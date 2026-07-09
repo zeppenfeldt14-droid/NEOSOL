@@ -354,7 +354,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
       </div>
 
       {/* Row: Planificador Diario and Planificador Semanal (50% each) */}
-      <div className="grid grid-cols-2 md:grid-cols-1 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {/* Planificador de Hoy */}
         <div className="glass-panel card delay-200" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="card-title">Planificador de Hoy</h3>
@@ -365,7 +365,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
               <div className="flex flex-col gap-4 items-center justify-center h-full" style={{ minHeight: '200px', opacity: 0.5 }}>
                 <MapPin size={48} />
                 <p>No hay visitas programadas para hoy.</p>
-                <Link href="/planificador" className="btn btn-secondary">
+                <Link href={`/zonas/${zonaName}/planificador`} className="btn btn-secondary">
                   Ir al Planificador
                 </Link>
               </div>
@@ -378,7 +378,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
                         {index + 1}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <Link href={`/empresas/${visita.empresaId}`} style={{ fontWeight: 500, fontSize: '0.875rem', color: 'white', display: 'block' }}>
+                        <Link href={`/zonas/${zonaName}/empresas/${visita.empresaId}`} style={{ fontWeight: 500, fontSize: '0.875rem', color: 'white', display: 'block' }}>
                           {visita.empresa.nombre}
                         </Link>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -389,7 +389,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
                   ))}
                 </div>
                 <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Link href="/planificador?vista=hoy" className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
+                  <Link href={`/zonas/${zonaName}/planificador?vista=hoy`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
                     Ir a la Ruta Completa
                   </Link>
                 </div>
@@ -408,7 +408,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
               <div className="flex flex-col gap-4 items-center justify-center h-full" style={{ minHeight: '200px', opacity: 0.5 }}>
                 <CalendarIcon size={48} />
                 <p>No hay visitas planificadas para los próximos días.</p>
-                <Link href="/planificador?vista=semana" className="btn btn-secondary">
+                <Link href={`/zonas/${zonaName}/planificador?vista=semana`} className="btn btn-secondary">
                   Planificar Semana
                 </Link>
               </div>
@@ -433,7 +433,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
                         {visitas.map((visita) => (
                           <div key={visita.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
                             <div style={{ flex: 1 }}>
-                              <Link href={`/empresas/${visita.empresaId}`} style={{ fontWeight: 500, fontSize: '0.875rem', color: 'white', display: 'block' }}>
+                              <Link href={`/zonas/${zonaName}/empresas/${visita.empresaId}`} style={{ fontWeight: 500, fontSize: '0.875rem', color: 'white', display: 'block' }}>
                                 {visita.empresa.nombre}
                               </Link>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -447,7 +447,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
                   })}
                 </div>
                 <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Link href="/planificador?vista=semana" className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
+                  <Link href={`/zonas/${zonaName}/planificador?vista=semana`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
                     Ver Planificador Semanal
                   </Link>
                 </div>
@@ -485,7 +485,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
                   </td>
                   <td>{new Date(emp.actualizadoEn).toLocaleDateString()}</td>
                   <td>
-                    <Link href={`/empresas/${emp.id}`} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                    <Link href={`/zonas/${zonaName}/empresas/${emp.id}`} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
                       Ver
                     </Link>
                   </td>
