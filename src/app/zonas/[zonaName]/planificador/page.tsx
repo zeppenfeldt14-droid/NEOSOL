@@ -32,53 +32,113 @@ async function crearRutaAction(empresaIds: number[], targetDateStr?: string) {
     })
   }
 
-  revalidatePath('/planificador')
+  let zona = 'CABA'
+  if (empresaIds.length > 0) {
+    const firstEmp = await prisma.empresa.findUnique({
+      where: { id: empresaIds[0] },
+      select: { zona: true }
+    })
+    zona = firstEmp?.zona || 'CABA'
+  }
+
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
 }
 
 async function eliminarAccionAction(accionId: number) {
   'use server'
+  const accion = await prisma.accion.findUnique({
+    where: { id: accionId },
+    include: { empresa: { select: { zona: true } } }
+  })
+  const zona = accion?.empresa?.zona || 'CABA'
+
   await prisma.accion.delete({
     where: { id: accionId }
   })
-  revalidatePath('/planificador')
-  revalidatePath('/')
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
 }
 
 async function reagendarAccionAction(accionId: number, targetDateStr: string) {
   'use server'
   const date = new Date(targetDateStr + 'T03:00:00.000Z') // Force Argentina midnight UTC-3
+  const accion = await prisma.accion.findUnique({
+    where: { id: accionId },
+    include: { empresa: { select: { zona: true } } }
+  })
+  const zona = accion?.empresa?.zona || 'CABA'
+
   await prisma.accion.update({
     where: { id: accionId },
     data: { fechaVencimiento: date }
   })
-  revalidatePath('/planificador')
-  revalidatePath('/')
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
 }
 
 async function reordenarRutaAction(accionesIds: number[]) {
   'use server'
-  // Use a transaction to update all orders based on the index + 1
   for (let i = 0; i < accionesIds.length; i++) {
     await prisma.accion.update({
       where: { id: accionesIds[i] },
       data: { orden: i + 1 }
     })
   }
-  revalidatePath('/planificador')
-  revalidatePath('/')
+
+  let zona = 'CABA'
+  if (accionesIds.length > 0) {
+    const action = await prisma.accion.findUnique({
+      where: { id: accionesIds[0] },
+      include: { empresa: { select: { zona: true } } }
+    })
+    zona = action?.empresa?.zona || 'CABA'
+  }
+
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
 }
 
-export default async function PlanificadorPage(props: { searchParams: Promise<{ vista?: string }> }) {
+export default async function PlanificadorPage(props: {
+  params: Promise<{ zonaName: string }>
+  searchParams: Promise<{ vista?: string }>
+}) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
+  const { zonaName } = await props.params
+  const decodedZona = decodeURIComponent(zonaName)
+
+  // Verify access permissions to this zone
+  if (user.nivel === 3 && user.zona !== decodedZona) {
+    redirect(`/zonas/${user.zona || 'CABA'}/planificador`)
+  } else if (user.nivel === 2) {
+    let enabledZones: string[] = []
+    try {
+      if (user.zonasHabilitadas) {
+        enabledZones = JSON.parse(JSON.stringify(user.zonasHabilitadas))
+      }
+    } catch (e) {}
+    if (!enabledZones.includes(decodedZona)) {
+      redirect(`/zonas/${enabledZones[0] || 'CABA'}/planificador`)
+    }
+  }
+
   const isVendedor = user.nivel === 3
   const userAlias = user.alias
 
-  const whereEmpresa = isVendedor ? { vendedorAsignado: userAlias } : {}
-  const whereAccion = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+  const whereEmpresa = {
+    zona: decodedZona,
+    ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+  }
+  const whereAccion = {
+    empresa: {
+      zona: decodedZona,
+      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+    }
+  }
 
   const searchParams = await props.searchParams
   const vista = searchParams.vista || 'hoy' // 'hoy', 'semana', 'mes'

@@ -9,13 +9,14 @@ import { getSessionUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EmpresaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EmpresaPage({ params }: { params: Promise<{ id: string; zonaName: string }> }) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
-  const { id } = await params
+  const { id, zonaName } = await params
+  const decodedZona = decodeURIComponent(zonaName)
   const empresaId = parseInt(id)
   
   if (isNaN(empresaId)) {
@@ -45,7 +46,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <Link href="/empresas" className="flex items-center gap-2" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+          <Link href={`/zonas/${zonaName}/empresas`} className="flex items-center gap-2" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
             <ArrowLeft size={16} /> Volver a empresas
           </Link>
           <div className="flex justify-between items-start mb-6">
@@ -67,7 +68,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="flex gap-2">
               <QuickActionsClient id={empresa.id} estado={empresa.estado} />
-              <Link href={`/empresas/${empresaId}/editar`} className="btn btn-secondary flex items-center gap-2">
+              <Link href={`/zonas/${zonaName}/empresas/${empresaId}/editar`} className="btn btn-secondary flex items-center gap-2">
                 <Edit size={16} /> Editar Ficha
               </Link>
             </div>

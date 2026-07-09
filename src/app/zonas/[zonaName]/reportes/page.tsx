@@ -5,17 +5,45 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ReportesPage() {
+export default async function ReportesPage({ params }: { params: Promise<{ zonaName: string }> }) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
+  const { zonaName } = await params
+  const decodedZona = decodeURIComponent(zonaName)
+
+  // Verify access permissions to this zone
+  if (user.nivel === 3 && user.zona !== decodedZona) {
+    redirect(`/zonas/${user.zona || 'CABA'}/reportes`)
+  } else if (user.nivel === 2) {
+    let enabledZones: string[] = []
+    try {
+      if (user.zonasHabilitadas) {
+        enabledZones = JSON.parse(JSON.stringify(user.zonasHabilitadas))
+      }
+    } catch (e) {}
+    if (!enabledZones.includes(decodedZona)) {
+      redirect(`/zonas/${enabledZones[0] || 'CABA'}/reportes`)
+    }
+  }
+
   const isVendedor = user.nivel === 3
   const userAlias = user.alias
 
-  const whereVisitasFilter = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
-  const wherePendientesFilter = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+  const whereVisitasFilter = {
+    empresa: {
+      zona: decodedZona,
+      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+    }
+  }
+  const wherePendientesFilter = {
+    empresa: {
+      zona: decodedZona,
+      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+    }
+  }
 
   const today = new Date()
   const startOfDay = new Date(today.setHours(0,0,0,0))

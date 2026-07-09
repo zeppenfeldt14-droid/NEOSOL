@@ -1,42 +1,70 @@
-import { createEmpresa } from './actions'
-import { ArrowLeft, Building2, Save } from 'lucide-react'
-import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { notFound, redirect } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, Building2, Save } from 'lucide-react'
+import { updateEmpresa } from '../actions'
 import { getSessionUser } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-
 export const dynamic = 'force-dynamic'
 
-export default async function NuevaEmpresaPage() {
+
+export default async function EditarEmpresaPage({ params }: { params: Promise<{ id: string; zonaName: string }> }) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
-  // Fetch active users for the salesperson select field (N1/N2 only)
+  const { id, zonaName } = await params
+  const decodedZona = decodeURIComponent(zonaName)
+  const empresaId = parseInt(id)
+  
+  if (isNaN(empresaId)) {
+    notFound()
+  }
+
+  const empresa = await prisma.empresa.findUnique({
+    where: { id: empresaId }
+  })
+
+  if (!empresa) {
+    notFound()
+  }
+
+  // Security: level 3 users can only edit their assigned companies
+  if (user.nivel === 3 && empresa.vendedorAsignado !== user.alias) {
+    notFound()
+  }
+
+  // Fetch active users for the salesperson selector (only for N1/N2 users)
   const usuarios = await prisma.usuario.findMany({
     where: { activo: true },
     select: { nombre: true, alias: true }
   })
 
+  const updateEmpresaWithId = updateEmpresa.bind(null, empresaId)
+
+
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/empresas" className="btn btn-secondary">
-          <ArrowLeft size={16} /> Volver
+        <Link href={`/zonas/${zonaName}/empresas/${empresaId}`} className="btn btn-secondary">
+          <ArrowLeft size={16} /> Volver a Ficha
         </Link>
         <div>
           <h1 className="page-title !mb-0 flex items-center gap-2">
-            <Building2 className="text-primary" /> Ficha de Alta de Cliente
+            <Building2 className="text-primary" /> Editar Ficha de Cliente
           </h1>
           <p className="page-subtitle mt-1">
-            Completar según formulario oficial para administración.
+            Actualizando datos de {empresa.nombre}
           </p>
         </div>
       </div>
 
       <div className="glass-panel p-6">
-        <form action={createEmpresa} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form action={async (formData) => {
+          'use server'
+          await updateEmpresaWithId(formData)
+          redirect(`/zonas/${zonaName}/empresas/${empresaId}`)
+        }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Bloque 1: Información General */}
           <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
@@ -44,51 +72,86 @@ export default async function NuevaEmpresaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Institución (Nombre y Apellido) / Empresa *</label>
-                <input type="text" name="nombre" className="form-input" required />
+                <input type="text" name="nombre" defaultValue={empresa.nombre} className="form-input" required />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">CUIT Nº</label>
-                <input type="text" name="cuit" className="form-input" placeholder="Ej. 30-12345678-9" />
+                <input type="text" name="cuit" defaultValue={empresa.cuit || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Actividad</label>
-                <input type="text" name="actividad" className="form-input" />
+                <input type="text" name="actividad" defaultValue={empresa.actividad || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Sucursal (Zona)</label>
-                <select name="zona" defaultValue="CABA" className="form-input bg-dark">
+                <select name="zona" defaultValue={empresa.zona || 'CABA'} className="form-input bg-dark">
                   <option value="CABA">CABA</option>
                   <option value="Zona SUR">Zona SUR</option>
                   <option value="Zona OESTE">Zona OESTE</option>
                   <option value="Zona NORTE">Zona NORTE</option>
                 </select>
               </div>
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label className="form-label">Estado de la Empresa</label>
+                <select
+                  name="estado"
+                  defaultValue={empresa.estado}
+                  className="form-input bg-dark"
+                  id="estadoSelect"
+                >
+                  <option value="prospecto">Prospecto</option>
+                  <option value="activo">Cliente Activo</option>
+                  <option value="descartada">Descartada</option>
+                  <option value="baja">Baja (ex-cliente)</option>
+                </select>
+              </div>
+              <div
+                id="motivoBajaSection"
+                className="flex flex-col gap-2 md:col-span-2"
+                style={{ display: empresa.estado === 'baja' ? 'flex' : 'none' }}
+              >
+                <label className="form-label" style={{ color: '#ef4444' }}>
+                  ⚠️ Motivo de Baja <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <textarea
+                  name="motivoBaja"
+                  defaultValue={empresa.motivoBaja || ''}
+                  className="form-input"
+                  rows={3}
+                  placeholder="Explica por qué se dio de baja al cliente (ej: dejó de comprar, encontró otro proveedor, cierre de negocio...)"
+                />
+              </div>
+              <script dangerouslySetInnerHTML={{ __html: `
+                document.getElementById('estadoSelect').addEventListener('change', function() {
+                  document.getElementById('motivoBajaSection').style.display = this.value === 'baja' ? 'flex' : 'none';
+                });
+              ` }} />
             </div>
           </div>
 
-          {/* Bloque 2: Dirección y Logística */}
+          {/* Bloque 2: Ubicación */}
           <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
             <h3 className="text-lg font-medium text-white mb-4 text-primary">Dirección y Logística</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Dirección Fiscal / Legal</label>
-                <input type="text" name="direccionFiscal" className="form-input" />
+                <input type="text" name="direccionFiscal" defaultValue={empresa.direccionFiscal || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Dirección de Entrega</label>
-                <input type="text" name="direccion" className="form-input" />
+                <input type="text" name="direccion" defaultValue={empresa.direccion || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Localidad</label>
-                <input type="text" name="barrio" className="form-input" />
+                <input type="text" name="barrio" defaultValue={empresa.barrio || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Partido</label>
-                <input type="text" name="partido" className="form-input" />
+                <input type="text" name="partido" defaultValue={empresa.partido || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="form-label">Transporte Sugerido</label>
-                <input type="text" name="transporte" className="form-input" />
+                <input type="text" name="transporte" defaultValue={empresa.transporte || ''} className="form-input" />
               </div>
             </div>
           </div>
@@ -99,21 +162,21 @@ export default async function NuevaEmpresaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Celular / TEL.</label>
-                <input type="text" name="telefono" className="form-input" />
+                <input type="text" name="telefono" defaultValue={empresa.telefono || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Correo Electrónico / e-mail empresa</label>
-                <input type="email" name="email" className="form-input" />
+                <input type="email" name="email" defaultValue={empresa.email || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Vendedor Asignado</label>
                 {user.nivel === 3 ? (
                   <>
-                    <input type="hidden" name="vendedorAsignado" value={user.alias} />
-                    <input type="text" className="form-input opacity-60 bg-black/20" value={`${user.alias}`} disabled />
+                    <input type="hidden" name="vendedorAsignado" value={empresa.vendedorAsignado || user.alias} />
+                    <input type="text" className="form-input opacity-60 bg-black/20" value={`${empresa.vendedorAsignado || user.alias}`} disabled />
                   </>
                 ) : (
-                  <select name="vendedorAsignado" defaultValue="" className="form-input bg-dark">
+                  <select name="vendedorAsignado" defaultValue={empresa.vendedorAsignado || ''} className="form-input bg-dark">
                     <option value="">Sin Asignar</option>
                     {usuarios.map(u => (
                       <option key={u.alias} value={u.alias}>
@@ -125,7 +188,7 @@ export default async function NuevaEmpresaPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Contacto principal (Responsable)</label>
-                <input type="text" name="responsable" className="form-input" />
+                <input type="text" name="responsable" defaultValue={empresa.responsable || ''} className="form-input" />
               </div>
             </div>
           </div>
@@ -136,41 +199,41 @@ export default async function NuevaEmpresaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Contacto de Cobranzas</label>
-                <input type="text" name="contactoCobranzas" className="form-input" />
+                <input type="text" name="contactoCobranzas" defaultValue={empresa.contactoCobranzas || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Días de pago</label>
-                <input type="text" name="diasPago" className="form-input" />
+                <input type="text" name="diasPago" defaultValue={empresa.diasPago || ''} className="form-input" />
               </div>
             </div>
           </div>
 
-          {/* Bloque 5: CRM Interno */}
+          {/* Bloque 5: Notas y CRM */}
           <div className="col-span-1 md:col-span-2 mb-4">
             <h3 className="text-lg font-medium text-white mb-4 text-primary">CRM Interno</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Productos de Interés</label>
-                <input type="text" name="productosInteres" className="form-input" />
+                <input type="text" name="productosInteres" defaultValue={empresa.productosInteres || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Ciclo de Venta Estimado (Días)</label>
-                <input type="number" name="cicloVentaDias" className="form-input" placeholder="Para alarmas automáticas" />
+                <input type="number" name="cicloVentaDias" defaultValue={empresa.cicloVentaDias?.toString() || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="form-label">Notas Adicionales (Tipo/Nº Cuenta, Cobrador, etc.)</label>
-                <textarea name="notas" className="form-input min-h-[100px]"></textarea>
+                <textarea name="notas" defaultValue={empresa.notas || ''} className="form-input min-h-[100px]"></textarea>
               </div>
             </div>
           </div>
 
           {/* Botones de acción */}
           <div className="col-span-1 md:col-span-2 flex justify-end gap-4 mt-4 pt-4 border-t border-white/10">
-            <Link href="/empresas" className="btn btn-secondary">
+            <Link href={`/empresas/${empresaId}`} className="btn btn-secondary">
               Cancelar
             </Link>
             <button type="submit" className="btn btn-primary">
-              <Save size={16} /> Guardar Ficha de Alta
+              <Save size={16} /> Guardar Cambios
             </button>
           </div>
         </form>
@@ -178,4 +241,3 @@ export default async function NuevaEmpresaPage() {
     </div>
   )
 }
-

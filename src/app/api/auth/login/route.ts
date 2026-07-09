@@ -52,7 +52,9 @@ export async function POST(request: Request) {
       nombre: usuario.nombre,
       nivel: usuario.nivel,
       rol: usuario.rol,
-      modulos: usuario.modulos || {}
+      modulos: usuario.modulos || {},
+      zona: usuario.zona,
+      zonasHabilitadas: usuario.zonasHabilitadas
     }
     const token = signToken(sessionUser)
 

@@ -16,6 +16,8 @@ interface Usuario {
   limitesEstado: Record<string, number>
   loginCount: number
   connectionLogs: Array<{ date: string; ip: string; userAgent: string }>
+  zona: string | null
+  zonasHabilitadas: any
 }
 
 interface LogEntry {
@@ -47,7 +49,6 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     visitas: true,
     planificador: true,
     reportes: true,
-    alertas: true,
     configuracion: false
   }
   const defaultLimits = {
@@ -55,6 +56,10 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     AUSENCIA_BANO: 15,
     AUSENCIA_GESTION: 30
   }
+
+  const [zones, setZones] = useState<string[]>(['CABA', 'SUR', 'NORTE', 'OESTE'])
+  const [formZona, setFormZona] = useState('CABA')
+  const [formZonasHabilitadas, setFormZonasHabilitadas] = useState<string[]>([])
 
   const [formName, setFormName] = useState('')
   const [formAlias, setFormAlias] = useState('')
@@ -91,9 +96,21 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     }
   }
 
+  const fetchZones = async () => {
+    try {
+      const res = await fetch('/api/zonas')
+      if (res.ok) {
+        const data = await res.json()
+        setZones(data.map((z: any) => z.nombre))
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   useEffect(() => {
     setIsLoading(true)
-    Promise.all([fetchUsers(), fetchLogs()]).finally(() => setIsLoading(false))
+    Promise.all([fetchUsers(), fetchLogs(), fetchZones()]).finally(() => setIsLoading(false))
   }, [])
 
   // Check if a user is online
@@ -130,6 +147,8 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormFoto(null)
     setFormModulos(defaultModules)
     setFormLimits(defaultLimits)
+    setFormZona('CABA')
+    setFormZonasHabilitadas([])
     setShowUserModal(true)
   }
 
@@ -146,6 +165,16 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormFoto(user.foto)
     setFormModulos({ ...defaultModules, ...(user.modulos as Record<string, boolean>) })
     setFormLimits({ ...defaultLimits, ...(user.limitesEstado as Record<string, number>) })
+    setFormZona(user.zona || 'CABA')
+    let enabled: string[] = []
+    try {
+      if (user.zonasHabilitadas) {
+        enabled = typeof user.zonasHabilitadas === 'string'
+          ? JSON.parse(user.zonasHabilitadas)
+          : JSON.parse(JSON.stringify(user.zonasHabilitadas))
+      }
+    } catch (e) {}
+    setFormZonasHabilitadas(enabled)
     setShowUserModal(true)
   }
 
@@ -186,7 +215,9 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
         activo: formActivo,
         foto: formFoto,
         modulos: formModulos,
-        limitesEstado: formLimits
+        limitesEstado: formLimits,
+        zona: formZona,
+        zonasHabilitadas: formZonasHabilitadas
       }
 
       const res = await fetch('/api/usuarios', {
@@ -394,6 +425,30 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                     }`}>
                       {levelLabel(u.nivel)}
                     </span>
+                    {u.nivel === 3 ? (
+                      <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
+                        📍 {u.zona || 'CABA'}
+                      </span>
+                    ) : (
+                      (() => {
+                        let enabled: string[] = []
+                        try {
+                          if (u.zonasHabilitadas) {
+                            enabled = typeof u.zonasHabilitadas === 'string'
+                              ? JSON.parse(u.zonasHabilitadas)
+                              : JSON.parse(JSON.stringify(u.zonasHabilitadas))
+                          }
+                        } catch (e) {}
+                        if (enabled && enabled.length > 0) {
+                          return (
+                            <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 animate-fade-in" title={enabled.join(', ')}>
+                              📍 {enabled.join(', ')}
+                            </span>
+                          )
+                        }
+                        return null
+                      })()
+                    )}
                   </div>
 
                   {/* Stats Row (3 Columns like Margarita Viajes) */}
@@ -618,6 +673,53 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="border-t border-white/5 pt-6 mt-6">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Zonas Autorizadas / Asignadas</h4>
+                  
+                  {formNivel === 3 ? (
+                    <>
+                      <p className="text-xs text-secondary mb-4">Selecciona la zona única asignada para este vendedor.</p>
+                      <select
+                        value={formZona}
+                        onChange={(e) => setFormZona(e.target.value)}
+                        className="form-input bg-[#0B132B]/50 border-white/10 cursor-pointer max-w-[200px]"
+                      >
+                        {zones.map(z => (
+                          <option key={z} value={z} className="bg-[#0B132B]">{z}</option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-secondary mb-4">Selecciona las zonas que el supervisor podrá gestionar.</p>
+                      <div className="flex flex-wrap gap-2.5">
+                        {zones.map(z => {
+                          const active = formZonasHabilitadas.includes(z)
+                          return (
+                            <button
+                              key={z}
+                              type="button"
+                              onClick={() => {
+                                setFormZonasHabilitadas(prev => 
+                                  active ? prev.filter(x => x !== z) : [...prev, z]
+                                )
+                              }}
+                              className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 ${
+                                active 
+                                  ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                                  : 'bg-white/5 border-white/10 text-secondary hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              {active && <Check size={12} strokeWidth={4} />}
+                              {z}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {selectedUser && (

@@ -34,10 +34,15 @@ export default async function RootLayout({
     )
   }
 
+  const zonesList = await prisma.zona.findMany({
+    orderBy: { nombre: 'asc' }
+  })
+  const zones = zonesList.map(z => z.nombre)
+
   return (
     <html lang="es">
       <body>
-        <AppShellClient logo={logo} user={user}>
+        <AppShellClient logo={logo} user={user} zones={zones}>
           {children}
         </AppShellClient>
       </body>

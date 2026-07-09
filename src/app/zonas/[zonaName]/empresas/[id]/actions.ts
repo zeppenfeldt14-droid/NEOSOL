@@ -45,7 +45,9 @@ export async function addVisita(empresaId: number, formData: FormData) {
     )
   }
 
-  revalidatePath(`/empresas/${empresaId}`)
+  const empresa = await prisma.empresa.findUnique({ where: { id: empresaId }, select: { zona: true } })
+  const zona = empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/empresas/${empresaId}`)
 }
 
 export async function addAccion(empresaId: number, formData: FormData) {
@@ -74,7 +76,9 @@ export async function addAccion(empresaId: number, formData: FormData) {
     )
   }
 
-  revalidatePath(`/empresas/${empresaId}`)
+  const empresa = await prisma.empresa.findUnique({ where: { id: empresaId }, select: { zona: true } })
+  const zona = empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/empresas/${empresaId}`)
 }
 
 export async function addAlerta(empresaId: number, formData: FormData) {
@@ -109,7 +113,9 @@ export async function addAlerta(empresaId: number, formData: FormData) {
     )
   }
 
-  revalidatePath(`/empresas/${empresaId}`)
+  const empresa = await prisma.empresa.findUnique({ where: { id: empresaId }, select: { zona: true } })
+  const zona = empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/empresas/${empresaId}`)
 }
 
 export async function completeAccion(accionId: number, empresaId: number) {
@@ -131,7 +137,9 @@ export async function completeAccion(accionId: number, empresaId: number) {
     )
   }
   
-  revalidatePath(`/empresas/${empresaId}`)
+  const empresa = await prisma.empresa.findUnique({ where: { id: empresaId }, select: { zona: true } })
+  const zona = empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/empresas/${empresaId}`)
 }
 
 export async function updateEmpresa(empresaId: number, formData: FormData) {
@@ -208,6 +216,6 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     )
   }
 
-  revalidatePath(`/empresas/${empresaId}`)
-  revalidatePath('/empresas')
+  revalidatePath(`/zonas/${zona}/empresas/${empresaId}`)
+  revalidatePath(`/zonas/${zona}/empresas`)
 }

@@ -103,6 +103,8 @@ model Usuario {
   mustChangePassword    Boolean  @default(false)
   loginCount            Int      @default(0)
   connectionLogs        Json     @default("[]") // Historial de últimas 20 conexiones
+  zona                  String?  @default("CABA") // Zona asignada para Nivel 3
+  zonasHabilitadas      Json     @default("[]")   // Zonas permitidas para Nivel 2/1
   passwordUpdatedAt     DateTime?
   creadoEn              DateTime @default(now())
   actualizadoEn         DateTime @updatedAt
@@ -115,5 +117,11 @@ model LogBitacora {
   tipoAccion   String   // LOGIN, LOGOUT, CREATE_USER, etc.
   detalles     String
   creadoEn     DateTime @default(now())
+}
+
+model Zona {
+  id       Int      @id @default(autoincrement())
+  nombre   String   @unique
+  creadoEn DateTime @default(now())
 }
 

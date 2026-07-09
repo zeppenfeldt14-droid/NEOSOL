@@ -15,6 +15,8 @@ export interface UserSession {
   nivel: number
   rol: string
   modulos: any
+  zona: string | null
+  zonasHabilitadas: any
 }
 
 export async function hashPassword(password: string): Promise<string> {

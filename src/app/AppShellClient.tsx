@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, Map as MapIcon, Bell, FileText, Settings, LogOut, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -13,21 +13,57 @@ interface UserSession {
   nivel: number
   rol: string
   modulos: Record<string, boolean>
+  zona: string | null
+  zonasHabilitadas: any // Json array of enabled zones
 }
 
 interface Props {
   children: React.ReactNode
   logo: string | null
   user: UserSession
+  zones?: string[]
 }
 
-export function AppShellClient({ children, logo, user }: Props) {
+export function AppShellClient({ children, logo, user, zones = [] }: Props) {
   const pathname = usePathname()
   const [modules, setModules] = useState<Record<string, boolean>>(user.modulos || {})
   const [userName, setUserName] = useState(user.nombre)
   const [userRol, setUserRol] = useState(user.rol)
 
-  // Sync with localStorage if available (to get updated name/photo changes if any)
+  // Zones UI States
+  const [isZonesExpanded, setIsZonesExpanded] = useState(true)
+  const [expandedZone, setExpandedZone] = useState<string | null>(null)
+  
+  // Create Zone Modal State
+  const [showCreateZone, setShowCreateZone] = useState(false)
+  const [newZoneName, setNewZoneName] = useState('')
+  const [isSubmittingZone, setIsSubmittingZone] = useState(false)
+
+  // Get allowed zones list based on user role
+  const allowedZones = typeof window !== 'undefined' ? [] : [] // placeholder for compile
+  
+  const [userZones, setUserZones] = useState<string[]>([])
+
+  useEffect(() => {
+    // Determine allowed zones
+    if (user.nivel === 1) {
+      setUserZones(zones)
+    } else if (user.nivel === 2) {
+      let enabled: string[] = []
+      try {
+        if (user.zonasHabilitadas) {
+          enabled = typeof user.zonasHabilitadas === 'string' 
+            ? JSON.parse(user.zonasHabilitadas) 
+            : JSON.parse(JSON.stringify(user.zonasHabilitadas))
+        }
+      } catch (e) {}
+      setUserZones(zones.filter(z => enabled.includes(z)))
+    } else {
+      setUserZones([user.zona || 'CABA'])
+    }
+  }, [zones, user])
+
+  // Sync with localStorage if available
   useEffect(() => {
     const localModules = localStorage.getItem('user_modules')
     const localName = localStorage.getItem('staff_user')
@@ -41,6 +77,15 @@ export function AppShellClient({ children, logo, user }: Props) {
     if (localName) setUserName(localName)
     if (localRol) setUserRol(localRol)
   }, [])
+
+  // Auto-expand active zone from pathname
+  useEffect(() => {
+    const match = pathname.match(/\/zonas\/([^/]+)/)
+    if (match) {
+      const activeZone = decodeURIComponent(match[1])
+      setExpandedZone(activeZone)
+    }
+  }, [pathname])
 
   const handleLogout = async () => {
     if (confirm('¿Estás seguro de que deseas salir del sistema?')) {
@@ -58,7 +103,36 @@ export function AppShellClient({ children, logo, user }: Props) {
     }
   }
 
-  // Initials for avatar
+  // Create new zone API call
+  const handleCreateZone = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newZoneName.trim()) return
+
+    setIsSubmittingZone(true)
+    try {
+      const res = await fetch('/api/zonas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: newZoneName })
+      })
+
+      if (res.ok) {
+        alert('Nueva zona creada con éxito.')
+        setShowCreateZone(false)
+        setNewZoneName('')
+        window.location.reload() // Reload to fetch fresh layout zones
+      } else {
+        const err = await res.json()
+        alert(`Error: ${err.error || 'No se pudo crear la zona.'}`)
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Error de conexión con el servidor.')
+    } finally {
+      setIsSubmittingZone(false)
+    }
+  }
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -68,11 +142,8 @@ export function AppShellClient({ children, logo, user }: Props) {
       .toUpperCase()
   }
 
-  // Active path checking
-  const isActive = (path: string) => {
-    if (path === '/' && pathname === '/') return true
-    if (path !== '/' && pathname.startsWith(path)) return true
-    return false
+  const isLinkActive = (path: string) => {
+    return pathname === path || (path !== '/' && pathname.startsWith(path))
   }
 
   return (
@@ -88,43 +159,119 @@ export function AppShellClient({ children, logo, user }: Props) {
         </div>
         
         <nav className="sidebar-nav">
-          {modules.visitas !== false && (
-            <Link href="/" className={`nav-item ${isActive('/') ? 'active' : ''}`}>
-              <LayoutDashboard className="nav-icon" />
-              <span>Gestión de Visitas</span>
-            </Link>
-          )}
           
-          {modules.empresas !== false && (
-            <Link href="/empresas" className={`nav-item ${isActive('/empresas') ? 'active' : ''}`}>
-              <Users className="nav-icon" />
-              <span>Empresas</span>
-            </Link>
-          )}
-          
-          {modules.planificador !== false && (
-            <Link href="/planificador" className={`nav-item ${isActive('/planificador') ? 'active' : ''}`}>
-              <MapIcon className="nav-icon" />
-              <span>Planificador Diario</span>
-            </Link>
-          )}
-          
-          {modules.alertas !== false && (
-            <Link href="/alertas" className={`nav-item ${isActive('/alertas') ? 'active' : ''}`}>
-              <Bell className="nav-icon" />
-              <span>Alertas y Tareas</span>
-            </Link>
+          {/* LEVEL 3 (Vendedor): Show single zone directly */}
+          {user.nivel === 3 ? (
+            userZones.map(zone => (
+              <div key={zone} className="flex flex-col gap-1.5">
+                <div className="px-3 py-1 text-[10px] font-black uppercase text-primary tracking-widest border-b border-white/5 mb-1.5">
+                  Zona {zone}
+                </div>
+                {modules.visitas !== false && (
+                  <Link href={`/zonas/${zone}`} className={`nav-item ${pathname === `/zonas/${zone}` ? 'active' : ''}`}>
+                    <LayoutDashboard className="nav-icon" />
+                    <span>Gestión de Visitas</span>
+                  </Link>
+                )}
+                {modules.empresas !== false && (
+                  <Link href={`/zonas/${zone}/empresas`} className={`nav-item ${isLinkActive(`/zonas/${zone}/empresas`) ? 'active' : ''}`}>
+                    <Users className="nav-icon" />
+                    <span>Empresas</span>
+                  </Link>
+                )}
+                {modules.planificador !== false && (
+                  <Link href={`/zonas/${zone}/planificador`} className={`nav-item ${isLinkActive(`/zonas/${zone}/planificador`) ? 'active' : ''}`}>
+                    <MapIcon className="nav-icon" />
+                    <span>Planificador Diario</span>
+                  </Link>
+                )}
+                {modules.reportes !== false && (
+                  <Link href={`/zonas/${zone}/reportes`} className={`nav-item ${isLinkActive(`/zonas/${zone}/reportes`) ? 'active' : ''}`}>
+                    <FileText className="nav-icon" />
+                    <span>Reportes (PDF)</span>
+                  </Link>
+                )}
+              </div>
+            ))
+          ) : (
+            /* LEVEL 1/2 (Admin / Supervisor): Show collapsible ZONAS menu */
+            <div className="flex flex-col">
+              <button 
+                onClick={() => setIsZonesExpanded(!isZonesExpanded)}
+                className="nav-item flex items-center justify-between w-full text-left"
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="nav-icon text-primary" />
+                  <span className="font-bold text-white uppercase tracking-wider text-xs">Zonas</span>
+                </div>
+                {isZonesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+
+              {isZonesExpanded && (
+                <div className="pl-4 mt-2 flex flex-col gap-2 border-l border-white/5 ml-3.5">
+                  {userZones.map(zone => {
+                    const isZoneActive = expandedZone === zone
+                    return (
+                      <div key={zone} className="flex flex-col gap-1">
+                        <button 
+                          onClick={() => setExpandedZone(isZoneActive ? null : zone)}
+                          className={`nav-item flex items-center justify-between w-full py-1.5 px-3 rounded-lg text-xs font-semibold ${isZoneActive ? 'text-primary bg-white/5' : 'text-secondary hover:text-white'}`}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          <span>{zone}</span>
+                          {isZoneActive ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                        </button>
+
+                        {isZoneActive && (
+                          <div className="pl-3 mt-1 flex flex-col gap-1.5 border-l border-white/5 ml-1.5">
+                            {modules.visitas !== false && (
+                              <Link href={`/zonas/${zone}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${pathname === `/zonas/${zone}` ? 'active' : ''}`}>
+                                <LayoutDashboard className="w-3.5 h-3.5" />
+                                <span>Gestión de Visitas</span>
+                              </Link>
+                            )}
+                            {modules.empresas !== false && (
+                              <Link href={`/zonas/${zone}/empresas`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/empresas`) ? 'active' : ''}`}>
+                                <Users className="w-3.5 h-3.5" />
+                                <span>Empresas</span>
+                              </Link>
+                            )}
+                            {modules.planificador !== false && (
+                              <Link href={`/zonas/${zone}/planificador`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/planificador`) ? 'active' : ''}`}>
+                                <MapIcon className="w-3.5 h-3.5" />
+                                <span>Planificador Diario</span>
+                              </Link>
+                            )}
+                            {modules.reportes !== false && (
+                              <Link href={`/zonas/${zone}/reportes`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/reportes`) ? 'active' : ''}`}>
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Reportes (PDF)</span>
+                              </Link>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {/* Add Zone Button (N1 only) */}
+                  {user.nivel === 1 && (
+                    <button 
+                      onClick={() => setShowCreateZone(true)}
+                      className="nav-item flex items-center justify-center gap-1.5 mt-2 py-1.5 text-xs text-primary bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white rounded-lg transition-all font-bold cursor-pointer"
+                    >
+                      <Plus size={12} /> Nueva Zona
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
-          {modules.reportes !== false && (
-            <Link href="/reportes" className={`nav-item ${isActive('/reportes') ? 'active' : ''}`}>
-              <FileText className="nav-icon" />
-              <span>Reportes (PDF)</span>
-            </Link>
-          )}
-
+          {/* Standalone users module link for N1/N2 */}
           {user.nivel < 3 && (
-            <Link href="/usuarios" className={`nav-item ${isActive('/usuarios') ? 'active' : ''}`}>
+            <Link href="/usuarios" className={`nav-item ${isLinkActive('/usuarios') ? 'active' : ''}`}>
               <ShieldCheck className="nav-icon" />
               <span>Usuarios</span>
             </Link>
@@ -133,7 +280,7 @@ export function AppShellClient({ children, logo, user }: Props) {
 
         <div className="sidebar-nav" style={{ flex: 'none', borderTop: '1px solid var(--border-light)' }}>
           {modules.configuracion !== false && (
-            <Link href="/configuracion" className={`nav-item ${isActive('/configuracion') ? 'active' : ''}`}>
+            <Link href="/configuracion" className={`nav-item ${isLinkActive('/configuracion') ? 'active' : ''}`}>
               <Settings className="nav-icon" />
               <span>Configuración</span>
             </Link>
@@ -166,6 +313,49 @@ export function AppShellClient({ children, logo, user }: Props) {
           {children}
         </div>
       </main>
+
+      {/* CREATE ZONE MODAL */}
+      {showCreateZone && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateZone} className="glass-panel card w-full max-w-sm border border-white/10 p-6 flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+              <h3 className="font-bold text-white text-base">Crear Nueva Zona</h3>
+              <button type="button" onClick={() => setShowCreateZone(false)} className="text-secondary hover:text-white transition-all">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="form-group mb-0">
+              <label className="form-label text-[10px] uppercase font-bold text-secondary">Nombre de la Zona</label>
+              <input 
+                type="text" 
+                value={newZoneName} 
+                onChange={(e) => setNewZoneName(e.target.value)} 
+                placeholder="Ej. Zona ESTE" 
+                className="form-input bg-black/40 border border-white/10 rounded-xl"
+                required
+                disabled={isSubmittingZone}
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <button 
+                type="button" 
+                onClick={() => setShowCreateZone(false)} 
+                className="btn btn-secondary text-xs px-4"
+                disabled={isSubmittingZone}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary text-xs px-5 shadow-lg shadow-primary/20 font-bold"
+                disabled={isSubmittingZone}
+              >
+                {isSubmittingZone ? 'Guardando...' : 'Crear'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

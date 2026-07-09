@@ -26,6 +26,8 @@ export async function GET() {
         loginCount: true,
         connectionLogs: true,
         mustChangePassword: true,
+        zona: true,
+        zonasHabilitadas: true,
         passwordUpdatedAt: true,
         creadoEn: true,
         actualizadoEn: true
@@ -60,7 +62,9 @@ export async function POST(request: Request) {
       foto,
       modulos,
       limitesEstado,
-      mustChangePassword
+      mustChangePassword,
+      zona,
+      zonasHabilitadas
     } = body
 
     if (!nombre || !alias || !email) {
@@ -104,7 +108,9 @@ export async function POST(request: Request) {
         foto: foto || null,
         modulos: modulos || {},
         limitesEstado: limitesEstado || {},
-        mustChangePassword: mustChangePassword === true
+        mustChangePassword: mustChangePassword === true,
+        zona: zona || 'CABA',
+        zonasHabilitadas: zonasHabilitadas || []
       }
 
       if (password && password.trim() !== '') {
@@ -160,6 +166,8 @@ export async function POST(request: Request) {
         modulos: modulos || {},
         limitesEstado: limitesEstado || {},
         mustChangePassword: mustChangePassword === true,
+        zona: zona || 'CABA',
+        zonasHabilitadas: zonasHabilitadas || [],
         passwordUpdatedAt: new Date()
       }
     })

@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check } from 'lucide-react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { CompleteActionButton } from '../empresas/[id]/ActionButtons'
@@ -41,6 +42,8 @@ export default function IntelligentPlanner({
   reordenarRutaAction?: (ids: number[]) => Promise<void>
   vista?: string
 }) {
+  const params = useParams()
+  const zonaName = params.zonaName as string
   const [selectedZonas, setSelectedZonas] = useState<string[]>([])
   const [selectedRoute, setSelectedRoute] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -684,7 +687,7 @@ export default function IntelligentPlanner({
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                       <Link 
-                        href={`/empresas/${s.id}`} 
+                        href={`/zonas/${zonaName}/empresas/${s.id}`} 
                         onClick={e => e.stopPropagation()}
                         className="btn btn-secondary" 
                         style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}

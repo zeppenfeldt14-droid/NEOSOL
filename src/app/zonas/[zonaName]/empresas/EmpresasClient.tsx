@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { Search, Plus, MapPin, Phone, Building2 } from 'lucide-react'
 
 type Empresa = {
@@ -18,6 +19,8 @@ type Empresa = {
 }
 
 export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[], zonas: string[] }) {
+  const params = useParams()
+  const zonaName = params.zonaName as string
   const [searchQuery, setSearchQuery] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<'todos' | 'prospecto' | 'activo' | 'descartada'>('todos')
   const [zonaFilter, setZonaFilter] = useState<string>('todas')
@@ -64,7 +67,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
           <h1 className="page-title">Directorio de Empresas</h1>
           <p className="page-subtitle">Gestiona todas las empresas, clientes, prospectos y descartadas.</p>
         </div>
-        <Link href="/empresas/nueva" className="btn btn-primary">
+        <Link href={`/zonas/${zonaName}/empresas/nueva`} className="btn btn-primary">
           <Plus size={18} /> Nueva Empresa
         </Link>
       </div>
@@ -194,7 +197,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                 </td>
                 <td>
                   <Link 
-                    href={`/empresas/${empresa.id}`} 
+                    href={`/zonas/${zonaName}/empresas/${empresa.id}`} 
                     className="btn btn-secondary" 
                     style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
                   >
