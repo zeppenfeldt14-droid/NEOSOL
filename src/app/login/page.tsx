@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import { Lock } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [alias, setAlias] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -37,7 +35,6 @@ export default function LoginPage() {
       }
 
       if (data.success && data.user) {
-        // Store user metadata in localStorage for Client-side usage (Sidebar, Header, Alerts Engine)
         localStorage.setItem('staff_user', data.user.nombre)
         localStorage.setItem('staff_user_id', data.user.id.toString())
         localStorage.setItem('staff_user_email', data.user.email)
@@ -48,7 +45,6 @@ export default function LoginPage() {
         localStorage.setItem('user_status_limits', JSON.stringify(data.user.limitesEstado || {}))
         localStorage.setItem('staff_auth', 'true')
 
-        // Redirect to homepage using full reload to refresh all Server Components with new session cookie
         window.location.href = '/'
       } else {
         setError('Error al procesar el inicio de sesión.')
@@ -62,54 +58,154 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B132B] flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative Glow Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#ea580c]/10 rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-500/10 rounded-full blur-[100px]" />
-
-      <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-[420px] shadow-2xl relative z-10 text-center border border-white/5">
-        <div className="w-20 h-20 bg-[#ea580c] rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-orange-500/40">
-          <Lock size={36} className="text-white" />
+    <div style={{
+      minHeight: '100vh',
+      background: '#1a1a2e',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+    }}>
+      {/* Floating white card */}
+      <div style={{
+        background: '#ffffff',
+        borderRadius: '18px',
+        padding: '48px 40px 40px',
+        width: '100%',
+        maxWidth: '400px',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+        textAlign: 'center',
+      }}>
+        {/* Orange lock icon */}
+        <div style={{
+          width: '64px',
+          height: '64px',
+          borderRadius: '50%',
+          background: '#ea580c',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 24px',
+          boxShadow: '0 8px 24px rgba(234, 88, 12, 0.35)',
+        }}>
+          <Lock size={28} color="#ffffff" />
         </div>
 
-        <h2 className="text-3xl font-black italic tracking-tight text-[#0B132B] mb-2 uppercase">NEOSOL STAFF</h2>
-        <p className="text-xs text-gray-500 font-bold mb-8 uppercase tracking-widest">Reporte de Visitas</p>
+        {/* Title block */}
+        <h1 style={{
+          fontSize: '22px',
+          fontWeight: 900,
+          fontStyle: 'italic',
+          color: '#1a1a2e',
+          letterSpacing: '1px',
+          margin: '0 0 2px',
+          textTransform: 'uppercase',
+        }}>
+          CRM NEOSOL
+        </h1>
+        <p style={{
+          fontSize: '13px',
+          fontWeight: 700,
+          fontStyle: 'italic',
+          color: '#1a1a2e',
+          letterSpacing: '2px',
+          margin: '0 0 32px',
+          textTransform: 'uppercase',
+        }}>
+          USER STAFF
+        </p>
 
+        {/* Error message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100 italic animate-pulse">
+          <div style={{
+            background: '#fef2f2',
+            color: '#dc2626',
+            padding: '10px 16px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: 600,
+            marginBottom: '20px',
+            border: '1px solid #fecaca',
+          }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5 text-left">
-          <div className="relative">
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          {/* Alias field */}
+          <div style={{ marginBottom: '16px' }}>
             <input
               type="text"
               placeholder="Alias de Usuario"
               value={alias}
               onChange={(e) => { setAlias(e.target.value); setError(''); }}
-              className="w-full bg-[#F8F9FB] text-[#0B132B] font-bold text-sm px-5 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#ea580c]/50 transition-all border-none"
               autoComplete="username"
               required
+              style={{
+                width: '100%',
+                border: 'none',
+                borderBottom: '1.5px solid #e5e7eb',
+                padding: '12px 4px',
+                fontSize: '14px',
+                color: '#374151',
+                background: 'transparent',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = '#ea580c'}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = '#e5e7eb'}
             />
           </div>
 
-          <div className="relative">
+          {/* Password field */}
+          <div style={{ marginBottom: '28px' }}>
             <input
               type="password"
               placeholder="Contraseña"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              className="w-full bg-[#F8F9FB] text-[#0B132B] font-bold text-sm px-5 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#ea580c]/50 transition-all border-none"
               autoComplete="current-password"
               required
+              style={{
+                width: '100%',
+                border: 'none',
+                borderBottom: '1.5px solid #e5e7eb',
+                padding: '12px 4px',
+                fontSize: '14px',
+                color: '#374151',
+                background: 'transparent',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = '#ea580c'}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = '#e5e7eb'}
             />
           </div>
 
+          {/* Submit button */}
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full ${isLoading ? 'bg-orange-400 cursor-not-allowed' : 'bg-[#0B132B] hover:bg-orange-600'} text-white py-4 rounded-2xl font-black tracking-widest text-sm transition-all shadow-lg shadow-blue-500/20 mt-2 flex items-center justify-center gap-2 uppercase`}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: isLoading ? '#fb923c' : '#ea580c',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 800,
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'background 0.2s, transform 0.1s',
+              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.3)',
+            }}
+            onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#c2410c' }}
+            onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = '#ea580c' }}
           >
             {isLoading ? 'VERIFICANDO...' : 'ENTRAR AL SISTEMA'}
           </button>
