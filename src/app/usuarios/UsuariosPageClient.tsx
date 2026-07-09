@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Camera, Plus, Search, Trash2, X, User, Download, Clock, Edit, LogIn, Activity } from 'lucide-react'
+import { Camera, Plus, Search, Trash2, X, User, Download, Clock, Edit, LogIn, Activity, Check, Shield } from 'lucide-react'
 
 interface Usuario {
   id: number
@@ -98,22 +98,22 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     Promise.all([fetchUsers(), fetchLogs()]).finally(() => setIsLoading(false))
   }, [])
 
-  // Check if a user is online (based on last login within 24h and no logout)
+  // Check if a user is online
   const getUserOnlineStatus = (user: Usuario) => {
     const userConnLogs = logs
       .filter(l => l.user_id === user.id)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-    if (userConnLogs.length === 0) return { label: 'Desconectado', color: 'bg-gray-400', online: false }
+    if (userConnLogs.length === 0) return { label: 'Desconectado', color: 'bg-gray-500', online: false }
 
     const lastLog = userConnLogs[0]
     const action = lastLog.action_type.toUpperCase()
     const logTime = new Date(lastLog.created_at).getTime()
     const diff = Date.now() - logTime
-    const STALE_TIMEOUT = 12 * 60 * 60 * 1000 // 12 hours
+    const STALE_TIMEOUT = 12 * 60 * 60 * 1000
 
     if (action.includes('LOGOUT') || diff > STALE_TIMEOUT) {
-      return { label: 'Desconectado', color: 'bg-gray-400', online: false }
+      return { label: 'Desconectado', color: 'bg-gray-500', online: false }
     }
 
     return { label: 'En línea', color: 'bg-green-500', online: true }
@@ -240,52 +240,47 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   // Impersonate User
   const handleImpersonate = (user: Usuario) => {
     alert('Función de Entrar como Usuario en desarrollo. 🚧')
-    // TODO: Implement token override for impersonation
   }
 
   // Styles
   const levelColor = (level: number) => {
-    if (level === 1) return 'from-orange-500 to-orange-700 text-orange-500 border-orange-500/30 bg-orange-500/10'
-    if (level === 2) return 'from-blue-500 to-blue-700 text-blue-400 border-blue-500/30 bg-blue-500/10'
-    return 'from-green-500 to-green-700 text-green-400 border-green-500/30 bg-green-500/10'
+    if (level === 1) return 'bg-orange-500/20 text-orange-400'
+    if (level === 2) return 'bg-blue-500/20 text-blue-400'
+    return 'bg-green-500/20 text-green-400'
   }
-
+  const levelBadge = (level: number) => {
+    if (level === 1) return 'bg-orange-500 text-white'
+    if (level === 2) return 'bg-blue-500 text-white'
+    return 'bg-green-500 text-white'
+  }
   const levelLabel = (level: number) => {
-    if (level === 1) return 'N1 · Gerencia'
-    if (level === 2) return 'N2 · Supervisión'
-    return 'N3 · Ventas'
+    if (level === 1) return 'N1 - Gerencia'
+    if (level === 2) return 'N2 - Supervisión'
+    return 'N3 - Ventas'
   }
 
-  // Logs filters
   const getFilteredLogs = () => {
     if (!showLogsModal) return []
-    
     return logs.filter(l => {
-      // Filtrar por usuario si no es GLOBAL
       if (showLogsModal !== 'GLOBAL' && l.user_id !== showLogsModal.id) return false
-      
       const isConnection = ['LOGIN', 'LOGOUT', 'HEARTBEAT'].includes(l.action_type.toUpperCase())
       if (logTab === 'conexiones' && !isConnection) return false
       if (logTab === 'gestion' && isConnection) return false
-
       if (filterMonth) {
-        const logDate = l.created_at.substring(0, 7) // 'YYYY-MM'
+        const logDate = l.created_at.substring(0, 7)
         return logDate === filterMonth
       }
       return true
     }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }
 
-  // Export CSV
   const handleExportCSV = () => {
     const entries = getFilteredLogs()
     if (!entries.length) return
-
     const headers = 'Fecha,Tipo,Usuario,Detalle\n'
     const rows = entries
       .map(e => `"${new Date(e.created_at).toLocaleString() || ''}","${e.action_type}","${e.user_alias}","${e.details.replace(/"/g, '""')}"`)
       .join('\n')
-
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -303,28 +298,32 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0B132B]">
       {/* HEADER PRINCIPAL */}
-      <div className="shrink-0 p-6 border-b border-white/5 bg-[#0B132B] sticky top-0 z-10">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Gestión de Usuarios</h1>
-            <p className="text-secondary text-sm">Administra el acceso, roles y zonas de tu equipo de trabajo.</p>
+      <div className="shrink-0 px-8 py-5 border-b border-white/5 bg-[#0B132B] sticky top-0 z-10">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-primary border border-white/10">
+              <User size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white tracking-wide">Usuarios</h1>
+            </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" size={16} />
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div className="relative flex-1 lg:w-72">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
               <input
                 type="text"
                 placeholder="Buscar por nombre o alias..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-input pl-10 w-full"
+                className="w-full bg-black/40 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-secondary/70"
               />
             </div>
             
             <button 
               onClick={() => { setShowLogsModal('GLOBAL'); fetchLogs(); }} 
-              className="btn btn-secondary flex items-center gap-2 px-4 whitespace-nowrap bg-white/5 hover:bg-white/10 text-white border-white/10"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/40 hover:bg-white/10 text-white border border-white/10 transition-all text-sm font-medium"
             >
               <Activity size={16} className="text-primary" /> 
               <span className="hidden sm:inline">Bitácora Global</span>
@@ -332,7 +331,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
             
             <button 
               onClick={handleOpenCreate} 
-              className="btn btn-primary flex items-center gap-2 px-4 shadow-lg shadow-primary/20 whitespace-nowrap"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary hover:bg-orange-600 text-white shadow-lg shadow-primary/20 transition-all text-sm font-bold"
             >
               <Plus size={16} /> 
               <span>Nuevo Perfil</span>
@@ -341,108 +340,97 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
         </div>
       </div>
 
-      {/* ÁREA DE GRILLA */}
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+      {/* ÁREA DE GRILLA (COMPACTA Y LIMPIA) */}
+      <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center flex flex-col items-center">
-              <div className="w-10 h-10 border-4 border-white/10 border-t-primary rounded-full animate-spin mb-4"></div>
-              <p className="text-secondary font-medium">Cargando perfiles...</p>
-            </div>
+            <div className="w-8 h-8 border-3 border-white/10 border-t-primary rounded-full animate-spin"></div>
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center glass-panel p-10 max-w-md">
-              <User size={48} className="text-secondary mx-auto mb-4 opacity-50" />
-              <h3 className="text-white text-lg font-bold mb-2">No se encontraron usuarios</h3>
-              <p className="text-secondary text-sm">Prueba con otro término de búsqueda o crea un nuevo perfil.</p>
-            </div>
+          <div className="flex flex-col items-center justify-center h-full opacity-50">
+            <User size={48} className="text-secondary mb-4" />
+            <h3 className="text-white font-medium">No se encontraron usuarios</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 pb-20">
             {filteredUsers.map(u => {
               const status = getUserOnlineStatus(u)
-              // Simulamos stats por ahora para mantener la estética si no vienen de BD
-              const visitas = u.loginCount || Math.floor(Math.random() * 30) 
-              const horas = Math.floor(visitas * 1.5)
-              const levelStyle = levelColor(u.nivel)
-              
               return (
-                <div key={u.id} className="glass-panel card flex flex-col overflow-hidden relative group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50 border-white/5 hover:border-white/10">
-                  {/* Top gradient bar indicator */}
-                  <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${levelStyle.split(' text-')[0]}`} />
-                  
-                  {/* Info Section */}
-                  <div className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex gap-3">
-                        <div className="relative">
-                          <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-[3px] border-[#0B132B] ${status.color} ${status.online ? 'animate-pulse' : ''} z-10 shadow-sm`} />
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden font-black text-xl shadow-inner border border-white/10 ${
-                            u.nivel === 1 ? 'bg-orange-500/20 text-orange-400' : 
-                            u.nivel === 2 ? 'bg-blue-500/20 text-blue-400' : 
-                            'bg-green-500/20 text-green-400'
-                          }`}>
-                            {u.foto ? (
-                              <img src={u.foto} className="w-full h-full object-cover" alt={u.nombre} />
-                            ) : (
-                              u.nombre.substring(0, 2).toUpperCase()
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-white text-base leading-tight truncate max-w-[120px]" title={u.nombre}>{u.nombre}</h4>
-                          <p className="text-xs text-secondary font-medium mt-0.5">@{u.alias}</p>
-                          <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md border inline-block mt-1.5 ${levelStyle}`}>
-                            {levelLabel(u.nivel)}
-                          </span>
-                        </div>
-                      </div>
+                <div key={u.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-white/20 hover:bg-white/[0.07] transition-all group relative overflow-hidden shadow-sm">
+                  {/* Etiqueta Superior Derecha (Inactivo) */}
+                  {!u.activo && (
+                    <div className="absolute top-4 right-4 text-[10px] uppercase font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+                      Inactivo
                     </div>
-                    
-                    {/* Detalles */}
-                    <div className="bg-black/30 rounded-xl p-3 mb-4 border border-white/5">
-                      <div className="flex justify-between items-center text-xs mb-2">
-                        <span className="text-secondary font-medium">Zona</span>
-                        <span className="text-white font-bold">{u.zona || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-secondary font-medium">Rol</span>
-                        <span className="text-white font-bold truncate max-w-[100px]">{u.rol || 'Vendedor'}</span>
-                      </div>
-                    </div>
+                  )}
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-2 text-center mt-auto">
-                      <div className="bg-white/5 rounded-lg py-2 border border-white/5">
-                        <div className="text-lg font-black text-white leading-none">{visitas}</div>
-                        <div className="text-[9px] font-bold text-secondary uppercase tracking-widest mt-1">Visitas</div>
+                  {/* Header de la tarjeta */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg overflow-hidden border border-white/10 ${levelColor(u.nivel)}`}>
+                        {u.foto ? (
+                          <img src={u.foto} className="w-full h-full object-cover" alt={u.nombre} />
+                        ) : (
+                          u.nombre.substring(0, 2).toUpperCase()
+                        )}
                       </div>
-                      <div className="bg-white/5 rounded-lg py-2 border border-white/5">
-                        <div className="text-lg font-black text-white leading-none">{horas}h</div>
-                        <div className="text-[9px] font-bold text-secondary uppercase tracking-widest mt-1">Horas Est.</div>
+                      <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0B132B] ${status.color} ${status.online ? 'animate-pulse' : ''}`}></span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <h4 className="font-bold text-white text-sm truncate pr-8" title={u.nombre}>{u.nombre}</h4>
+                      <p className="text-xs text-secondary font-medium">@{u.alias}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${levelBadge(u.nivel)}`}>
+                          {levelLabel(u.nivel)}
+                        </span>
+                        <span className="text-[10px] text-secondary/80 font-medium truncate">
+                          {u.zona === 'Global' ? 'Global' : `Zona ${u.zona}`}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="bg-black/40 border-t border-white/5 p-3 flex items-center justify-between gap-2">
-                    <div className="flex gap-2 w-full">
-                      <button onClick={() => { setShowLogsModal(u); fetchLogs(); }} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs font-bold" title="Bitácora">
-                        <Clock size={14} /> Bitácora
-                      </button>
-                      <button onClick={() => handleOpenEdit(u)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all text-xs font-bold" title="Editar Perfil">
-                        <Edit size={14} /> Editar
-                      </button>
+                  {/* Estadísticas ultra compactas */}
+                  <div className="flex items-center justify-between bg-black/30 rounded-xl p-3 border border-white/5 mt-2">
+                    <div className="text-center">
+                      <div className="text-primary font-black text-sm">{u.loginCount || Math.floor(Math.random() * 30)}</div>
+                      <div className="text-[9px] text-secondary font-bold uppercase tracking-widest mt-0.5">Visitas</div>
+                    </div>
+                    <div className="w-px h-6 bg-white/10"></div>
+                    <div className="text-center">
+                      <div className="text-blue-400 font-black text-sm">{Math.floor((u.loginCount || 10) * 1.5)}h</div>
+                      <div className="text-[9px] text-secondary font-bold uppercase tracking-widest mt-0.5">Hrs Obj</div>
+                    </div>
+                    <div className="w-px h-6 bg-white/10"></div>
+                    <div className="text-center flex flex-col items-center">
+                      <Shield size={14} className="text-green-400 mb-0.5" />
+                      <div className="text-[9px] text-secondary font-bold uppercase tracking-widest">Activo</div>
                     </div>
                   </div>
-                  {/* Botón ENTRAR inferior */}
-                  <button 
-                    onClick={() => handleImpersonate(u)} 
-                    className="w-full py-2.5 bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 border-t border-primary/20"
-                  >
-                    <LogIn size={14} /> ENTRAR COMO {u.alias.toUpperCase()}
-                  </button>
+
+                  {/* Botones de acción tipo Pill */}
+                  <div className="flex items-center justify-between gap-2 mt-auto pt-2">
+                    <button 
+                      onClick={() => { setShowLogsModal(u); fetchLogs(); }} 
+                      className="flex-1 py-2 px-3 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 bg-black/30 text-secondary hover:text-white hover:bg-white/10 border border-white/5 transition-all"
+                    >
+                      <Clock size={12} /> Bitácora
+                    </button>
+                    <button 
+                      onClick={() => handleOpenEdit(u)} 
+                      className="flex-1 py-2 px-3 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 bg-black/30 text-secondary hover:text-white hover:bg-white/10 border border-white/5 transition-all"
+                    >
+                      <Edit size={12} /> Editar
+                    </button>
+                    <button 
+                      onClick={() => handleImpersonate(u)} 
+                      className="w-10 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-all"
+                      title="Entrar como usuario"
+                    >
+                      <LogIn size={14} />
+                    </button>
+                  </div>
+
                 </div>
               )
             })}
@@ -450,146 +438,227 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
         )}
       </div>
 
-      {/* USER EDIT/CREATE MODAL */}
+      {/* USER EDIT/CREATE MODAL - VISTA DIVIDIDA */}
       {showUserModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-panel card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in shadow-2xl border-white/10">
-            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/20">
-              <div>
-                <h3 className="font-bold text-xl text-white">
-                  {selectedUser ? `Editar Perfil: ${selectedUser.nombre}` : 'Nuevo Perfil'}
-                </h3>
-                <p className="text-secondary text-xs mt-1">
-                  {selectedUser ? 'Actualiza los datos y permisos de este usuario.' : 'Completa los datos para crear un nuevo usuario en el sistema.'}
-                </p>
-              </div>
-              <button onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-secondary hover:text-white transition-all">
-                <X size={18} />
-              </button>
-            </div>
+          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in shadow-2xl rounded-3xl border border-white/10 bg-[#0B132B]">
             
-            <form onSubmit={handleSaveUser} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#0B132B]/50">
+            {/* Columna Izquierda: Perfil (Oscura) */}
+            <div className="md:w-1/3 bg-[#0B132B] flex flex-col justify-between border-r border-white/10 relative p-8">
               
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Photo upload */}
-                <div className="flex flex-col items-center gap-3 bg-black/20 p-5 rounded-2xl border border-white/5 w-full md:w-1/3 shrink-0">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shadow-inner">
+              <div className="absolute top-4 right-4 md:hidden">
+                <button onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div>
+                <h3 className="font-black text-xl text-white italic tracking-tight mb-8">
+                  {selectedUser ? 'EDITAR PERFIL' : 'NUEVO PERFIL'}
+                </h3>
+                
+                <div className="flex flex-col items-center text-center mt-6">
+                  <div className="relative mb-4 group">
+                    <div className="w-28 h-28 rounded-full bg-white/5 border-4 border-[#0B132B] outline outline-1 outline-white/20 flex items-center justify-center overflow-hidden shadow-xl">
                       {formFoto ? (
                         <img src={formFoto} className="w-full h-full object-cover" alt="Profile" />
                       ) : (
-                        <User size={40} className="text-secondary opacity-50" />
+                        <User size={48} className="text-secondary/50" />
                       )}
                     </div>
-                    <label htmlFor="user-photo-input" className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary text-white rounded-xl flex items-center justify-center cursor-pointer hover:bg-orange-600 transition-all shadow-lg border border-white/10">
-                      <Camera size={14} />
+                    <label htmlFor="user-photo-input" className="absolute bottom-0 right-0 w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-orange-600 transition-all shadow-lg border-2 border-[#0B132B]">
+                      <Camera size={16} />
                     </label>
                     <input type="file" id="user-photo-input" accept="image/*" className="hidden" onChange={handlePhotoChange} />
                   </div>
-                  <div className="text-center mt-2">
-                    <h4 className="text-sm font-bold text-white">Avatar</h4>
-                    <p className="text-[10px] text-secondary mt-1">JPG, PNG (máx. 1MB)</p>
-                  </div>
-                </div>
-
-                {/* Form fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                  <div className="form-group md:col-span-2">
-                    <label className="form-label">Nombre Completo *</label>
-                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ej. Ernesto Lares" className="form-input bg-black/40" required />
-                  </div>
                   
-                  <div className="form-group">
-                    <label className="form-label">Alias (@usuario) *</label>
-                    <input type="text" value={formAlias} onChange={(e) => setFormAlias(e.target.value)} placeholder="Ej. elarez" className="form-input bg-black/40" required />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Correo Electrónico *</label>
-                    <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="ejemplo@correo.com" className="form-input bg-black/40" required />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Nivel de Acceso *</label>
-                    <select value={formNivel} onChange={(e) => setFormNivel(Number(e.target.value))} className="form-input bg-black/40">
-                      <option value={1}>Nivel 1 (Gerencia)</option>
-                      <option value={2}>Nivel 2 (Supervisión)</option>
-                      <option value={3}>Nivel 3 (Ventas)</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Zona Asignada *</label>
-                    <select value={formZona} onChange={(e) => setFormZona(e.target.value)} className="form-input bg-black/40">
-                      <option value="CABA">CABA</option>
-                      <option value="Zona SUR">Zona SUR</option>
-                      <option value="Zona NORTE">Zona NORTE</option>
-                      <option value="Zona OESTE">Zona OESTE</option>
-                      <option value="Global">Global</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group md:col-span-2">
-                    <label className="form-label">Contraseña {selectedUser && <span className="text-secondary font-normal">(Dejar vacío para no cambiar)</span>}</label>
-                    <input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="••••••••" className="form-input bg-black/40" required={!selectedUser} />
+                  <h4 className="text-xl font-bold text-white leading-none">
+                    {formName || 'Nombre de Usuario'}
+                  </h4>
+                  <p className="text-sm text-secondary mt-1 mb-4">
+                    @{formAlias || 'alias'}
+                  </p>
+                  
+                  <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${levelBadge(formNivel)} shadow-lg`}>
+                    {levelLabel(formNivel)}
                   </div>
                 </div>
               </div>
 
-              {/* Permissions switches */}
-              <div className="bg-black/20 p-5 rounded-2xl border border-white/5">
-                <label className="form-label mb-3 block text-white border-b border-white/5 pb-2">Acceso a Módulos del Sistema</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4">
-                  {Object.entries(formModulos).map(([mod, active]) => (
-                    <label key={mod} className="flex items-center gap-2.5 text-sm text-secondary cursor-pointer hover:text-white transition-all select-none bg-white/5 py-2 px-3 rounded-xl border border-white/5">
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={(e) => setFormModulos(prev => ({ ...prev, [mod]: e.target.checked }))}
-                        className="rounded border-white/10 bg-black/50 text-primary focus:ring-primary focus:ring-offset-0 focus:ring-2"
+              {/* Botón Guardar y Switch Activo */}
+              <div className="mt-12 space-y-4">
+                <div className="flex items-center justify-center gap-3">
+                  <span className={`text-xs font-bold ${formActivo ? 'text-green-400' : 'text-secondary'}`}>
+                    {formActivo ? 'ACTIVO' : 'INACTIVO'}
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={formActivo} onChange={(e) => setFormActivo(e.target.checked)} />
+                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            {/* Columna Derecha: Datos y Permisos (Panel Cristalino Oscuro) */}
+            <div className="md:w-2/3 bg-white/[0.03] flex flex-col h-[60vh] md:h-auto">
+              
+              <div className="hidden md:flex justify-end p-4 shrink-0">
+                <button onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10 transition-all border border-white/5">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                
+                <div className="mb-8">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Acceso al Sistema</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Correo Electrónico *</label>
+                      <input 
+                        type="email" 
+                        value={formEmail} 
+                        onChange={(e) => setFormEmail(e.target.value)} 
+                        placeholder="ejemplo@correo.com" 
+                        className="w-full bg-transparent border-b border-white/10 pb-2 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-medium" 
+                        required 
                       />
-                      <span className="capitalize font-medium">{mod}</span>
-                    </label>
-                  ))}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">
+                        Contraseña {selectedUser && <span className="text-secondary/50">(Dejar vacío para no cambiar)</span>}
+                      </label>
+                      <input 
+                        type="password" 
+                        value={formPassword} 
+                        onChange={(e) => setFormPassword(e.target.value)} 
+                        placeholder="••••••••" 
+                        className="w-full bg-transparent border-b border-white/10 pb-2 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-medium" 
+                        required={!selectedUser} 
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5">
-                <input
-                  type="checkbox"
-                  id="user-activo"
-                  checked={formActivo}
-                  onChange={(e) => setFormActivo(e.target.checked)}
-                  className="rounded border-white/10 bg-black/50 text-primary focus:ring-primary focus:ring-offset-0 focus:ring-2 w-5 h-5 cursor-pointer"
-                />
+                <div className="mb-10">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Perfil y Nivel</h4>
+                  <div className="bg-black/20 rounded-2xl p-5 border border-white/5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Nombre Completo *</label>
+                        <input 
+                          type="text" 
+                          value={formName} 
+                          onChange={(e) => setFormName(e.target.value)} 
+                          placeholder="Ej. Ernesto Lares" 
+                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-bold" 
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Alias (Login) *</label>
+                        <input 
+                          type="text" 
+                          value={formAlias} 
+                          onChange={(e) => setFormAlias(e.target.value)} 
+                          placeholder="Ej. elarez" 
+                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-bold" 
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Rol Asignado *</label>
+                        <input 
+                          type="text" 
+                          value={formRol} 
+                          onChange={(e) => setFormRol(e.target.value)} 
+                          placeholder="Gerente Operaciones" 
+                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-medium" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Nivel de Acceso *</label>
+                        <select 
+                          value={formNivel} 
+                          onChange={(e) => setFormNivel(Number(e.target.value))} 
+                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all cursor-pointer font-medium"
+                        >
+                          <option value={1} className="bg-[#0B132B]">Nivel 1 — Total (Gerencia)</option>
+                          <option value={2} className="bg-[#0B132B]">Nivel 2 — Supervisión</option>
+                          <option value={3} className="bg-[#0B132B]">Nivel 3 — Vendedor</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Zona Asignada *</label>
+                        <select 
+                          value={formZona} 
+                          onChange={(e) => setFormZona(e.target.value)} 
+                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all cursor-pointer font-medium"
+                        >
+                          <option value="CABA" className="bg-[#0B132B]">CABA</option>
+                          <option value="Zona SUR" className="bg-[#0B132B]">Zona SUR</option>
+                          <option value="Zona NORTE" className="bg-[#0B132B]">Zona NORTE</option>
+                          <option value="Zona OESTE" className="bg-[#0B132B]">Zona OESTE</option>
+                          <option value="Global" className="bg-[#0B132B]">Global</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label htmlFor="user-activo" className="text-sm font-bold text-white cursor-pointer select-none block">Usuario Activo</label>
-                  <p className="text-xs text-secondary mt-0.5">Si se desactiva, el usuario no podrá iniciar sesión en el CRM.</p>
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Módulos Autorizados</h4>
+                  <p className="text-xs text-secondary mb-4">Selecciona los módulos a los que el usuario tendrá acceso.</p>
+                  
+                  <div className="flex flex-wrap gap-2.5">
+                    {Object.entries(formModulos).map(([mod, active]) => (
+                      <button
+                        key={mod}
+                        type="button"
+                        onClick={() => setFormModulos(prev => ({ ...prev, [mod]: !active }))}
+                        className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 ${
+                          active 
+                            ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                            : 'bg-white/5 border-white/10 text-secondary hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {active && <Check size={12} strokeWidth={4} />}
+                        {mod}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {selectedUser && (
+                  <div className="mt-12 pt-6 border-t border-white/10 flex justify-end">
+                    <button 
+                      type="button" 
+                      onClick={() => handleDeleteUser(selectedUser as Usuario)} 
+                      className="text-xs font-bold text-red-500 hover:text-red-400 underline decoration-dashed underline-offset-4"
+                    >
+                      Eliminar permanentemente este perfil
+                    </button>
+                  </div>
+                )}
+
               </div>
 
-              {/* Footer action buttons */}
-              <div className="flex items-center justify-between pt-4">
-                {selectedUser ? (
-                  <button type="button" onClick={() => handleDeleteUser(selectedUser as Usuario)} className="btn bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white px-4">
-                    Eliminar Perfil
-                  </button>
-                ) : <div></div>}
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setShowUserModal(false)} className="btn btn-secondary px-6">
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn btn-primary px-8 shadow-lg shadow-primary/20">
-                    Guardar
-                  </button>
-                </div>
+              {/* Botón Guardar Inferior */}
+              <div className="p-4 bg-black/20 border-t border-white/10 shrink-0">
+                <button 
+                  onClick={handleSaveUser}
+                  className="w-full py-3.5 rounded-full bg-white text-black font-black uppercase tracking-wider text-xs hover:bg-primary hover:text-white transition-all shadow-lg"
+                >
+                  Guardar Cambios
+                </button>
               </div>
-            </form>
+
+            </div>
           </div>
         </div>
       )}
 
-      {/* LOGS / BITACORA VIEW MODAL */}
+      {/* LOGS / BITACORA VIEW MODAL (Sin grandes cambios) */}
       {showLogsModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:p-0">
           <div className="glass-panel card w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in shadow-2xl border-white/10 print:bg-white print:text-black print:max-h-none print:shadow-none print:border-none print:w-full print:h-full">
@@ -634,7 +703,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="form-input max-w-[180px] text-sm text-center bg-black/40"
+                className="form-input max-w-[180px] text-sm text-center bg-black/40 rounded-full"
               />
             </div>
 
