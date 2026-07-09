@@ -51,7 +51,8 @@ export async function POST(request: Request) {
       email: usuario.email,
       nombre: usuario.nombre,
       nivel: usuario.nivel,
-      rol: usuario.rol
+      rol: usuario.rol,
+      modulos: usuario.modulos || {}
     }
     const token = signToken(sessionUser)
 

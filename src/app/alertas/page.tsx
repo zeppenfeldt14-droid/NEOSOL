@@ -1,11 +1,22 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Bell, Clock, AlertCircle } from 'lucide-react'
+import { getSessionUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AlertasPage() {
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isVendedor = user.nivel === 3
+  const whereFilter = isVendedor ? { vendedorAsignado: user.alias } : {}
+
   const empresas = await prisma.empresa.findMany({
+    where: whereFilter,
     include: {
       visitas: {
         orderBy: { fecha: 'desc' },
@@ -17,6 +28,7 @@ export default async function AlertasPage() {
       }
     }
   })
+
 
   const today = new Date()
   

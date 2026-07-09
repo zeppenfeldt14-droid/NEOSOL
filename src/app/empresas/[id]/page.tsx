@@ -1,14 +1,20 @@
 import { prisma } from '@/lib/prisma'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit } from 'lucide-react'
 import { CompleteActionButton } from './ActionButtons'
 import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
+import { getSessionUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EmpresaPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
   const { id } = await params
   const empresaId = parseInt(id)
   
@@ -28,6 +34,12 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   if (!empresa) {
     notFound()
   }
+
+  // Security: level 3 users can only access their assigned companies
+  if (user.nivel === 3 && empresa.vendedorAsignado !== user.alias) {
+    notFound()
+  }
+
 
   return (
     <div className="animate-fade-in">

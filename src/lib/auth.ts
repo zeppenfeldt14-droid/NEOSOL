@@ -14,6 +14,7 @@ export interface UserSession {
   nombre: string
   nivel: number
   rol: string
+  modulos: any
 }
 
 export async function hashPassword(password: string): Promise<string> {

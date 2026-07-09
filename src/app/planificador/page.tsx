@@ -4,8 +4,11 @@ import { Map as MapIcon, Clock, AlertTriangle, Calendar as CalendarIcon } from '
 import { CompleteActionButton } from '../empresas/[id]/ActionButtons'
 import IntelligentPlanner from './IntelligentPlanner'
 import { revalidatePath } from 'next/cache'
+import { getSessionUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
+
 
 async function crearRutaAction(empresaIds: number[], targetDateStr?: string) {
   'use server'
@@ -66,6 +69,17 @@ async function reordenarRutaAction(accionesIds: number[]) {
 }
 
 export default async function PlanificadorPage(props: { searchParams: Promise<{ vista?: string }> }) {
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isVendedor = user.nivel === 3
+  const userAlias = user.alias
+
+  const whereEmpresa = isVendedor ? { vendedorAsignado: userAlias } : {}
+  const whereAccion = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+
   const searchParams = await props.searchParams
   const vista = searchParams.vista || 'hoy' // 'hoy', 'semana', 'mes'
 
@@ -81,7 +95,8 @@ export default async function PlanificadorPage(props: { searchParams: Promise<{ 
       estado: 'pendiente',
       fechaVencimiento: {
         lt: today
-      }
+      },
+      ...whereAccion
     },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
@@ -94,7 +109,8 @@ export default async function PlanificadorPage(props: { searchParams: Promise<{ 
       fechaVencimiento: {
         gte: today,
         lt: tomorrow
-      }
+      },
+      ...whereAccion
     },
     include: { empresa: true },
     orderBy: [
@@ -112,7 +128,8 @@ export default async function PlanificadorPage(props: { searchParams: Promise<{ 
       fechaVencimiento: {
         gte: tomorrow,
         lt: proximaSemana
-      }
+      },
+      ...whereAccion
     },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
@@ -120,6 +137,7 @@ export default async function PlanificadorPage(props: { searchParams: Promise<{ 
 
   // Algoritmo Inteligente de Sugerencias
   const empresasAll = await prisma.empresa.findMany({
+    where: whereEmpresa,
     include: {
       visitas: {
         orderBy: { fecha: 'desc' },

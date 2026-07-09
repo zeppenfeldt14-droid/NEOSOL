@@ -1,10 +1,24 @@
 import { createEmpresa } from './actions'
 import { ArrowLeft, Building2, Save } from 'lucide-react'
 import Link from 'next/link'
+import { prisma } from '@/lib/prisma'
+import { getSessionUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default function NuevaEmpresaPage() {
+export default async function NuevaEmpresaPage() {
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  // Fetch active users for the salesperson select field (N1/N2 only)
+  const usuarios = await prisma.usuario.findMany({
+    where: { activo: true },
+    select: { nombre: true, alias: true }
+  })
+
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
@@ -42,12 +56,17 @@ export default function NuevaEmpresaPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Sucursal (Zona)</label>
-                <input type="text" name="zona" className="form-input" />
+                <select name="zona" defaultValue="CABA" className="form-input bg-dark">
+                  <option value="CABA">CABA</option>
+                  <option value="Zona SUR">Zona SUR</option>
+                  <option value="Zona OESTE">Zona OESTE</option>
+                  <option value="Zona NORTE">Zona NORTE</option>
+                </select>
               </div>
             </div>
           </div>
 
-          {/* Bloque 2: Ubicación */}
+          {/* Bloque 2: Dirección y Logística */}
           <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
             <h3 className="text-lg font-medium text-white mb-4 text-primary">Dirección y Logística</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -88,7 +107,21 @@ export default function NuevaEmpresaPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Vendedor Asignado</label>
-                <input type="text" name="vendedorAsignado" className="form-input" />
+                {user.nivel === 3 ? (
+                  <>
+                    <input type="hidden" name="vendedorAsignado" value={user.alias} />
+                    <input type="text" className="form-input opacity-60 bg-black/20" value={`${user.alias}`} disabled />
+                  </>
+                ) : (
+                  <select name="vendedorAsignado" defaultValue="" className="form-input bg-dark">
+                    <option value="">Sin Asignar</option>
+                    {usuarios.map(u => (
+                      <option key={u.alias} value={u.alias}>
+                        {u.nombre} (@{u.alias})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Contacto principal (Responsable)</label>
@@ -112,7 +145,7 @@ export default function NuevaEmpresaPage() {
             </div>
           </div>
 
-          {/* Bloque 5: Notas y CRM */}
+          {/* Bloque 5: CRM Interno */}
           <div className="col-span-1 md:col-span-2 mb-4">
             <h3 className="text-lg font-medium text-white mb-4 text-primary">CRM Interno</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -145,3 +178,4 @@ export default function NuevaEmpresaPage() {
     </div>
   )
 }
+

@@ -4,14 +4,29 @@ import Link from 'next/link'
 import { DailyRouteChart } from '@/components/charts/DailyRouteChart'
 import { MonthlyVisitsChart } from '@/components/charts/MonthlyVisitsChart'
 import { WeeklyVisitsChart } from '@/components/charts/WeeklyVisitsChart'
+import { getSessionUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const totalEmpresas = await prisma.empresa.count()
-  const empresasProspecto = await prisma.empresa.count({ where: { estado: 'prospecto' } })
-  const empresasClientes = await prisma.empresa.count({ where: { estado: 'activo' } })
-  const accionesPendientes = await prisma.accion.count({ where: { estado: 'pendiente' } })
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isVendedor = user.nivel === 3
+  const userAlias = user.alias
+
+  const whereEmpresa = isVendedor ? { vendedorAsignado: userAlias } : {}
+  const whereAccion = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+  const whereVisita = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+
+  const totalEmpresas = await prisma.empresa.count({ where: whereEmpresa })
+  const empresasProspecto = await prisma.empresa.count({ where: { estado: 'prospecto', ...whereEmpresa } })
+  const empresasClientes = await prisma.empresa.count({ where: { estado: 'activo', ...whereEmpresa } })
+  const accionesPendientes = await prisma.accion.count({ where: { estado: 'pendiente', ...whereAccion } })
+
 
   // Efectividad: nuevos clientes este mes / empresas contactadas este mes × 100
   const now = new Date()
@@ -19,7 +34,10 @@ export default async function DashboardPage() {
   const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
   const visitasMesQuery = await prisma.visita.findMany({
-    where: { fecha: { gte: startOfMonth, lte: endOfMonth } },
+    where: { 
+      fecha: { gte: startOfMonth, lte: endOfMonth },
+      ...whereVisita
+    },
     select: { empresaId: true },
     distinct: ['empresaId']
   })
@@ -27,7 +45,10 @@ export default async function DashboardPage() {
 
   // Para saber nuevos clientes, contamos las empresas activas cuya primera visita de venta fue este mes
   const activasParaEfectividad = await prisma.empresa.findMany({
-    where: { estado: 'activo' },
+    where: { 
+      estado: 'activo',
+      ...whereEmpresa
+    },
     include: {
       visitas: {
         where: { resultado: 'venta' },
@@ -52,6 +73,7 @@ export default async function DashboardPage() {
 
   // Last 5 companies added or updated
   const recientes = await prisma.empresa.findMany({
+    where: whereEmpresa,
     take: 5,
     orderBy: { actualizadoEn: 'desc' }
   })
@@ -69,7 +91,8 @@ export default async function DashboardPage() {
       fechaVencimiento: {
         gte: today,
         lt: tomorrow
-      }
+      },
+      ...whereAccion
     },
     include: {
       empresa: true
@@ -90,7 +113,8 @@ export default async function DashboardPage() {
       fechaVencimiento: {
         gte: tomorrow,
         lt: proximaSemana
-      }
+      },
+      ...whereAccion
     },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
@@ -102,7 +126,8 @@ export default async function DashboardPage() {
       fecha: {
         gte: today,
         lt: tomorrow
-      }
+      },
+      ...whereVisita
     }
   })
 
@@ -115,7 +140,8 @@ export default async function DashboardPage() {
     where: {
       fecha: {
         gte: startOfYear
-      }
+      },
+      ...whereVisita
     },
     select: {
       fecha: true
@@ -137,7 +163,8 @@ export default async function DashboardPage() {
       fecha: {
         gte: startOfWeek,
         lt: endOfWeek
-      }
+      },
+      ...whereVisita
     }
   })
 
@@ -154,7 +181,10 @@ export default async function DashboardPage() {
 
   // ── Nuevos: primer venta en ese mes (este año)
   const clientesActivosTodos = await prisma.empresa.findMany({
-    where: { estado: 'activo' },
+    where: { 
+      estado: 'activo',
+      ...whereEmpresa
+    },
     include: {
       visitas: {
         where: { resultado: 'venta' },
@@ -201,7 +231,10 @@ export default async function DashboardPage() {
 
   // ── Bajas: empresas dadas de baja ese mes (usando actualizadoEn como fecha de baja)
   const empresasBaja = await prisma.empresa.findMany({
-    where: { estado: 'baja' },
+    where: { 
+      estado: 'baja',
+      ...whereEmpresa
+    },
     select: { actualizadoEn: true }
   })
 

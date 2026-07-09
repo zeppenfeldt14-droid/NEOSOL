@@ -1,12 +1,21 @@
 import { prisma } from '@/lib/prisma'
 import EmpresasClient from './EmpresasClient'
+import { getSessionUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EmpresasPage() {
-  // Fetch all companies from DB. Filtering will be handled purely on the client side
-  // using React state, replicating the logic requested from Margarita Viajes.
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isVendedor = user.nivel === 3
+  const whereFilter = isVendedor ? { vendedorAsignado: user.alias } : {}
+
   const empresasAll = await prisma.empresa.findMany({
+    where: whereFilter,
     orderBy: { nombre: 'asc' },
     include: {
       visitas: {
@@ -27,3 +36,4 @@ export default async function EmpresasPage() {
     <EmpresasClient empresas={empresasAll} zonas={zones} />
   )
 }
+

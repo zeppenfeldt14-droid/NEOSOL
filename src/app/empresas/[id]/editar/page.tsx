@@ -3,10 +3,16 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Building2, Save } from 'lucide-react'
 import { updateEmpresa } from '../actions'
-
+import { getSessionUser } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
+
 export default async function EditarEmpresaPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
   const { id } = await params
   const empresaId = parseInt(id)
   
@@ -22,7 +28,19 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
     notFound()
   }
 
+  // Security: level 3 users can only edit their assigned companies
+  if (user.nivel === 3 && empresa.vendedorAsignado !== user.alias) {
+    notFound()
+  }
+
+  // Fetch active users for the salesperson selector (only for N1/N2 users)
+  const usuarios = await prisma.usuario.findMany({
+    where: { activo: true },
+    select: { nombre: true, alias: true }
+  })
+
   const updateEmpresaWithId = updateEmpresa.bind(null, empresaId)
+
 
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
@@ -65,7 +83,12 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Sucursal (Zona)</label>
-                <input type="text" name="zona" defaultValue={empresa.zona || ''} className="form-input" />
+                <select name="zona" defaultValue={empresa.zona || 'CABA'} className="form-input bg-dark">
+                  <option value="CABA">CABA</option>
+                  <option value="Zona SUR">Zona SUR</option>
+                  <option value="Zona OESTE">Zona OESTE</option>
+                  <option value="Zona NORTE">Zona NORTE</option>
+                </select>
               </div>
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="form-label">Estado de la Empresa</label>
@@ -146,7 +169,21 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Vendedor Asignado</label>
-                <input type="text" name="vendedorAsignado" defaultValue={empresa.vendedorAsignado || ''} className="form-input" />
+                {user.nivel === 3 ? (
+                  <>
+                    <input type="hidden" name="vendedorAsignado" value={empresa.vendedorAsignado || user.alias} />
+                    <input type="text" className="form-input opacity-60 bg-black/20" value={`${empresa.vendedorAsignado || user.alias}`} disabled />
+                  </>
+                ) : (
+                  <select name="vendedorAsignado" defaultValue={empresa.vendedorAsignado || ''} className="form-input bg-dark">
+                    <option value="">Sin Asignar</option>
+                    {usuarios.map(u => (
+                      <option key={u.alias} value={u.alias}>
+                        {u.nombre} (@{u.alias})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Contacto principal (Responsable)</label>

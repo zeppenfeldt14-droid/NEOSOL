@@ -1,9 +1,22 @@
 import { prisma } from '@/lib/prisma'
 import ReportGenerator from './ReportGenerator'
+import { getSessionUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ReportesPage() {
+  const user = await getSessionUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isVendedor = user.nivel === 3
+  const userAlias = user.alias
+
+  const whereVisitasFilter = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+  const wherePendientesFilter = isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {}
+
   const today = new Date()
   const startOfDay = new Date(today.setHours(0,0,0,0))
   
@@ -12,7 +25,8 @@ export default async function ReportesPage() {
     where: {
       fecha: {
         gte: startOfDay
-      }
+      },
+      ...whereVisitasFilter
     },
     include: {
       empresa: true
@@ -21,10 +35,14 @@ export default async function ReportesPage() {
 
   // Obtener acciones pendientes para añadir al reporte
   const pendientes = await prisma.accion.findMany({
-    where: { estado: 'pendiente' },
+    where: { 
+      estado: 'pendiente',
+      ...wherePendientesFilter
+    },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
   })
+
 
   // Map to a serializable format for the Client Component
   const reporteData = {
