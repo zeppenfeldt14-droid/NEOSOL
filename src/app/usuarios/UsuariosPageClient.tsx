@@ -10,7 +10,6 @@ interface Usuario {
   email: string
   nivel: number
   rol: string
-  zona: string
   foto: string | null
   activo: boolean
   modulos: Record<string, boolean>
@@ -63,7 +62,6 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   const [formPassword, setFormPassword] = useState('')
   const [formNivel, setFormNivel] = useState(3)
   const [formRol, setFormRol] = useState('Vendedor')
-  const [formZona, setFormZona] = useState('CABA')
   const [formActivo, setFormActivo] = useState(true)
   const [formFoto, setFormFoto] = useState<string | null>(null)
   const [formModulos, setFormModulos] = useState<Record<string, boolean>>(defaultModules)
@@ -128,7 +126,6 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormPassword('')
     setFormNivel(3)
     setFormRol('Vendedor')
-    setFormZona('CABA')
     setFormActivo(true)
     setFormFoto(null)
     setFormModulos(defaultModules)
@@ -145,7 +142,6 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormPassword('')
     setFormNivel(user.nivel)
     setFormRol(user.rol || 'Vendedor')
-    setFormZona(user.zona || 'CABA')
     setFormActivo(user.activo)
     setFormFoto(user.foto)
     setFormModulos({ ...defaultModules, ...(user.modulos as Record<string, boolean>) })
@@ -187,7 +183,6 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
         password: formPassword || null,
         nivel: formNivel,
         rol: formRol,
-        zona: formZona,
         activo: formActivo,
         foto: formFoto,
         modulos: formModulos,
@@ -340,7 +335,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
         </div>
       </div>
 
-      {/* ÁREA DE GRILLA (COMPACTA Y LIMPIA) */}
+      {/* ÁREA DE GRILLA (ORDENADO UNO AL LADO DEL OTRO) */}
       <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -352,85 +347,95 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
             <h3 className="text-white font-medium">No se encontraron usuarios</h3>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 pb-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-20">
             {filteredUsers.map(u => {
               const status = getUserOnlineStatus(u)
               return (
-                <div key={u.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-white/20 hover:bg-white/[0.07] transition-all group relative overflow-hidden shadow-sm">
-                  {/* Etiqueta Superior Derecha (Inactivo) */}
-                  {!u.activo && (
-                    <div className="absolute top-4 right-4 text-[10px] uppercase font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
-                      Inactivo
-                    </div>
-                  )}
-
-                  {/* Header de la tarjeta */}
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg overflow-hidden border border-white/10 ${levelColor(u.nivel)}`}>
+                <div key={u.id} className="glass-panel card flex flex-col relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50 border-white/5 hover:border-white/10" style={{ padding: '1.25rem' }}>
+                  {/* Top colored indicator bar */}
+                  <div className={`absolute top-0 left-0 right-0 h-1.5 ${
+                    u.nivel === 1 ? 'bg-orange-500' : 
+                    u.nivel === 2 ? 'bg-blue-500' : 
+                    'bg-green-500'
+                  }`} />
+                  
+                  {/* Top content: Avatar + Info */}
+                  <div className="flex gap-3 items-center mb-3">
+                    <div className="relative flex-shrink-0">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg overflow-hidden border border-white/10 ${
+                        u.nivel === 1 ? 'bg-orange-500/20 text-orange-400' : 
+                        u.nivel === 2 ? 'bg-blue-500/20 text-blue-400' : 
+                        'bg-green-500/20 text-green-400'
+                      }`}>
                         {u.foto ? (
                           <img src={u.foto} className="w-full h-full object-cover" alt={u.nombre} />
                         ) : (
                           u.nombre.substring(0, 2).toUpperCase()
                         )}
                       </div>
-                      <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0B132B] ${status.color} ${status.online ? 'animate-pulse' : ''}`}></span>
+                      <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0B132B] ${status.color}`}></span>
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <h4 className="font-bold text-white text-sm truncate pr-8" title={u.nombre}>{u.nombre}</h4>
-                      <p className="text-xs text-secondary font-medium">@{u.alias}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${levelBadge(u.nivel)}`}>
-                          {levelLabel(u.nivel)}
-                        </span>
-                        <span className="text-[10px] text-secondary/80 font-medium truncate">
-                          {u.zona === 'Global' ? 'Global' : `Zona ${u.zona}`}
-                        </span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-white text-sm truncate" title={u.nombre}>{u.nombre}</h4>
+                      <p className="text-xs text-secondary font-medium truncate">@{u.alias}</p>
+                      <p className="text-[10px] text-secondary/60 truncate">{u.email}</p>
+                    </div>
+                  </div>
+
+                  {/* Badges row */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 truncate max-w-[120px]">
+                      {u.rol || 'Vendedor'}
+                    </span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      u.nivel === 1 ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 
+                      u.nivel === 2 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                      'bg-green-500/10 text-green-400 border border-green-500/20'
+                    }`}>
+                      {levelLabel(u.nivel)}
+                    </span>
+                  </div>
+
+                  {/* Stats Row (3 Columns like Margarita Viajes) */}
+                  <div className="grid grid-cols-3 gap-2 bg-black/35 rounded-xl p-2.5 border border-white/5 mb-4 text-center">
+                    <div>
+                      <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Visitas</div>
+                      <div className="text-primary font-black text-sm mt-0.5">{u.loginCount || 0}</div>
+                    </div>
+                    <div className="border-x border-white/5">
+                      <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Hrs Obj</div>
+                      <div className="text-blue-400 font-black text-sm mt-0.5">{Math.floor((u.loginCount || 0) * 1.5)}h</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Estado</div>
+                      <div className={`text-xs font-bold mt-1 ${u.activo ? 'text-green-400' : 'text-red-400'}`}>
+                        {u.activo ? 'Activo' : 'Inactivo'}
                       </div>
                     </div>
                   </div>
 
-                  {/* Estadísticas ultra compactas */}
-                  <div className="flex items-center justify-between bg-black/30 rounded-xl p-3 border border-white/5 mt-2">
-                    <div className="text-center">
-                      <div className="text-primary font-black text-sm">{u.loginCount || Math.floor(Math.random() * 30)}</div>
-                      <div className="text-[9px] text-secondary font-bold uppercase tracking-widest mt-0.5">Visitas</div>
-                    </div>
-                    <div className="w-px h-6 bg-white/10"></div>
-                    <div className="text-center">
-                      <div className="text-blue-400 font-black text-sm">{Math.floor((u.loginCount || 10) * 1.5)}h</div>
-                      <div className="text-[9px] text-secondary font-bold uppercase tracking-widest mt-0.5">Hrs Obj</div>
-                    </div>
-                    <div className="w-px h-6 bg-white/10"></div>
-                    <div className="text-center flex flex-col items-center">
-                      <Shield size={14} className="text-green-400 mb-0.5" />
-                      <div className="text-[9px] text-secondary font-bold uppercase tracking-widest">Activo</div>
-                    </div>
-                  </div>
-
-                  {/* Botones de acción tipo Pill */}
-                  <div className="flex items-center justify-between gap-2 mt-auto pt-2">
+                  {/* Action buttons (3 Pills like Margarita Viajes) */}
+                  <div className="flex gap-2 mt-auto">
                     <button 
                       onClick={() => { setShowLogsModal(u); fetchLogs(); }} 
-                      className="flex-1 py-2 px-3 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 bg-black/30 text-secondary hover:text-white hover:bg-white/10 border border-white/5 transition-all"
+                      className="flex-1 py-1.5 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 bg-transparent text-blue-400 border border-blue-500/20 hover:bg-blue-500/10 transition-all uppercase tracking-wider"
                     >
-                      <Clock size={12} /> Bitácora
+                      <Clock size={11} /> Bitácora
                     </button>
                     <button 
                       onClick={() => handleOpenEdit(u)} 
-                      className="flex-1 py-2 px-3 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 bg-black/30 text-secondary hover:text-white hover:bg-white/10 border border-white/5 transition-all"
+                      className="flex-1 py-1.5 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 bg-transparent text-secondary border border-white/10 hover:bg-white/5 transition-all uppercase tracking-wider"
                     >
-                      <Edit size={12} /> Editar
+                      <Edit size={11} /> Editar
                     </button>
                     <button 
                       onClick={() => handleImpersonate(u)} 
-                      className="w-10 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-all"
+                      className="px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center justify-center bg-transparent text-primary border border-primary/20 hover:bg-primary/10 transition-all"
                       title="Entrar como usuario"
                     >
-                      <LogIn size={14} />
+                      <LogIn size={11} />
                     </button>
                   </div>
-
                 </div>
               )
             })}
@@ -441,13 +446,13 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
       {/* USER EDIT/CREATE MODAL - VISTA DIVIDIDA */}
       {showUserModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in shadow-2xl rounded-3xl border border-white/10 bg-[#0B132B]">
+          <form onSubmit={handleSaveUser} className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in shadow-2xl rounded-3xl border border-white/10 bg-[#0B132B]">
             
             {/* Columna Izquierda: Perfil (Oscura) */}
             <div className="md:w-1/3 bg-[#0B132B] flex flex-col justify-between border-r border-white/10 relative p-8">
               
               <div className="absolute top-4 right-4 md:hidden">
-                <button onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white">
+                <button type="button" onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white">
                   <X size={16} />
                 </button>
               </div>
@@ -503,7 +508,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
             <div className="md:w-2/3 bg-white/[0.03] flex flex-col h-[60vh] md:h-auto">
               
               <div className="hidden md:flex justify-end p-4 shrink-0">
-                <button onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10 transition-all border border-white/5">
+                <button type="button" onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10 transition-all border border-white/5">
                   <X size={16} />
                 </button>
               </div>
@@ -513,27 +518,27 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                 <div className="mb-8">
                   <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Acceso al Sistema</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Correo Electrónico *</label>
+                    <div className="form-group">
+                      <label className="form-label">Correo Electrónico *</label>
                       <input 
                         type="email" 
                         value={formEmail} 
                         onChange={(e) => setFormEmail(e.target.value)} 
                         placeholder="ejemplo@correo.com" 
-                        className="w-full bg-transparent border-b border-white/10 pb-2 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-medium" 
+                        className="form-input bg-[#0B132B]/50 border-white/10" 
                         required 
                       />
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">
-                        Contraseña {selectedUser && <span className="text-secondary/50">(Dejar vacío para no cambiar)</span>}
+                    <div className="form-group">
+                      <label className="form-label">
+                        Contraseña {selectedUser && <span className="text-secondary/50">(Vacío para no cambiar)</span>}
                       </label>
                       <input 
                         type="password" 
                         value={formPassword} 
                         onChange={(e) => setFormPassword(e.target.value)} 
                         placeholder="••••••••" 
-                        className="w-full bg-transparent border-b border-white/10 pb-2 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-medium" 
+                        className="form-input bg-[#0B132B]/50 border-white/10" 
                         required={!selectedUser} 
                       />
                     </div>
@@ -544,62 +549,48 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                   <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Perfil y Nivel</h4>
                   <div className="bg-black/20 rounded-2xl p-5 border border-white/5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                      <div>
-                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Nombre Completo *</label>
+                      <div className="form-group">
+                        <label className="form-label">Nombre Completo *</label>
                         <input 
                           type="text" 
                           value={formName} 
                           onChange={(e) => setFormName(e.target.value)} 
                           placeholder="Ej. Ernesto Lares" 
-                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-bold" 
+                          className="form-input bg-[#0B132B]/50 border-white/10" 
                           required 
                         />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Alias (Login) *</label>
+                      <div className="form-group">
+                        <label className="form-label">Alias (Login) *</label>
                         <input 
                           type="text" 
                           value={formAlias} 
                           onChange={(e) => setFormAlias(e.target.value)} 
                           placeholder="Ej. elarez" 
-                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-bold" 
+                          className="form-input bg-[#0B132B]/50 border-white/10" 
                           required 
                         />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Rol Asignado *</label>
+                      <div className="form-group">
+                        <label className="form-label">Rol Asignado *</label>
                         <input 
                           type="text" 
                           value={formRol} 
                           onChange={(e) => setFormRol(e.target.value)} 
                           placeholder="Gerente Operaciones" 
-                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all placeholder:text-white/20 font-medium" 
+                          className="form-input bg-[#0B132B]/50 border-white/10" 
                         />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Nivel de Acceso *</label>
+                      <div className="form-group">
+                        <label className="form-label">Nivel de Acceso *</label>
                         <select 
                           value={formNivel} 
                           onChange={(e) => setFormNivel(Number(e.target.value))} 
-                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all cursor-pointer font-medium"
+                          className="form-input bg-[#0B132B]/50 border-white/10 cursor-pointer"
                         >
                           <option value={1} className="bg-[#0B132B]">Nivel 1 — Total (Gerencia)</option>
                           <option value={2} className="bg-[#0B132B]">Nivel 2 — Supervisión</option>
                           <option value={3} className="bg-[#0B132B]">Nivel 3 — Vendedor</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Zona Asignada *</label>
-                        <select 
-                          value={formZona} 
-                          onChange={(e) => setFormZona(e.target.value)} 
-                          className="w-full bg-transparent border-b border-white/10 pb-1.5 text-sm text-white focus:outline-none focus:border-primary transition-all cursor-pointer font-medium"
-                        >
-                          <option value="CABA" className="bg-[#0B132B]">CABA</option>
-                          <option value="Zona SUR" className="bg-[#0B132B]">Zona SUR</option>
-                          <option value="Zona NORTE" className="bg-[#0B132B]">Zona NORTE</option>
-                          <option value="Zona OESTE" className="bg-[#0B132B]">Zona OESTE</option>
-                          <option value="Global" className="bg-[#0B132B]">Global</option>
                         </select>
                       </div>
                     </div>
@@ -634,7 +625,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                     <button 
                       type="button" 
                       onClick={() => handleDeleteUser(selectedUser as Usuario)} 
-                      className="text-xs font-bold text-red-500 hover:text-red-400 underline decoration-dashed underline-offset-4"
+                      className="text-xs font-bold text-red-500 hover:text-red-400 underline decoration-dashed underline-offset-4 cursor-pointer"
                     >
                       Eliminar permanentemente este perfil
                     </button>
@@ -646,19 +637,19 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
               {/* Botón Guardar Inferior */}
               <div className="p-4 bg-black/20 border-t border-white/10 shrink-0">
                 <button 
-                  onClick={handleSaveUser}
-                  className="w-full py-3.5 rounded-full bg-white text-black font-black uppercase tracking-wider text-xs hover:bg-primary hover:text-white transition-all shadow-lg"
+                  type="submit"
+                  className="w-full py-3.5 rounded-full bg-white text-black font-black uppercase tracking-wider text-xs hover:bg-primary hover:text-white transition-all shadow-lg cursor-pointer"
                 >
                   Guardar Cambios
                 </button>
               </div>
 
             </div>
-          </div>
+          </form>
         </div>
       )}
 
-      {/* LOGS / BITACORA VIEW MODAL (Sin grandes cambios) */}
+      {/* LOGS / BITACORA VIEW MODAL */}
       {showLogsModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 print:p-0">
           <div className="glass-panel card w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in shadow-2xl border-white/10 print:bg-white print:text-black print:max-h-none print:shadow-none print:border-none print:w-full print:h-full">
