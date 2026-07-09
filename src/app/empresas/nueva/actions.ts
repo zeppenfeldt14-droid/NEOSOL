@@ -1,0 +1,58 @@
+'use server'
+
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
+
+export async function createEmpresa(formData: FormData) {
+  const nombre = formData.get('nombre') as string
+  const cuit = formData.get('cuit') as string
+  const direccion = formData.get('direccion') as string
+  const direccionFiscal = formData.get('direccionFiscal') as string
+  const barrio = formData.get('barrio') as string
+  const partido = formData.get('partido') as string
+  const telefono = formData.get('telefono') as string
+  const email = formData.get('email') as string
+  const responsable = formData.get('responsable') as string
+  const zona = formData.get('zona') as string
+  const notas = formData.get('notas') as string
+  
+  const contactoCobranzas = formData.get('contactoCobranzas') as string
+  const diasPago = formData.get('diasPago') as string
+  const vendedorAsignado = formData.get('vendedorAsignado') as string
+  const actividad = formData.get('actividad') as string
+  const productosInteres = formData.get('productosInteres') as string
+  const transporte = formData.get('transporte') as string
+  
+  const cicloVentaStr = formData.get('cicloVentaDias') as string
+  const cicloVentaDias = cicloVentaStr ? parseInt(cicloVentaStr) : null
+
+  if (!nombre) {
+    throw new Error('El nombre de la empresa es obligatorio')
+  }
+
+  const empresa = await prisma.empresa.create({
+    data: {
+      nombre,
+      cuit,
+      direccion,
+      direccionFiscal,
+      barrio,
+      partido,
+      telefono,
+      email,
+      responsable,
+      contactoCobranzas,
+      diasPago,
+      vendedorAsignado,
+      actividad,
+      productosInteres,
+      transporte,
+      zona,
+      notas,
+      estado: 'prospecto',
+      cicloVentaDias
+    }
+  })
+
+  redirect(`/empresas/${empresa.id}`)
+}

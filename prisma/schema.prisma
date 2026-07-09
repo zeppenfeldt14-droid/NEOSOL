@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Empresa {
+  id               Int      @id @default(autoincrement())
+  zona             String?
+  nombre           String   // Institución / Empresa
+  cuit             String?
+  direccion        String?  // Dirección de Entrega
+  direccionFiscal  String?
+  barrio           String?  // Localidad
+  partido          String?
+  telefono         String?  // TEL / Celular
+  email            String?
+  responsable      String?  // Contacto principal
+  contactoCobranzas String?
+  diasPago         String?
+  vendedorAsignado String?
+  actividad        String?
+  productosInteres String?
+  transporte       String?
+  url              String?
+  googleMaps       String?
+  notas            String?
+  estado           String   @default("prospecto")  // 'prospecto' | 'activo' | 'descartada' | 'baja'
+  motivoBaja       String?  // Obligatorio cuando estado = 'baja'
+  fechaBaja        DateTime?
+  frecuenciaVisita Int?
+  cicloVentaDias   Int?
+  creadoEn         DateTime @default(now())
+  actualizadoEn    DateTime @updatedAt
+
+  visitas  Visita[]
+  acciones Accion[]
+  alertas  Alerta[]
+}
+
+model Visita {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int
+  empresa       Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fecha         DateTime @default(now())
+  tipo          String   @default("visita")   // 'visita' | 'correo' | 'whatsapp'
+  resultado     String
+  contacto      String?
+  cargo         String?
+  notas         String?
+  proximaAccion String?
+  creadoEn      DateTime @default(now())
+}
+
+model Accion {
+  id               Int       @id @default(autoincrement())
+  empresaId        Int
+  empresa          Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  tipo             String
+  descripcion      String
+  fechaVencimiento DateTime?
+  prioridad        String    @default("media")
+  estado           String    @default("pendiente")
+  orden            Int       @default(0)
+  completadaEn     DateTime?
+  creadoEn         DateTime  @default(now())
+}
+
+model Alerta {
+  id                Int       @id @default(autoincrement())
+  empresaId         Int
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  tipo              String
+  mensaje           String?
+  diasConfiguracion Int?
+  fechaActivacion   DateTime?
+  activa            Boolean   @default(true)
+  creadoEn          DateTime  @default(now())
+}
+
+model ConfiguracionSistema {
+  id          Int    @id @default(autoincrement())
+  clave       String @unique
+  valor       String
+  descripcion String?
+}

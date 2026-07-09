@@ -1,0 +1,36 @@
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: white !important;
+  }
+
+  /* Ocultar elementos de UI no deseados */
+  .no-print, nav, header, footer, .sidebar {
+    display: none !important;
+  }
+
+  /* Asegurarnos de que el fondo del body sea blanco puro en impresión */
+  .print-bg-white {
+    background-color: white !important;
+  }
+
+  /* Ajustar la hoja A4 */
+  .a4-sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 210mm !important;
+    padding: 10mm 15mm !important;
+  }
+
+  /* Ajustes para firmas */
+  .no-print-adjust {
+    margin-top: 40px !important;
+  }
+}
