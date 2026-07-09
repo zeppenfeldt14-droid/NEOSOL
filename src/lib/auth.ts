@@ -44,7 +44,26 @@ export async function getSessionUser(): Promise<UserSession | null> {
     const cookieStore = await cookies()
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)
     if (!sessionCookie || !sessionCookie.value) return null
-    return verifyToken(sessionCookie.value)
+    const decrypted = verifyToken(sessionCookie.value)
+    if (!decrypted) return null
+
+    // Fetch fresh user data from database to prevent stale token redirect loops
+    const dbUser = await prisma.usuario.findUnique({
+      where: { id: decrypted.id }
+    })
+    if (!dbUser || !dbUser.activo) return null
+
+    return {
+      id: dbUser.id,
+      alias: dbUser.alias,
+      email: dbUser.email,
+      nombre: dbUser.nombre,
+      nivel: dbUser.nivel,
+      rol: dbUser.rol,
+      modulos: dbUser.modulos || {},
+      zona: dbUser.zona,
+      zonasHabilitadas: dbUser.zonasHabilitadas
+    }
   } catch (e) {
     return null
   }
