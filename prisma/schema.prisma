@@ -87,3 +87,33 @@ model ConfiguracionSistema {
   valor       String
   descripcion String?
 }
+
+model Usuario {
+  id                    Int      @id @default(autoincrement())
+  nombre                String
+  alias                 String   @unique
+  email                 String   @unique
+  passwordHash          String
+  nivel                 Int      @default(3) // 1 = Gerencia/Admin, 2 = Supervisión, 3 = Ventas/Vendedores
+  rol                   String   @default("Vendedor")
+  foto                  String?  // Avatar en Base64 o URL
+  activo                Boolean  @default(true)
+  modulos               Json     @default("{}") // Mapeo de permisos por módulo
+  limitesEstado         Json     @default("{}") // Límites de tiempo para pausas
+  mustChangePassword    Boolean  @default(false)
+  loginCount            Int      @default(0)
+  connectionLogs        Json     @default("[]") // Historial de últimas 20 conexiones
+  passwordUpdatedAt     DateTime?
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+}
+
+model LogBitacora {
+  id           Int      @id @default(autoincrement())
+  usuarioId    Int?
+  usuarioAlias String   @default("Sistema")
+  tipoAccion   String   // LOGIN, LOGOUT, CREATE_USER, etc.
+  detalles     String
+  creadoEn     DateTime @default(now())
+}
+

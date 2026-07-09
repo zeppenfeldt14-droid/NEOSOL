@@ -2,8 +2,11 @@
 
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
+import { getSessionUser, registrarAccion } from '@/lib/auth'
 
 export async function createEmpresa(formData: FormData) {
+  const user = await getSessionUser()
+
   const nombre = formData.get('nombre') as string
   const cuit = formData.get('cuit') as string
   const direccion = formData.get('direccion') as string
@@ -53,6 +56,15 @@ export async function createEmpresa(formData: FormData) {
       cicloVentaDias
     }
   })
+
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'CREATE_EMPRESA',
+      `Creada empresa: ${empresa.nombre} (ID: ${empresa.id})`
+    )
+  }
 
   redirect(`/empresas/${empresa.id}`)
 }

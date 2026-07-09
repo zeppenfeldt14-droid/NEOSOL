@@ -2,8 +2,11 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getSessionUser, registrarAccion } from '@/lib/auth'
+
 
 export async function addVisita(empresaId: number, formData: FormData) {
+  const user = await getSessionUser()
   const fecha = formData.get('fecha') as string
   const tipo = (formData.get('tipo') as string) || 'visita'  // 'visita' | 'correo' | 'whatsapp'
   const resultado = formData.get('resultado') as string
@@ -12,7 +15,7 @@ export async function addVisita(empresaId: number, formData: FormData) {
   const notas = formData.get('notas') as string
   const proximaAccion = formData.get('proximaAccion') as string
 
-  await prisma.visita.create({
+  const visita = await prisma.visita.create({
     data: {
       empresaId,
       fecha: new Date(fecha),
@@ -33,10 +36,20 @@ export async function addVisita(empresaId: number, formData: FormData) {
     })
   }
 
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'CREATE_VISITA',
+      `Visita registrada para empresa ID: ${empresaId} - Tipo: ${tipo}`
+    )
+  }
+
   revalidatePath(`/empresas/${empresaId}`)
 }
 
 export async function addAccion(empresaId: number, formData: FormData) {
+  const user = await getSessionUser()
   const tipo = formData.get('tipo') as string
   const descripcion = formData.get('descripcion') as string
   const fechaVencimiento = formData.get('fechaVencimiento') as string
@@ -52,10 +65,20 @@ export async function addAccion(empresaId: number, formData: FormData) {
     }
   })
 
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'CREATE_ACCION',
+      `Acción de ruta creada para empresa ID: ${empresaId} - Tipo: ${tipo}`
+    )
+  }
+
   revalidatePath(`/empresas/${empresaId}`)
 }
 
 export async function addAlerta(empresaId: number, formData: FormData) {
+  const user = await getSessionUser()
   const tipo = formData.get('tipo') as string
   const diasConfiguracion = parseInt(formData.get('diasConfiguracion') as string)
   const mensaje = formData.get('mensaje') as string
@@ -77,10 +100,20 @@ export async function addAlerta(empresaId: number, formData: FormData) {
     })
   }
 
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'CREATE_ALERTA',
+      `Alerta configurada para empresa ID: ${empresaId} - Tipo: ${tipo}`
+    )
+  }
+
   revalidatePath(`/empresas/${empresaId}`)
 }
 
 export async function completeAccion(accionId: number, empresaId: number) {
+  const user = await getSessionUser()
   await prisma.accion.update({
     where: { id: accionId },
     data: { 
@@ -89,10 +122,20 @@ export async function completeAccion(accionId: number, empresaId: number) {
     }
   })
   
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'COMPLETE_ACCION',
+      `Acción de ruta ID: ${accionId} completada para empresa ID: ${empresaId}`
+    )
+  }
+  
   revalidatePath(`/empresas/${empresaId}`)
 }
 
 export async function updateEmpresa(empresaId: number, formData: FormData) {
+  const user = await getSessionUser()
   const nombre = formData.get('nombre') as string
   const cuit = formData.get('cuit') as string
   const direccion = formData.get('direccion') as string
@@ -155,6 +198,15 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
       cicloVentaDias,
     }
   })
+
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'UPDATE_EMPRESA',
+      `Empresa actualizada: ${nombre} (ID: ${empresaId})`
+    )
+  }
 
   revalidatePath(`/empresas/${empresaId}`)
   revalidatePath('/empresas')

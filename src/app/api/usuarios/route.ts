@@ -1,0 +1,179 @@
+import { NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import { getSessionUser, hashPassword, registrarAccion } from '@/lib/auth'
+
+// GET: List all users (N1 only)
+export async function GET() {
+  try {
+    const session = await getSessionUser()
+    if (!session || session.nivel !== 1) {
+      return NextResponse.json({ error: 'Acceso denegado.' }, { status: 403 })
+    }
+
+    const usuarios = await prisma.usuario.findMany({
+      orderBy: { nombre: 'asc' },
+      select: {
+        id: true,
+        nombre: true,
+        alias: true,
+        email: true,
+        nivel: true,
+        rol: true,
+        foto: true,
+        activo: true,
+        modulos: true,
+        limitesEstado: true,
+        loginCount: true,
+        connectionLogs: true,
+        mustChangePassword: true,
+        passwordUpdatedAt: true,
+        creadoEn: true,
+        actualizadoEn: true
+      }
+    })
+
+    return NextResponse.json(usuarios)
+  } catch (error: any) {
+    console.error('[API GET Users] Error:', error)
+    return NextResponse.json({ error: 'Error al listar usuarios.' }, { status: 500 })
+  }
+}
+
+// POST: Create or Update User (N1 only)
+export async function POST(request: Request) {
+  try {
+    const session = await getSessionUser()
+    if (!session || session.nivel !== 1) {
+      return NextResponse.json({ error: 'Acceso denegado.' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const {
+      id,
+      nombre,
+      alias,
+      email,
+      password,
+      nivel,
+      rol,
+      activo,
+      foto,
+      modulos,
+      limitesEstado,
+      mustChangePassword
+    } = body
+
+    if (!nombre || !alias || !email) {
+      return NextResponse.json({ error: 'Faltan campos obligatorios (nombre, alias, email).' }, { status: 400 })
+    }
+
+    const cleanAlias = alias.replace(/^@/, '').trim()
+
+    // 1. UPDATE USER
+    if (id) {
+      const existingUser = await prisma.usuario.findUnique({
+        where: { id: Number(id) }
+      })
+
+      if (!existingUser) {
+        return NextResponse.json({ error: 'Usuario no encontrado.' }, { status: 404 })
+      }
+
+      // Check if alias or email is taken by another user
+      const duplicateUser = await prisma.usuario.findFirst({
+        where: {
+          NOT: { id: Number(id) },
+          OR: [
+            { alias: { equals: cleanAlias, mode: 'insensitive' } },
+            { email: { equals: email, mode: 'insensitive' } }
+          ]
+        }
+      })
+
+      if (duplicateUser) {
+        return NextResponse.json({ error: 'El alias o correo ya está en uso por otro usuario.' }, { status: 400 })
+      }
+
+      const updateData: any = {
+        nombre,
+        alias: cleanAlias,
+        email,
+        nivel: Number(nivel) || 3,
+        rol: rol || 'Vendedor',
+        activo: activo !== false,
+        foto: foto || null,
+        modulos: modulos || {},
+        limitesEstado: limitesEstado || {},
+        mustChangePassword: mustChangePassword === true
+      }
+
+      if (password && password.trim() !== '') {
+        updateData.passwordHash = await hashPassword(password)
+        updateData.passwordUpdatedAt = new Date()
+      }
+
+      const updatedUser = await prisma.usuario.update({
+        where: { id: Number(id) },
+        data: updateData
+      })
+
+      await registrarAccion(
+        session.id,
+        session.alias,
+        'UPDATE_USER',
+        `Usuario modificado: ${updatedUser.nombre} (@${updatedUser.alias})`
+      )
+
+      return NextResponse.json({ success: true, user: updatedUser })
+    }
+
+    // 2. CREATE USER
+    if (!password) {
+      return NextResponse.json({ error: 'La contraseña es obligatoria para nuevos perfiles.' }, { status: 400 })
+    }
+
+    const duplicateUser = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { alias: { equals: cleanAlias, mode: 'insensitive' } },
+          { email: { equals: email, mode: 'insensitive' } }
+        ]
+      }
+    })
+
+    if (duplicateUser) {
+      return NextResponse.json({ error: 'El alias o correo ya está en uso.' }, { status: 400 })
+    }
+
+    const passwordHash = await hashPassword(password)
+
+    const newUser = await prisma.usuario.create({
+      data: {
+        nombre,
+        alias: cleanAlias,
+        email,
+        passwordHash,
+        nivel: Number(nivel) || 3,
+        rol: rol || 'Vendedor',
+        activo: activo !== false,
+        foto: foto || null,
+        modulos: modulos || {},
+        limitesEstado: limitesEstado || {},
+        mustChangePassword: mustChangePassword === true,
+        passwordUpdatedAt: new Date()
+      }
+    })
+
+    await registrarAccion(
+      session.id,
+      session.alias,
+      'CREATE_USER',
+      `Nuevo usuario creado: ${newUser.nombre} (@${newUser.alias})`
+    )
+
+    return NextResponse.json({ success: true, user: newUser })
+  } catch (error: any) {
+    console.error('[API POST Users] Error:', error)
+    return NextResponse.json({ error: 'Error al procesar el usuario.' }, { status: 500 })
+  }
+}
