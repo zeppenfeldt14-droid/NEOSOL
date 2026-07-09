@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, Map as MapIcon, Bell, FileText, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Map as MapIcon, Bell, FileText, Settings, LogOut, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -120,6 +120,13 @@ export function AppShellClient({ children, logo, user }: Props) {
             <Link href="/reportes" className={`nav-item ${isActive('/reportes') ? 'active' : ''}`}>
               <FileText className="nav-icon" />
               <span>Reportes (PDF)</span>
+            </Link>
+          )}
+
+          {user.nivel < 3 && (
+            <Link href="/usuarios" className={`nav-item ${isActive('/usuarios') ? 'active' : ''}`}>
+              <ShieldCheck className="nav-icon" />
+              <span>Usuarios</span>
             </Link>
           )}
         </nav>
