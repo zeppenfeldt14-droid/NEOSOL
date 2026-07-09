@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
-import prisma from './prisma'
+import { prisma } from './prisma'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'neosol_secret_key_2026'
 const SESSION_COOKIE_NAME = 'neosol_session'

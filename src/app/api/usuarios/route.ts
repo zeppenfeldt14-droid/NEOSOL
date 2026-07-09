@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { getSessionUser, hashPassword, registrarAccion } from '@/lib/auth'
 
 // GET: List all users (N1 only)
