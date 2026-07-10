@@ -28,6 +28,11 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
     orderBy: { nombre: 'asc' }
   })
 
+  // Fetch all major zones
+  const todasLasZonas = await prisma.zona.findMany({
+    orderBy: { nombre: 'asc' }
+  })
+
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
@@ -68,10 +73,9 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
                 <label className="form-label">Sucursal (Zona Principal)</label>
                 {user.nivel === 1 ? (
                   <select name="zona" defaultValue={decodedZona} className="form-input bg-dark">
-                    <option value="CABA">CABA</option>
-                    <option value="Zona SUR">Zona SUR</option>
-                    <option value="Zona OESTE">Zona OESTE</option>
-                    <option value="Zona NORTE">Zona NORTE</option>
+                    {todasLasZonas.map(z => (
+                      <option key={z.id} value={z.nombre}>{z.nombre}</option>
+                    ))}
                   </select>
                 ) : (
                   <>

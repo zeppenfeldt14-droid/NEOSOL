@@ -15,6 +15,13 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [isSaving, setIsSaving] = useState(false)
   const [dragActive, setDragActive] = useState(false)
 
+  // Zones management state
+  const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([])
+  const [newZonaName, setNewZonaName] = useState('')
+  const [editingZonaId, setEditingZonaId] = useState<number | null>(null)
+  const [editingZonaName, setEditingZonaName] = useState('')
+  const [isLoadingZonas, setIsLoadingZonas] = useState(false)
+
   // Fetch current user level on mount
   useEffect(() => {
     fetch('/api/auth/me')
@@ -25,7 +32,87 @@ export function ConfigPageClient({ currentLogo }: Props) {
         }
       })
       .catch(e => console.error('Error fetching auth me:', e))
+    
+    fetchZonas()
   }, [])
+
+  const fetchZonas = async () => {
+    setIsLoadingZonas(true)
+    try {
+      const res = await fetch('/api/zonas')
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        setZonas(data)
+      }
+    } catch (e) {
+      console.error('Error fetching zones:', e)
+    } finally {
+      setIsLoadingZonas(false)
+    }
+  }
+
+  const handleCreateZona = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newZonaName.trim()) return
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/zonas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: newZonaName.trim().toUpperCase() })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al crear zona')
+      setNewZonaName('')
+      alert('Zona creada correctamente.')
+      fetchZonas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdateZona = async (id: number) => {
+    if (!editingZonaName.trim()) return
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/zonas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, nombre: editingZonaName.trim().toUpperCase() })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al modificar zona')
+      setEditingZonaId(null)
+      alert('Zona modificada correctamente.')
+      fetchZonas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteZona = async (id: number, name: string) => {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la zona '${name}'? Esto también borrará todas las sub-zonas asociadas.`)) {
+      return
+    }
+    setIsSaving(true)
+    try {
+      const res = await fetch(`/api/zonas?id=${id}`, {
+        method: 'DELETE'
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al eliminar zona')
+      alert('Zona eliminada correctamente.')
+      fetchZonas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   // Handle file select and convert to base64
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,6 +268,95 @@ export function ConfigPageClient({ currentLogo }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Dynamic Zones Management (Nivel 1 only) */}
+      {userNivel === 1 && (
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in mt-6">
+          <div className="glass-panel card md:col-span-2">
+            <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+              Gestión de Zonas Principales
+            </h3>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                {isLoadingZonas ? (
+                  <p className="text-secondary text-sm">Cargando zonas...</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {zonas.map(z => (
+                      <div key={z.id} className="flex justify-between items-center p-3 rounded-lg border border-white/5 bg-black/10">
+                        {editingZonaId === z.id ? (
+                          <div className="flex gap-2 flex-1 mr-4">
+                            <input 
+                              type="text" 
+                              className="form-input !py-1" 
+                              value={editingZonaName} 
+                              onChange={(e) => setEditingZonaName(e.target.value)} 
+                            />
+                            <button onClick={() => handleUpdateZona(z.id)} className="btn btn-primary !py-1 text-xs">
+                              Guardar
+                            </button>
+                            <button onClick={() => setEditingZonaId(null)} className="btn btn-secondary !py-1 text-xs">
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-white font-semibold text-sm">{z.nombre}</span>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => { setEditingZonaId(z.id); setEditingZonaName(z.nombre); }} 
+                                className="btn btn-secondary !py-1 !px-2 text-xs"
+                              >
+                                Editar
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteZona(z.id, z.nombre)} 
+                                className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs"
+                              >
+                                Borrar
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                    {zonas.length === 0 && (
+                      <p className="text-secondary text-sm">No hay zonas principales configuradas.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '200px' }}>
+            <div>
+              <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                Nueva Zona Principal
+              </h3>
+              <form onSubmit={handleCreateZona} className="flex flex-col gap-4">
+                <div className="form-group mb-0">
+                  <label className="form-label">Nombre de la Zona</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Ej. TUCUMAN" 
+                    value={newZonaName} 
+                    onChange={(e) => setNewZonaName(e.target.value)} 
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary w-full" disabled={isSaving}>
+                  Crear Zona
+                </button>
+              </form>
+            </div>
+            <div className="text-secondary text-center mt-4" style={{ fontSize: '0.75rem' }}>
+              Al crear una nueva zona principal, aparecerá de forma inmediata en el menú de navegación y en los formularios de alta/edición.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -46,6 +46,11 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
     orderBy: { nombre: 'asc' }
   })
 
+  // Fetch all major zones
+  const todasLasZonas = await prisma.zona.findMany({
+    orderBy: { nombre: 'asc' }
+  })
+
   const updateEmpresaWithId = updateEmpresa.bind(null, empresaId)
 
 
@@ -92,10 +97,9 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
                 <label className="form-label">Sucursal (Zona Principal)</label>
                 {user.nivel === 1 ? (
                   <select name="zona" defaultValue={empresa.zona || 'CABA'} className="form-input bg-dark">
-                    <option value="CABA">CABA</option>
-                    <option value="Zona SUR">Zona SUR</option>
-                    <option value="Zona OESTE">Zona OESTE</option>
-                    <option value="Zona NORTE">Zona NORTE</option>
+                    {todasLasZonas.map(z => (
+                      <option key={z.id} value={z.nombre}>{z.nombre}</option>
+                    ))}
                   </select>
                 ) : (
                   <>
