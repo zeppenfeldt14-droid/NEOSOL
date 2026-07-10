@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X } from 'lucide-react'
+import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -191,6 +191,29 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
                     <span>Reportes (PDF)</span>
                   </Link>
                 )}
+
+                {/* Módulos Comerciales - Level 3 */}
+                <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-2 mb-1.5">
+                  Comercial
+                </div>
+                {modules.pedidos !== false && (
+                  <Link href="/pedidos" className={`nav-item ${isLinkActive('/pedidos') ? 'active' : ''}`}>
+                    <ShoppingCart className="nav-icon" />
+                    <span>Pedidos</span>
+                  </Link>
+                )}
+                {modules.ventas !== false && (
+                  <Link href="/ventas" className={`nav-item ${isLinkActive('/ventas') ? 'active' : ''}`}>
+                    <TrendingUp className="nav-icon" />
+                    <span>Ventas</span>
+                  </Link>
+                )}
+                {modules.cobranzas !== false && (
+                  <Link href="/cobranzas" className={`nav-item ${isLinkActive('/cobranzas') ? 'active' : ''}`}>
+                    <Banknote className="nav-icon" />
+                    <span>Cobranzas</span>
+                  </Link>
+                )}
               </div>
             ))
           ) : (
@@ -269,6 +292,23 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
             </div>
           )}
 
+          {/* Módulos Comerciales - Level 1/2 */}
+          <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-3 mb-1.5">
+            Comercial
+          </div>
+          <Link href="/pedidos" className={`nav-item ${isLinkActive('/pedidos') ? 'active' : ''}`}>
+            <ShoppingCart className="nav-icon" />
+            <span>Pedidos</span>
+          </Link>
+          <Link href="/ventas" className={`nav-item ${isLinkActive('/ventas') ? 'active' : ''}`}>
+            <TrendingUp className="nav-icon" />
+            <span>Ventas</span>
+          </Link>
+          <Link href="/cobranzas" className={`nav-item ${isLinkActive('/cobranzas') ? 'active' : ''}`}>
+            <Banknote className="nav-icon" />
+            <span>Cobranzas</span>
+          </Link>
+
           {/* Standalone users module link for N1/N2 */}
           {user.nivel < 3 && (
             <Link href="/usuarios" className={`nav-item ${isLinkActive('/usuarios') ? 'active' : ''}`}>
@@ -283,6 +323,13 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
             <Link href="/configuracion" className={`nav-item ${isLinkActive('/configuracion') ? 'active' : ''}`}>
               <Settings className="nav-icon" />
               <span>Configuración</span>
+            </Link>
+          )}
+          {/* Lista de Precios - Level 1 only */}
+          {user.nivel === 1 && (
+            <Link href="/configuracion/productos" className={`nav-item ${isLinkActive('/configuracion/productos') ? 'active' : ''}`}>
+              <Package className="nav-icon" />
+              <span>Lista de Precios</span>
             </Link>
           )}
           <button onClick={handleLogout} className="nav-item" style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}>

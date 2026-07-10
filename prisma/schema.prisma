@@ -39,6 +39,7 @@ model Empresa {
   visitas  Visita[]
   acciones Accion[]
   alertas  Alerta[]
+  pedidos  Pedido[]
 }
 
 model Visita {
@@ -125,3 +126,182 @@ model Zona {
   creadoEn DateTime @default(now())
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO COMERCIAL: Productos, Pedidos, Ventas y Cobranzas
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Producto {
+  id              Int      @id @default(autoincrement())
+  codigoInterno   String   @unique
+  nombre          String
+  linea           String?  // 'pack_individual' | 'tripack' | 'minis' | 'snacks'
+  precioPaquete   Float    // Precio x paquete (sin IVA)
+  paqPorCaja      Int      // Paquetes por caja
+  precioCaja      Float    // Precio x caja (sin IVA)
+  activo          Boolean  @default(true)
+  creadoEn        DateTime @default(now())
+  actualizadoEn   DateTime @updatedAt
+
+  detallesPedido DetallePedido[]
+  detallesPromocion DetallePromocion[]
+}
+
+model Promocion {
+  id          Int      @id @default(autoincrement())
+  nombre      String   // Ej: "10x1 Sándwich"
+  descripcion String?
+  tipo        String   @default("bonificacion") // 'bonificacion' | 'descuento_porcentaje' | 'precio_especial'
+  // Para 10x1: compraMinima=10, bonificacion=1
+  compraMinima    Int?   // Cantidad mínima para aplicar la promo
+  bonificacion    Int?   // Unidades obsequiadas
+  descuento       Float? // Porcentaje de descuento si aplica
+  activa          Boolean  @default(true)
+  vigenciaDesde   DateTime?
+  vigenciaHasta   DateTime?
+  creadoEn        DateTime @default(now())
+  actualizadoEn   DateTime @updatedAt
+
+  detallesPromocion DetallePromocion[]
+}
+
+model DetallePromocion {
+  id         Int      @id @default(autoincrement())
+  promocion  Promocion @relation(fields: [promocionId], references: [id])
+  promocionId Int
+  producto   Producto  @relation(fields: [productoId], references: [id])
+  productoId  Int
+}
+
+model Pedido {
+  id              Int      @id @default(autoincrement())
+  numeroPedido    String   @unique // Generado automáticamente, ej: PED-2026-001
+  empresaId       Int
+  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+  vendedorId      Int
+  vendedorAlias   String
+  zona            String
+  
+  // Estado del flujo
+  estado          String   @default("borrador")
+  // 'borrador' | 'pendiente_supervisor' | 'aprobado' | 'cancelado'
+  
+  // Condiciones de negociación
+  porcentajePagoA Float    @default(20)  // % que va con IVA (Factura A)
+  porcentajePagoB Float    @default(80)  // % que va sin IVA (Factura B / Remito)
+  aplicaFinanciera Boolean @default(false)
+  // Plazos de pago (texto libre, ej: "30 días / 60 días")
+  plazosPago      String?
+  condicionPago   String?  // Ej: "20/80", "50/50", "100% A", personalizada
+  
+  // Totales calculados
+  subtotalSinIVA  Float    @default(0)
+  montoIVA        Float    @default(0)  // 21% sobre la parte A
+  montoFinanciera Float    @default(0)  // 3% sobre la parte que aplica
+  totalGeneral    Float    @default(0)
+  
+  // Promoción aplicada
+  promocionId     Int?
+  
+  observaciones   String?
+  acuerdosComerciales String?
+  requierePresupuesto Boolean @default(false)
+  turnoEntrega    String?  // 'SI' | 'NO'
+  
+  // Auditoría
+  aprobadoPorId   Int?
+  aprobadoPorAlias String?
+  aprobadoEn      DateTime?
+  creadoEn        DateTime @default(now())
+  actualizadoEn   DateTime @updatedAt
+  
+  detalles    DetallePedido[]
+  facturas    Factura[]
+  cobranzas   Cobranza[]
+}
+
+model DetallePedido {
+  id          Int      @id @default(autoincrement())
+  pedidoId    Int
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId  Int
+  producto    Producto @relation(fields: [productoId], references: [id])
+  
+  // Snapshot de precios al momento del pedido
+  productoNombre    String
+  precioCajaSnapshot Float
+  precioPaqSnapshot  Float
+  paqPorCajaSnapshot Int
+  
+  cantidadCajas   Int      @default(0)
+  subtotal        Float    @default(0) // cantidadCajas * precioCajaSnapshot
+  
+  // Bonificación 10x1 u otro tipo
+  cajasBonus      Int      @default(0)
+  descripcionBonus String?
+}
+
+model Factura {
+  id            Int      @id @default(autoincrement())
+  pedidoId      Int
+  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
+  numeroFactura String   @unique // Ej: FAC-A-2026-001
+  tipo          String   // 'A' | 'B' | 'remito'
+  
+  // Montos
+  subtotal      Float
+  iva           Float    @default(0)  // Solo si tipo='A'
+  recargo       Float    @default(0)  // 3% financiera si aplica
+  total         Float
+  
+  estado        String   @default("pendiente") // 'pendiente' | 'pagada' | 'parcial' | 'anulada'
+  
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  
+  pagos         Pago[]
+}
+
+model Cobranza {
+  id              Int      @id @default(autoincrement())
+  pedidoId        Int
+  pedido          Pedido   @relation(fields: [pedidoId], references: [id])
+  empresaId       Int
+  empresaNombre   String
+  vendedorAlias   String
+  zona            String
+  
+  // Montos
+  montoOriginal   Float
+  saldoPendiente  Float
+  
+  // Plazos
+  cuota           Int      @default(1)  // Número de cuota
+  totalCuotas     Int      @default(1)
+  fechaVencimiento DateTime?
+  
+  estado          String   @default("pendiente") // 'pendiente' | 'pagada' | 'vencida' | 'parcial'
+  
+  creadoEn        DateTime @default(now())
+  actualizadoEn   DateTime @updatedAt
+  
+  pagos           Pago[]
+}
+
+model Pago {
+  id            Int      @id @default(autoincrement())
+  cobranzaId    Int?
+  cobranza      Cobranza? @relation(fields: [cobranzaId], references: [id])
+  facturaId     Int?
+  factura       Factura?  @relation(fields: [facturaId], references: [id])
+  
+  monto         Float
+  metodoPago    String   // 'efectivo' | 'transferencia' | 'cheque' | 'financiera'
+  recargoAplicado Float  @default(0) // 3% si es financiera
+  montoFinal    Float    // monto + recargoAplicado
+  
+  referencia    String?  // Número de cheque, comprobante, etc.
+  notas         String?
+  registradoPorAlias String
+  
+  creadoEn      DateTime @default(now())
+}

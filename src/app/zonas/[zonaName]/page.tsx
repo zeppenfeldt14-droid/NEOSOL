@@ -354,7 +354,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
       </div>
 
       {/* Row: Planificador Diario and Planificador Semanal (50% each) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
         {/* Planificador de Hoy */}
         <div className="glass-panel card delay-200" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="card-title">Planificador de Hoy</h3>
