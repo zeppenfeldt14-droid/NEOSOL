@@ -77,37 +77,14 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
       )}
       
       {estado === 'activo' && (
-        <>
-          <button 
-            onClick={handleConvertToProspect}
-            disabled={isUpdating}
-            className="btn btn-secondary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
-          >
-            <UserCheck size={16} /> 
-            {isUpdating ? 'Actualizando...' : 'Volver a Prospecto'}
-          </button>
-          <button 
-            onClick={handleDarDeBaja}
-            disabled={isUpdating}
-            className="btn btn-outline border-error text-error hover:bg-error hover:text-white"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
-          >
-            <Ban size={16} /> 
-            {isUpdating ? 'Actualizando...' : 'Dar de Baja'}
-          </button>
-        </>
-      )}
-
-      {estado === 'baja' && (
         <button 
-          onClick={handleReactivar}
+          onClick={handleConvertToProspect}
           disabled={isUpdating}
-          className="btn btn-primary"
+          className="btn btn-secondary"
           style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
         >
-          <ArrowUpCircle size={16} /> 
-          {isUpdating ? 'Actualizando...' : 'Reactivar Cliente'}
+          <UserCheck size={16} /> 
+          {isUpdating ? 'Actualizando...' : 'Volver a Prospecto'}
         </button>
       )}
 
@@ -120,6 +97,30 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
         >
           <UserCheck size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Recuperar Prospecto'}
+        </button>
+      )}
+
+      {estado !== 'baja' && (
+        <button 
+          onClick={handleDarDeBaja}
+          disabled={isUpdating}
+          className="btn btn-outline border-error text-error hover:bg-error hover:text-white"
+          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+        >
+          <Ban size={16} /> 
+          {isUpdating ? 'Actualizando...' : 'Dar de Baja'}
+        </button>
+      )}
+
+      {estado === 'baja' && (
+        <button 
+          onClick={handleReactivar}
+          disabled={isUpdating}
+          className="btn btn-primary"
+          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+        >
+          <ArrowUpCircle size={16} /> 
+          {isUpdating ? 'Actualizando...' : 'Reactivar Cliente'}
         </button>
       )}
 

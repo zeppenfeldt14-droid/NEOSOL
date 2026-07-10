@@ -429,7 +429,30 @@ export function ProductosPageClient({ userNivel }: Props) {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  {userNivel === 1 ? (
+                    <>
+                      <col style={{ width: '10%' }} />
+                      <col style={{ width: '32%' }} />
+                      <col style={{ width: '10%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '6%' }} />
+                      <col style={{ width: '6%' }} />
+                    </>
+                  ) : (
+                    <>
+                      <col style={{ width: '10%' }} />
+                      <col style={{ width: '44%' }} />
+                      <col style={{ width: '10%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                    </>
+                  )}
+                </colgroup>
                 <thead>
                   <tr className="border-b border-white/5">
                     {[
