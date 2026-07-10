@@ -93,6 +93,76 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autorizado. Se requiere nivel 1.' }, { status: 403 })
     }
 
+    const contentType = request.headers.get('content-type') || ''
+    
+    // --- JSON Payload (Create new list by cloning/increasing) ---
+    if (contentType.includes('application/json')) {
+      const body = await request.json()
+      const { nombre, vigenteDesdeStr, porcentaje, baseListaId, tarifaTipo } = body
+
+      if (!nombre || !vigenteDesdeStr || porcentaje === undefined) {
+        return NextResponse.json({ error: 'Faltan campos requeridos (nombre, fecha de vigencia y porcentaje).' }, { status: 400 })
+      }
+
+      const vigenteDesde = new Date(vigenteDesdeStr)
+      if (isNaN(vigenteDesde.getTime())) {
+        return NextResponse.json({ error: 'Fecha de vigencia inválida.' }, { status: 400 })
+      }
+
+      const basePrecios = baseListaId ? await prisma.precioProducto.findMany({
+        where: { listaId: Number(baseListaId) }
+      }) : []
+
+      const newLista = await prisma.listaPrecio.create({
+        data: { nombre, vigenteDesde, activa: true }
+      })
+
+      const multiplier = 1 + (Number(porcentaje) / 100)
+      let createdCount = 0
+
+      if (basePrecios.length > 0) {
+        for (const bp of basePrecios) {
+          const applyMin = tarifaTipo === 'min' || tarifaTipo === 'ambas'
+          const applyMax = tarifaTipo === 'max' || tarifaTipo === 'ambas'
+          
+          await prisma.precioProducto.create({
+            data: {
+              listaId: newLista.id,
+              productoId: bp.productoId,
+              productoCodigo: bp.productoCodigo,
+              precioPaqueteMin: applyMin ? bp.precioPaqueteMin * multiplier : bp.precioPaqueteMin,
+              precioCajaMin: applyMin ? bp.precioCajaMin * multiplier : bp.precioCajaMin,
+              precioPaqueteMax: applyMax ? bp.precioPaqueteMax * multiplier : bp.precioPaqueteMax,
+              precioCajaMax: applyMax ? bp.precioCajaMax * multiplier : bp.precioCajaMax
+            }
+          })
+          createdCount++
+        }
+      } else {
+        const dbProductos = await prisma.producto.findMany()
+        for (const p of dbProductos) {
+          const applyMin = tarifaTipo === 'min' || tarifaTipo === 'ambas'
+          const applyMax = tarifaTipo === 'max' || tarifaTipo === 'ambas'
+          
+          await prisma.precioProducto.create({
+            data: {
+              listaId: newLista.id,
+              productoId: p.id,
+              productoCodigo: p.codigoInterno,
+              precioPaqueteMin: applyMin ? p.precioPaquete * 1.15 * multiplier : p.precioPaquete * 1.15,
+              precioCajaMin: applyMin ? p.precioCaja * 1.15 * multiplier : p.precioCaja * 1.15,
+              precioPaqueteMax: applyMax ? p.precioPaquete * multiplier : p.precioPaquete,
+              precioCajaMax: applyMax ? p.precioCaja * multiplier : p.precioCaja
+            }
+          })
+          createdCount++
+        }
+      }
+
+      return NextResponse.json({ success: true, listaId: newLista.id, productosCreados: createdCount })
+    }
+
+    // --- Multipart FormData Payload (Upload CSV) ---
     const formData = await request.formData()
     const nombre = formData.get('nombre') as string
     const vigenteDesdeStr = formData.get('vigenteDesde') as string
@@ -211,6 +281,49 @@ export async function PUT(request: Request) {
       await prisma.$executeRawUnsafe(sql, multiplier, listaId)
 
       return NextResponse.json({ success: true, message: `Aumento de ${porcentaje}% aplicado masivamente.` })
+    }
+
+    if (action === 'editar_lista') {
+      const { nombre, vigenteDesdeStr, porcentaje, tarifaTipo } = body
+      const updateData: any = {}
+      if (nombre) updateData.nombre = nombre
+      if (vigenteDesdeStr) {
+        const date = new Date(vigenteDesdeStr)
+        if (!isNaN(date.getTime())) {
+          updateData.vigenteDesde = date
+        }
+      }
+
+      await prisma.listaPrecio.update({
+        where: { id: Number(listaId) },
+        data: updateData
+      })
+
+      if (porcentaje !== undefined && !isNaN(porcentaje) && porcentaje !== 0) {
+        const multiplier = 1 + (porcentaje / 100)
+        let sql = ''
+        if (tarifaTipo === 'min') {
+          sql = `UPDATE "PrecioProducto" 
+                 SET "precioPaqueteMin" = "precioPaqueteMin" * $1,
+                     "precioCajaMin" = "precioCajaMin" * $1
+                 WHERE "listaId" = $2`
+        } else if (tarifaTipo === 'max') {
+          sql = `UPDATE "PrecioProducto" 
+                 SET "precioPaqueteMax" = "precioPaqueteMax" * $1,
+                     "precioCajaMax" = "precioCajaMax" * $1
+                 WHERE "listaId" = $2`
+        } else {
+          sql = `UPDATE "PrecioProducto" 
+                 SET "precioPaqueteMin" = "precioPaqueteMin" * $1,
+                     "precioCajaMin" = "precioCajaMin" * $1,
+                     "precioPaqueteMax" = "precioPaqueteMax" * $1,
+                     "precioCajaMax" = "precioCajaMax" * $1
+                 WHERE "listaId" = $2`
+        }
+        await prisma.$executeRawUnsafe(sql, multiplier, Number(listaId))
+      }
+
+      return NextResponse.json({ success: true, message: 'Tarifario actualizado correctamente.' })
     }
 
     if (action === 'editar_precio') {

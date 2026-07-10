@@ -384,9 +384,9 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
       {/* ── Modal: Detalle de Pedido ───────────────────────────────── */}
       {selectedPedido && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
+          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl">
             {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <ShoppingCart className="text-primary" size={20} />
                 <h3 className="text-white font-bold text-lg">Pedido {selectedPedido.numeroPedido}</h3>
@@ -617,7 +617,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-white/5 flex items-center justify-end gap-3">
+            <div className="p-6 border-t border-white/5 flex items-center justify-end gap-3 shrink-0">
               <button
                 onClick={() => setSelectedPedido(null)}
                 className="btn btn-secondary text-xs"
@@ -632,8 +632,8 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
       {/* ── Modal: Selector de Fecha de Entrega ────────────────────────── */}
       {pedidoAprobar && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-md w-full p-6 flex flex-col gap-5 shadow-2xl">
-            <div>
+          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-md w-full flex flex-col shadow-2xl max-h-[90vh]">
+            <div className="p-6 border-b border-white/5 shrink-0">
               <h3 className="text-white font-bold text-base flex items-center gap-2">
                 <Calendar size={18} className="text-primary" />
                 Día de Entrega del Pedido
@@ -643,18 +643,20 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
               </p>
             </div>
 
-            <div className="form-group mb-0">
-              <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha de Entrega</label>
-              <input
-                type="date"
-                value={fechaEntrega}
-                onChange={e => setFechaEntrega(e.target.value)}
-                className="form-input bg-black/40 border border-white/10 rounded-xl text-sm mt-1 w-full text-white"
-                required
-              />
+            <div className="p-6 flex flex-col gap-5 overflow-y-auto">
+              <div className="form-group mb-0">
+                <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha de Entrega</label>
+                <input
+                  type="date"
+                  value={fechaEntrega}
+                  onChange={e => setFechaEntrega(e.target.value)}
+                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm mt-1 w-full text-white"
+                  required
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 mt-2">
+            <div className="flex items-center justify-end gap-3 mt-2 shrink-0">
               <button
                 onClick={() => {
                   setPedidoAprobar(null)

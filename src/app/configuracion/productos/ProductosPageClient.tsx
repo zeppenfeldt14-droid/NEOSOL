@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Package, Plus, Pencil, Trash2, Download, Search,
   Save, X, CheckCircle2, AlertCircle, RefreshCw,
-  Printer, ChevronDown, ChevronUp, ToggleLeft, ToggleRight
+  Printer, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Percent
 } from 'lucide-react'
 
 interface Producto {
@@ -59,6 +59,16 @@ export function ProductosPageClient({ userNivel }: Props) {
   const [saving, setSaving]   = useState(false)
   const [msgOk, setMsgOk]     = useState('')
   const [msgErr, setMsgErr]   = useState('')
+
+  // Tarifa / Aumento Masivo State
+  const [showAumentoModal, setShowAumentoModal] = useState(false)
+  const [isNewList, setIsNewList] = useState(false)
+  const [newListNombre, setNewListNombre] = useState('')
+  const [newListVigencia, setNewListVigencia] = useState('')
+  const [aumentoPorcentaje, setAumentoPorcentaje] = useState('')
+  const [aumentoTarifaTipo, setAumentoTarifaTipo] = useState<'ambas'|'min'|'max'>('ambas')
+  const [editListTarget, setEditListTarget] = useState<any | null>(null)
+  const [processingTarifa, setProcessingTarifa] = useState(false)
 
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -229,6 +239,53 @@ export function ProductosPageClient({ userNivel }: Props) {
     await fetchProductos()
   }
 
+  // ─── Scheduled Tariffs Handlers ───────────────────────────────────────
+  const handleDeleteLista = async (l: any) => {
+    if (!confirm(`¿Eliminar la lista programada "${l.nombre}"?`)) return
+    try {
+      await fetch(`/api/configuracion/tarifas?id=${l.id}`, { method: 'DELETE' })
+      await fetchProductos()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleTarifaAction = async () => {
+    if (!newListNombre || !newListVigencia || !aumentoPorcentaje) {
+      alert('Completá nombre, vigencia y porcentaje')
+      return
+    }
+    setProcessingTarifa(true)
+    try {
+      const payload = {
+        nombre: newListNombre,
+        vigenteDesdeStr: newListVigencia,
+        porcentaje: parseFloat(aumentoPorcentaje),
+        tarifaTipo: aumentoTarifaTipo,
+        baseListaId: selectedListId,
+        action: editListTarget ? 'editar_lista' : undefined,
+        listaId: editListTarget?.id
+      }
+      
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: editListTarget ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      
+      setShowAumentoModal(false)
+      setEditListTarget(null)
+      await fetchProductos()
+    } catch (e: any) {
+      alert(e.message || 'Error al procesar tarifa')
+    } finally {
+      setProcessingTarifa(false)
+    }
+  }
+
   // ─── PDF Export ────────────────────────────────────────────────────────
   const handleExportPDF = () => {
     const today = new Date().toLocaleDateString('es-AR', {
@@ -378,12 +435,20 @@ export function ProductosPageClient({ userNivel }: Props) {
             </button>
           )}
           {userNivel === 1 && (
-            <button
-              onClick={openCrear}
-              className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 font-bold text-sm"
-            >
-              <Plus size={15} /> Nuevo Producto
-            </button>
+            <>
+              <button
+                onClick={() => setShowAumentoModal(true)}
+                className="btn btn-secondary flex items-center gap-2 border border-white/10 font-bold text-xs"
+              >
+                <Percent size={14} /> Aumento Masivo
+              </button>
+              <button
+                onClick={openCrear}
+                className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 font-bold text-sm"
+              >
+                <Plus size={15} /> Nuevo Producto
+              </button>
+            </>
           )}
           <button
             onClick={handleExportPDF}
@@ -404,27 +469,55 @@ export function ProductosPageClient({ userNivel }: Props) {
             ) : (
               priceLists.map((l: any) => {
                 const isUpcoming = new Date(l.vigenteDesde) > new Date()
+                const monthName = new Date(l.vigenteDesde).toLocaleDateString('es-AR', { month: 'short' })
                 return (
-                  <button
-                    key={l.id}
-                    onClick={() => setSelectedListId(l.id)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                      selectedListId === l.id
-                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                        : 'border-white/10 text-secondary hover:text-white hover:border-white/20 bg-black/20'
-                    }`}
-                  >
-                    <span>{l.nombre}</span>
-                    {isUpcoming ? (
-                      <span className="px-1 py-0.5 rounded bg-blue-400/20 text-blue-400 text-[8px] font-black uppercase">
-                        Próxima (Ago)
-                      </span>
-                    ) : (
-                      <span className="px-1 py-0.5 rounded bg-green-400/20 text-green-400 text-[8px] font-black uppercase">
-                        Vigente
-                      </span>
+                  <div key={l.id} className={`flex items-stretch rounded-xl overflow-hidden transition-all border ${
+                    selectedListId === l.id
+                      ? 'border-primary shadow-lg shadow-primary/20'
+                      : 'border-white/10 hover:border-white/20 bg-black/20'
+                  }`}>
+                    <button
+                      onClick={() => setSelectedListId(l.id)}
+                      className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 ${
+                        selectedListId === l.id ? 'bg-primary text-white' : 'text-secondary hover:text-white'
+                      }`}
+                    >
+                      <span>{l.nombre}</span>
+                      {isUpcoming ? (
+                        <span className="px-1 py-0.5 rounded bg-blue-400/20 text-blue-400 text-[8px] font-black uppercase">
+                          Próxima ({monthName})
+                        </span>
+                      ) : (
+                        <span className="px-1 py-0.5 rounded bg-green-400/20 text-green-400 text-[8px] font-black uppercase">
+                          Vigente
+                        </span>
+                      )}
+                    </button>
+                    {isUpcoming && userNivel === 1 && (
+                      <div className="flex flex-col border-l border-white/5">
+                        <button 
+                          onClick={() => {
+                            setEditListTarget(l)
+                            setNewListNombre(l.nombre)
+                            setNewListVigencia(l.vigenteDesde.split('T')[0])
+                            setAumentoPorcentaje('')
+                            setAumentoTarifaTipo('ambas')
+                          }}
+                          className="flex-1 px-2 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10"
+                          title="Editar tarifario programado"
+                        >
+                          <Pencil size={11} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteLista(l)}
+                          className="flex-1 px-2 flex items-center justify-center text-secondary hover:text-red-400 hover:bg-red-400/10 border-t border-white/5"
+                          title="Eliminar tarifario programado"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 )
               })
             )}
@@ -655,8 +748,8 @@ export function ProductosPageClient({ userNivel }: Props) {
       {/* ─── MODAL CREAR / EDITAR ──────────────────────────────────────── */}
       {modal && userNivel === 1 && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-panel card w-full max-w-md border border-white/10 p-6 flex flex-col gap-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+          <div className="glass-panel card w-full max-w-md border border-white/10 flex flex-col shadow-2xl max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-white/5 p-6 shrink-0">
               <h3 className="font-black text-white flex items-center gap-2">
                 <Package size={18} className="text-primary" />
                 {modal === 'crear' ? 'Nuevo Producto' : 'Editar Producto'}
@@ -666,112 +759,270 @@ export function ProductosPageClient({ userNivel }: Props) {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-5 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px] uppercase font-black text-secondary">Código Interno *</label>
+                  <input
+                    type="text"
+                    value={form.codigoInterno}
+                    onChange={e => handleFormChange('codigoInterno', e.target.value)}
+                    placeholder="Ej: 33001"
+                    className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px] uppercase font-black text-secondary">Línea *</label>
+                  <select
+                    value={form.linea}
+                    onChange={e => handleFormChange('linea', e.target.value)}
+                    className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                  >
+                    {LINEAS_OPTS.map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Código Interno *</label>
+                <label className="form-label text-[10px] uppercase font-black text-secondary">Descripción / Nombre *</label>
                 <input
                   type="text"
-                  value={form.codigoInterno}
-                  onChange={e => handleFormChange('codigoInterno', e.target.value)}
-                  placeholder="Ej: 33001"
+                  value={form.nombre}
+                  onChange={e => handleFormChange('nombre', e.target.value)}
+                  placeholder="Ej: SANDW. 176 PAQ X 25 GR"
                   className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
                 />
               </div>
-              <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Línea *</label>
-                <select
-                  value={form.linea}
-                  onChange={e => handleFormChange('linea', e.target.value)}
-                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-                >
-                  {LINEAS_OPTS.map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            <div className="form-group mb-0">
-              <label className="form-label text-[10px] uppercase font-black text-secondary">Descripción / Nombre *</label>
-              <input
-                type="text"
-                value={form.nombre}
-                onChange={e => handleFormChange('nombre', e.target.value)}
-                placeholder="Ej: SANDW. 176 PAQ X 25 GR"
-                className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Precio Paq. ($)</label>
-                <input
-                  type="number" step="0.01" min="0"
-                  value={form.precioPaquete}
-                  onChange={e => handleFormChange('precioPaquete', e.target.value)}
-                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-                />
-              </div>
-              <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Paq/Caja *</label>
-                <input
-                  type="number" min="1"
-                  value={form.paqPorCaja}
-                  onChange={e => handleFormChange('paqPorCaja', e.target.value)}
-                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-                />
-              </div>
-              <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Precio Caja ($) *</label>
-                <input
-                  type="number" step="0.01" min="0"
-                  value={form.precioCaja}
-                  onChange={e => handleFormChange('precioCaja', e.target.value)}
-                  className={`form-input bg-black/40 border rounded-xl text-sm font-bold ${
-                    parseFloat(form.precioPaquete || '0') * parseInt(form.paqPorCaja || '0') === parseFloat(form.precioCaja || '0')
-                      ? 'border-green-400/30 text-green-400'
-                      : 'border-white/10 text-white'
-                  }`}
-                />
-              </div>
-            </div>
-
-            {/* Preview */}
-            {precioPreview > 0 && (
-              <div className="p-3 rounded-xl bg-black/20 border border-white/5 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <p className="text-secondary text-[10px] font-black uppercase">Precio sin IVA</p>
-                  <p className="text-white font-black">{fmt(precioPreview)}</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px] uppercase font-black text-secondary">Precio Paq. ($)</label>
+                  <input
+                    type="number" step="0.01" min="0"
+                    value={form.precioPaquete}
+                    onChange={e => handleFormChange('precioPaquete', e.target.value)}
+                    className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                  />
                 </div>
-                <div>
-                  <p className="text-secondary text-[10px] font-black uppercase">Total c/IVA 21%</p>
-                  <p className="text-primary font-black">{fmt(precioPreview * (1 + IVA))}</p>
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px] uppercase font-black text-secondary">Paq/Caja *</label>
+                  <input
+                    type="number" min="1"
+                    value={form.paqPorCaja}
+                    onChange={e => handleFormChange('paqPorCaja', e.target.value)}
+                    className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px] uppercase font-black text-secondary">Precio Caja ($) *</label>
+                  <input
+                    type="number" step="0.01" min="0"
+                    value={form.precioCaja}
+                    onChange={e => handleFormChange('precioCaja', e.target.value)}
+                    className={`form-input bg-black/40 border rounded-xl text-sm font-bold ${
+                      parseFloat(form.precioPaquete || '0') * parseInt(form.paqPorCaja || '0') === parseFloat(form.precioCaja || '0')
+                        ? 'border-green-400/30 text-green-400'
+                        : 'border-white/10 text-white'
+                    }`}
+                  />
                 </div>
               </div>
-            )}
 
-            {msgErr && (
-              <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle size={14} /> {msgErr}
-              </div>
-            )}
-            {msgOk && (
-              <div className="p-3 rounded-xl bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-semibold flex items-center gap-2">
-                <CheckCircle2 size={14} /> {msgOk}
-              </div>
-            )}
+              {/* Preview */}
+              {precioPreview > 0 && (
+                <div className="p-3 rounded-xl bg-black/20 border border-white/5 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-secondary text-[10px] font-black uppercase">Precio sin IVA</p>
+                    <p className="text-white font-black">{fmt(precioPreview)}</p>
+                  </div>
+                  <div>
+                    <p className="text-secondary text-[10px] font-black uppercase">Total c/IVA 21%</p>
+                    <p className="text-primary font-black">{fmt(precioPreview * (1 + IVA))}</p>
+                  </div>
+                </div>
+              )}
 
-            <div className="flex justify-end gap-3 border-t border-white/5 pt-4">
-              <button onClick={() => setModal(null)} disabled={saving} className="btn btn-secondary text-xs px-5">
+              {msgErr && (
+                <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle size={14} /> {msgErr}
+                </div>
+              )}
+
+              {msgOk && (
+                <div className="p-3 rounded-xl bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 size={14} /> {msgOk}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-white/5 shrink-0 flex gap-3">
+              <button
+                onClick={() => setModal(null)}
+                className="btn btn-secondary flex-1"
+                disabled={saving}
+              >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-bold"
                 disabled={saving}
-                className="btn btn-primary text-xs px-6 shadow-lg shadow-primary/20 font-black flex items-center gap-2"
               >
-                <Save size={14} />
-                {saving ? 'Guardando...' : (modal === 'crear' ? 'Crear Producto' : 'Guardar Cambios')}
+                {saving ? (
+                  <><RefreshCw size={16} className="animate-spin" /> Guardando...</>
+                ) : (
+                  <><Save size={16} /> Guardar</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL AUMENTO MASIVO / EDITAR LISTA PROGRAMADA ────────────────── */}
+      {showAumentoModal && userNivel === 1 && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-panel card w-full max-w-md border border-white/10 flex flex-col shadow-2xl max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-white/5 p-6 shrink-0">
+              <h3 className="font-black text-white flex items-center gap-2">
+                <Percent size={18} className="text-primary" />
+                {editListTarget ? 'Editar Lista Programada' : 'Aumento Masivo de Precios'}
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowAumentoModal(false)
+                  setEditListTarget(null)
+                  setIsNewList(false)
+                }} 
+                className="text-secondary hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-5 overflow-y-auto p-6">
+              {!editListTarget && (
+                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                  <ToggleLeft size={20} className={!isNewList ? 'text-primary' : 'text-secondary'} onClick={() => setIsNewList(false)} />
+                  <span className="text-xs font-bold flex-1 text-center">
+                    {isNewList ? 'Crear lista programada' : 'Aumento Inmediato (Sobrescribir actual)'}
+                  </span>
+                  <ToggleRight size={20} className={isNewList ? 'text-primary' : 'text-secondary'} onClick={() => setIsNewList(true)} />
+                </div>
+              )}
+
+              {(isNewList || editListTarget) && (
+                <>
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px] uppercase font-black text-secondary">Nombre del Tarifario (Ej: Ago 2026)</label>
+                    <input
+                      type="text"
+                      value={newListNombre}
+                      onChange={e => setNewListNombre(e.target.value)}
+                      placeholder="Nombre de la lista"
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                    />
+                  </div>
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha de Entrada en Vigencia</label>
+                    <input
+                      type="date"
+                      value={newListVigencia}
+                      onChange={e => setNewListVigencia(e.target.value)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="form-group mb-0">
+                <label className="form-label text-[10px] uppercase font-black text-secondary">
+                  {editListTarget ? 'Recalcular Porcentaje de Aumento (%) (Opcional)' : 'Porcentaje de Aumento (%) *'}
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={aumentoPorcentaje}
+                  onChange={e => setAumentoPorcentaje(e.target.value)}
+                  placeholder="Ej: 15"
+                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                />
+              </div>
+
+              <div className="form-group mb-0">
+                <label className="form-label text-[10px] uppercase font-black text-secondary">Aplicar aumento a:</label>
+                <select
+                  value={aumentoTarifaTipo}
+                  onChange={(e: any) => setAumentoTarifaTipo(e.target.value)}
+                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                >
+                  <option value="ambas">Ambas Tarifas (Estándar y Volumen)</option>
+                  <option value="min">Solo Tarifa Estándar (&lt; 300 cajas)</option>
+                  <option value="max">Solo Tarifa Volumen (&gt;= 300 cajas)</option>
+                </select>
+              </div>
+
+              {!isNewList && !editListTarget && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 text-amber-500">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  <div className="text-xs font-medium">
+                    <strong className="block font-black mb-1">Cuidado</strong>
+                    Esta acción aumentará todos los precios de la lista <strong>actualmente seleccionada</strong> inmediatamente y no se puede deshacer de forma automática.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-white/5 shrink-0 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowAumentoModal(false)
+                  setEditListTarget(null)
+                }}
+                className="btn btn-secondary flex-1"
+                disabled={processingTarifa}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (isNewList || editListTarget) {
+                    await handleTarifaAction()
+                  } else {
+                    if (!aumentoPorcentaje || isNaN(Number(aumentoPorcentaje))) {
+                      alert('Ingrese un porcentaje válido')
+                      return
+                    }
+                    if (confirm(`¿Aplicar un aumento del ${aumentoPorcentaje}% a la lista seleccionada ahora mismo?`)) {
+                      setProcessingTarifa(true)
+                      try {
+                        const res = await fetch('/api/configuracion/tarifas', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action: 'aumento_global', porcentaje: Number(aumentoPorcentaje), listaId: selectedListId, tarifaTipo: aumentoTarifaTipo })
+                        })
+                        const data = await res.json()
+                        if (!res.ok) throw new Error(data.error)
+                        await fetchProductos()
+                        setShowAumentoModal(false)
+                      } catch (e: any) {
+                        alert(e.message || 'Error')
+                      } finally {
+                        setProcessingTarifa(false)
+                      }
+                    }
+                  }
+                }}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-bold"
+                disabled={processingTarifa}
+              >
+                {processingTarifa ? (
+                  <><RefreshCw size={16} className="animate-spin" /> Procesando...</>
+                ) : (
+                  <><Save size={16} /> Aplicar</>
+                )}
               </button>
             </div>
           </div>
