@@ -13,8 +13,9 @@ export async function GET(request: Request) {
     const q      = searchParams.get('q')
     const limit  = parseInt(searchParams.get('limit') || '50')
 
-    // Level 3 can only see their own zone
-    const zonaFiltro = session.nivel === 3
+    // Level 3 can only see their own zone and assigned, visible companies
+    const isVendedor = session.nivel === 3
+    const zonaFiltro = isVendedor
       ? session.zona
       : (zona && zona !== '' ? zona : undefined)
 
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
         ...(estado ? { estado } : {}),
         ...(zonaFiltro ? { zona: zonaFiltro } : {}),
         ...(q ? { nombre: { contains: q, mode: 'insensitive' } } : {}),
+        ...(isVendedor ? { vendedorAsignado: session.alias, ocultarVendedor: false } : {}),
       },
       select: {
         id: true,

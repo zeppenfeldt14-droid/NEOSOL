@@ -32,7 +32,7 @@ export default async function EmpresasPage({ params }: { params: Promise<{ zonaN
   const isVendedor = user.nivel === 3
   const whereFilter = {
     zona: decodedZona,
-    ...(isVendedor ? { vendedorAsignado: user.alias } : {})
+    ...(isVendedor ? { vendedorAsignado: user.alias, ocultarVendedor: false } : {})
   }
 
   const empresasAll = await prisma.empresa.findMany({
@@ -46,15 +46,27 @@ export default async function EmpresasPage({ params }: { params: Promise<{ zonaN
     }
   })
 
-  // Get unique zones
-  const zonesSet = new Set<string>()
-  empresasAll.forEach(emp => {
-    if (emp.zona) zonesSet.add(emp.zona.trim().toUpperCase())
+  // Fetch available sub-zones in DB for this major zone
+  const dbSubZonas = await prisma.subZona.findMany({
+    where: { zona: decodedZona },
+    orderBy: { nombre: 'asc' }
   })
-  const zones = Array.from(zonesSet).sort()
+
+  // Get unique sub-zones (combining predefined ones with actual company subZones)
+  const subZonesSet = new Set<string>()
+  dbSubZonas.forEach(sz => subZonesSet.add(sz.nombre.trim().toUpperCase()))
+  empresasAll.forEach(emp => {
+    if (emp.subZona) {
+      subZonesSet.add(emp.subZona.trim().toUpperCase())
+    }
+  })
+  subZonesSet.add('SIN ASIGNAR')
+  subZonesSet.add('CORREO')
+
+  const subZones = Array.from(subZonesSet).sort()
 
   return (
-    <EmpresasClient empresas={empresasAll} zonas={zones} />
+    <EmpresasClient empresas={empresasAll} zonas={subZones} />
   )
 }
 

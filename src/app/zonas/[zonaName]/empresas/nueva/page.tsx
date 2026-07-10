@@ -22,6 +22,12 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
     select: { nombre: true, alias: true }
   })
 
+  // Fetch available sub-zones in DB for this major zone
+  const subZonas = await prisma.subZona.findMany({
+    where: { zona: decodedZona },
+    orderBy: { nombre: 'asc' }
+  })
+
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
@@ -40,6 +46,7 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
 
       <div className="glass-panel p-6">
         <form action={createEmpresa} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input type="hidden" name="defaultZona" value={decodedZona} />
           
           {/* Bloque 1: Información General */}
           <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
@@ -58,14 +65,43 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
                 <input type="text" name="actividad" className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="form-label">Sucursal (Zona)</label>
-                <select name="zona" defaultValue={decodedZona} className="form-input bg-dark">
-                  <option value="CABA">CABA</option>
-                  <option value="Zona SUR">Zona SUR</option>
-                  <option value="Zona OESTE">Zona OESTE</option>
-                  <option value="Zona NORTE">Zona NORTE</option>
+                <label className="form-label">Sucursal (Zona Principal)</label>
+                {user.nivel === 1 ? (
+                  <select name="zona" defaultValue={decodedZona} className="form-input bg-dark">
+                    <option value="CABA">CABA</option>
+                    <option value="Zona SUR">Zona SUR</option>
+                    <option value="Zona OESTE">Zona OESTE</option>
+                    <option value="Zona NORTE">Zona NORTE</option>
+                  </select>
+                ) : (
+                  <>
+                    <input type="hidden" name="zona" value={decodedZona} />
+                    <input type="text" className="form-input opacity-60 bg-black/20" value={decodedZona} disabled />
+                  </>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="form-label">Mini-Zona / Categoría (Sub-Zona)</label>
+                <select name="subZona" defaultValue="SIN ASIGNAR" className="form-input bg-dark">
+                  <option value="SIN ASIGNAR">SIN ASIGNAR</option>
+                  <option value="CORREO">CORREO</option>
+                  {subZonas.map(sz => (
+                    <option key={sz.id} value={sz.nombre}>{sz.nombre}</option>
+                  ))}
                 </select>
               </div>
+              {user.nivel === 1 && (
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="form-label flex items-center gap-2 cursor-pointer mt-2">
+                    <input 
+                      type="checkbox" 
+                      name="ocultarVendedor" 
+                      className="w-4 h-4 rounded border-white/10 bg-dark text-primary focus:ring-primary"
+                    />
+                    <span>Ocultar esta empresa para el Vendedor (Nivel 3)</span>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 

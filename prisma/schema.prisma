@@ -10,6 +10,8 @@ datasource db {
 model Empresa {
   id               Int      @id @default(autoincrement())
   zona             String?
+  subZona          String?
+  ocultarVendedor  Boolean  @default(false)
   nombre           String   // Institución / Empresa
   cuit             String?
   direccion        String?  // Dirección de Entrega
@@ -40,6 +42,14 @@ model Empresa {
   acciones Accion[]
   alertas  Alerta[]
   pedidos  Pedido[]
+}
+
+model SubZona {
+  id     Int    @id @default(autoincrement())
+  zona   String // CABA, Zona SUR, Zona OESTE, Zona NORTE
+  nombre String // CABA 1, CABA 2, OESTE 1, OESTE 2, etc.
+
+  @@unique([zona, nombre])
 }
 
 model Visita {

@@ -9,6 +9,8 @@ type Empresa = {
   id: number
   nombre: string
   zona: string | null
+  subZona: string | null
+  ocultarVendedor: boolean
   direccion: string | null
   barrio: string | null
   telefono: string | null
@@ -25,6 +27,30 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
   const [estadoFilter, setEstadoFilter] = useState<'todos' | 'prospecto' | 'activo' | 'baja' | 'descartada'>('todos')
   const [zonaFilter, setZonaFilter] = useState<string>('todas')
 
+  const decodedZona = useMemo(() => {
+    return decodeURIComponent(zonaName)
+  }, [zonaName])
+
+  const handleAddSubZona = async () => {
+    const name = prompt('Nombre de la nueva mini-zona / categoría (ej: CABA 4, OESTE 3):')
+    if (!name || !name.trim()) return
+
+    try {
+      const res = await fetch('/api/subzonas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zona: decodedZona, nombre: name.trim().toUpperCase() })
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al crear')
+      }
+      window.location.reload()
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
   const filteredEmpresas = useMemo(() => {
     const result = empresas.filter(emp => {
       const q = searchQuery.toLowerCase()
@@ -35,8 +61,8 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
 
       const matchesEstado = estadoFilter === 'todos' || emp.estado === estadoFilter
 
-      const empZonaNormalizada = emp.zona ? emp.zona.trim().toUpperCase() : ''
-      const matchesZona = zonaFilter === 'todas' || empZonaNormalizada === zonaFilter
+      const empSubZonaNormalizada = emp.subZona ? emp.subZona.trim().toUpperCase() : 'SIN ASIGNAR'
+      const matchesZona = zonaFilter === 'todas' || empSubZonaNormalizada === zonaFilter.toUpperCase()
 
       return matchesSearch && matchesEstado && matchesZona
     })
@@ -116,8 +142,8 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
         </div>
 
         <div style={{ marginTop: '1.5rem' }}>
-          <label className="form-label" style={{ marginBottom: '0.5rem' }}>Zonas</label>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <label className="form-label" style={{ marginBottom: '0.5rem' }}>Mini-Zonas / Categorías</label>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               onClick={() => setZonaFilter('todas')}
               className={`badge ${zonaFilter === 'todas' ? 'badge-info' : 'badge-neutral'}`}
@@ -135,6 +161,14 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                 {z}
               </button>
             ))}
+            <button
+              onClick={handleAddSubZona}
+              className="badge badge-neutral hover:bg-primary/20 hover:text-primary transition-all flex items-center justify-center"
+              style={{ cursor: 'pointer', padding: '0.4rem 0.8rem', border: '1px dashed rgba(255,255,255,0.2)' }}
+              title="Crear Nueva Categoría / Mini-Zona"
+            >
+              <Plus size={12} />
+            </button>
           </div>
         </div>
       </div>
@@ -170,7 +204,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                     {empresa.barrio || '-'}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                    {empresa.zona || 'Sin Zona'}
+                    {empresa.subZona || 'SIN ASIGNAR'}
                   </div>
                 </td>
                 <td>

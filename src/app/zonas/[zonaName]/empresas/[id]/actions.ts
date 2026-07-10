@@ -153,7 +153,8 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
   const telefono = formData.get('telefono') as string
   const email = formData.get('email') as string
   const responsable = formData.get('responsable') as string
-  const zona = formData.get('zona') as string
+  const subZona = formData.get('subZona') as string || 'SIN ASIGNAR'
+  
   const notas = formData.get('notas') as string
   const estado = formData.get('estado') as string
   const motivoBaja = formData.get('motivoBaja') as string
@@ -168,6 +169,40 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
   const cicloVentaStr = formData.get('cicloVentaDias') as string
   const cicloVentaDias = cicloVentaStr ? parseInt(cicloVentaStr) : null
 
+  const canModifyConfig = user && user.nivel === 1
+
+  const notasFinal = estado === 'baja' && motivoBaja
+    ? `[BAJA - ${new Date().toLocaleDateString('es-AR')}] ${motivoBaja}\n\n${notas || ''}`.trim()
+    : notas
+
+  const updateData: any = {
+    nombre,
+    cuit,
+    direccion,
+    direccionFiscal,
+    barrio,
+    partido,
+    telefono,
+    email,
+    responsable,
+    contactoCobranzas,
+    diasPago,
+    vendedorAsignado,
+    actividad,
+    productosInteres,
+    transporte,
+    subZona,
+    notas: notasFinal,
+    estado,
+    cicloVentaDias,
+  }
+
+  if (canModifyConfig) {
+    const newZona = formData.get('zona') as string
+    if (newZona) updateData.zona = newZona
+    updateData.ocultarVendedor = formData.get('ocultarVendedor') === 'on' || formData.get('ocultarVendedor') === 'true'
+  }
+
   if (!nombre) {
     throw new Error('El nombre de la empresa es obligatorio')
   }
@@ -176,35 +211,9 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     throw new Error('El motivo de baja es obligatorio')
   }
 
-  // motivoBaja y fechaBaja se activan luego de reiniciar el servidor (prisma generate)
-  // Por ahora, si hay motivo de baja lo guardamos en notas
-  const notasFinal = estado === 'baja' && motivoBaja
-    ? `[BAJA - ${new Date().toLocaleDateString('es-AR')}] ${motivoBaja}\n\n${notas || ''}`.trim()
-    : notas
-
   await prisma.empresa.update({
     where: { id: empresaId },
-    data: {
-      nombre,
-      cuit,
-      direccion,
-      direccionFiscal,
-      barrio,
-      partido,
-      telefono,
-      email,
-      responsable,
-      contactoCobranzas,
-      diasPago,
-      vendedorAsignado,
-      actividad,
-      productosInteres,
-      transporte,
-      zona,
-      notas: notasFinal,
-      estado,
-      cicloVentaDias,
-    }
+    data: updateData
   })
 
   if (user) {
@@ -216,6 +225,12 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     )
   }
 
-  revalidatePath(`/zonas/${zona}/empresas/${empresaId}`)
-  revalidatePath(`/zonas/${zona}/empresas`)
+  const updatedEmp = await prisma.empresa.findUnique({
+    where: { id: empresaId },
+    select: { zona: true }
+  })
+  const finalZona = updatedEmp?.zona || 'CABA'
+
+  revalidatePath(`/zonas/${finalZona}/empresas/${empresaId}`)
+  revalidatePath(`/zonas/${finalZona}/empresas`)
 }

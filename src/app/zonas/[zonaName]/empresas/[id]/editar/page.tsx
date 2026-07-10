@@ -40,6 +40,12 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
     select: { nombre: true, alias: true }
   })
 
+  // Fetch available sub-zones in DB for this company's major zone
+  const subZonas = await prisma.subZona.findMany({
+    where: { zona: empresa.zona || 'CABA' },
+    orderBy: { nombre: 'asc' }
+  })
+
   const updateEmpresaWithId = updateEmpresa.bind(null, empresaId)
 
 
@@ -83,14 +89,44 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
                 <input type="text" name="actividad" defaultValue={empresa.actividad || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="form-label">Sucursal (Zona)</label>
-                <select name="zona" defaultValue={empresa.zona || 'CABA'} className="form-input bg-dark">
-                  <option value="CABA">CABA</option>
-                  <option value="Zona SUR">Zona SUR</option>
-                  <option value="Zona OESTE">Zona OESTE</option>
-                  <option value="Zona NORTE">Zona NORTE</option>
+                <label className="form-label">Sucursal (Zona Principal)</label>
+                {user.nivel === 1 ? (
+                  <select name="zona" defaultValue={empresa.zona || 'CABA'} className="form-input bg-dark">
+                    <option value="CABA">CABA</option>
+                    <option value="Zona SUR">Zona SUR</option>
+                    <option value="Zona OESTE">Zona OESTE</option>
+                    <option value="Zona NORTE">Zona NORTE</option>
+                  </select>
+                ) : (
+                  <>
+                    <input type="hidden" name="zona" value={empresa.zona || 'CABA'} />
+                    <input type="text" className="form-input opacity-60 bg-black/20" value={empresa.zona || 'CABA'} disabled />
+                  </>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="form-label">Mini-Zona / Categoría (Sub-Zona)</label>
+                <select name="subZona" defaultValue={empresa.subZona || 'SIN ASIGNAR'} className="form-input bg-dark">
+                  <option value="SIN ASIGNAR">SIN ASIGNAR</option>
+                  <option value="CORREO">CORREO</option>
+                  {subZonas.map(sz => (
+                    <option key={sz.id} value={sz.nombre}>{sz.nombre}</option>
+                  ))}
                 </select>
               </div>
+              {user.nivel === 1 && (
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="form-label flex items-center gap-2 cursor-pointer mt-2">
+                    <input 
+                      type="checkbox" 
+                      name="ocultarVendedor" 
+                      defaultChecked={empresa.ocultarVendedor} 
+                      className="w-4 h-4 rounded border-white/10 bg-dark text-primary focus:ring-primary"
+                    />
+                    <span>Ocultar esta empresa para el Vendedor (Nivel 3)</span>
+                  </label>
+                </div>
+              )}
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="form-label">Estado de la Empresa</label>
                 <select

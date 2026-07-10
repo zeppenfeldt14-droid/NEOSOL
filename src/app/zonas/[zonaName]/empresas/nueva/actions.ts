@@ -16,7 +16,14 @@ export async function createEmpresa(formData: FormData) {
   const telefono = formData.get('telefono') as string
   const email = formData.get('email') as string
   const responsable = formData.get('responsable') as string
-  const zona = formData.get('zona') as string
+  
+  const defaultZona = formData.get('defaultZona') as string || 'CABA'
+  const subZona = formData.get('subZona') as string || 'SIN ASIGNAR'
+  
+  const canModifyConfig = user && user.nivel === 1
+  const zona = canModifyConfig ? (formData.get('zona') as string || defaultZona) : defaultZona
+  const ocultarVendedor = canModifyConfig ? (formData.get('ocultarVendedor') === 'on' || formData.get('ocultarVendedor') === 'true') : false
+
   const notas = formData.get('notas') as string
   
   const contactoCobranzas = formData.get('contactoCobranzas') as string
@@ -51,6 +58,8 @@ export async function createEmpresa(formData: FormData) {
       productosInteres,
       transporte,
       zona,
+      subZona,
+      ocultarVendedor,
       notas,
       estado: 'prospecto',
       cicloVentaDias
