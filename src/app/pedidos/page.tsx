@@ -1,22 +1,10 @@
-import { cookies } from 'next/headers'
+import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { PedidosPageClient } from './PedidosPageClient'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-
-async function getSession() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('auth_token')?.value
-  if (!token) return null
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
-      id: number; nombre: string; alias: string; nivel: number; zona: string | null; zonasHabilitadas: string[]
-    }
-  } catch { return null }
-}
 
 export default async function PedidosPage() {
-  const session = await getSession()
+  const session = await getSessionUser()
   if (!session) redirect('/login')
 
   // Fetch zones available for the user

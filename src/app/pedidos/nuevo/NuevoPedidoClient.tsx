@@ -99,9 +99,10 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   // ── Fetch data on mount ──────────────────────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
+      const zoneQueryParam = userNivel === 3 ? (userZona || '') : ''
       const [prodRes, empRes] = await Promise.all([
         fetch('/api/productos'),
-        fetch(`/api/empresas?estado=activo&zona=${userZona || ''}&limit=200`),
+        fetch(`/api/empresas?estado=activo&zona=${zoneQueryParam}&limit=200`),
       ])
       const prodData = await prodRes.json()
       const empData  = await empRes.json()

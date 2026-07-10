@@ -5,14 +5,35 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EmpresasPage() {
+export default async function EmpresasPage({ params }: { params: Promise<{ zonaName: string }> }) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
+  const { zonaName } = await params
+  const decodedZona = decodeURIComponent(zonaName)
+
+  // Verify access permissions to this zone
+  if (user.nivel === 3 && user.zona !== decodedZona) {
+    redirect(`/zonas/${user.zona || 'CABA'}/empresas`)
+  } else if (user.nivel === 2) {
+    let enabledZones: string[] = []
+    try {
+      if (user.zonasHabilitadas) {
+        enabledZones = JSON.parse(JSON.stringify(user.zonasHabilitadas))
+      }
+    } catch (e) {}
+    if (!enabledZones.includes(decodedZona)) {
+      redirect(`/zonas/${enabledZones[0] || 'CABA'}/empresas`)
+    }
+  }
+
   const isVendedor = user.nivel === 3
-  const whereFilter = isVendedor ? { vendedorAsignado: user.alias } : {}
+  const whereFilter = {
+    zona: decodedZona,
+    ...(isVendedor ? { vendedorAsignado: user.alias } : {})
+  }
 
   const empresasAll = await prisma.empresa.findMany({
     where: whereFilter,
