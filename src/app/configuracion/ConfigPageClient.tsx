@@ -22,6 +22,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [csvFileMin, setCsvFileMin] = useState<File | null>(null)
   const [csvFileMax, setCsvFileMax] = useState<File | null>(null)
   const [aumentoPorcentaje, setAumentoPorcentaje] = useState<{ [key: number]: string }>({})
+  const [aumentoTipo, setAumentoTipo] = useState<{ [key: number]: 'min' | 'max' | 'ambas' }>({})
   const [isLoadingTarifas, setIsLoadingTarifas] = useState(false)
 
   // Promotions state
@@ -125,11 +126,13 @@ export function ConfigPageClient({ currentLogo }: Props) {
 
   const handleApplyAumento = async (listaId: number) => {
     const pct = parseFloat(aumentoPorcentaje[listaId] || '')
+    const tipo = aumentoTipo[listaId] || 'ambas'
     if (isNaN(pct)) {
       alert('Por favor ingresa un porcentaje de aumento válido.')
       return
     }
-    if (!confirm(`¿Estás seguro de que deseas aplicar un aumento global del ${pct}% sobre esta lista de precios?`)) {
+    const labelTipo = tipo === 'min' ? 'Menos de 300 cajas' : tipo === 'max' ? 'Más de 300 cajas' : 'Ambas tarifas'
+    if (!confirm(`¿Estás seguro de que deseas aplicar un aumento global del ${pct}% sobre la tarifa [${labelTipo}] de esta lista de precios?`)) {
       return
     }
     setIsSaving(true)
@@ -137,7 +140,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
       const res = await fetch('/api/configuracion/tarifas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'aumento_global', listaId, porcentaje: pct })
+        body: JSON.stringify({ action: 'aumento_global', listaId, porcentaje: pct, tarifaTipo: tipo })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al aplicar aumento')
@@ -620,6 +623,16 @@ export function ConfigPageClient({ currentLogo }: Props) {
                         <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
                           {/* Aumento Global */}
                           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-lg border border-white/5">
+                            <select
+                              value={aumentoTipo[l.id] || 'ambas'}
+                              onChange={(e) => setAumentoTipo(prev => ({ ...prev, [l.id]: e.target.value as any }))}
+                              className="form-input !py-1 !px-2 text-[10px] bg-black/50 border-white/10 text-white rounded-md"
+                              style={{ minWidth: '130px' }}
+                            >
+                              <option value="ambas" className="bg-black text-white">Ambas Tarifas</option>
+                              <option value="min" className="bg-black text-white">Menos de 300 Cajas</option>
+                              <option value="max" className="bg-black text-white">Más de 300 Cajas</option>
+                            </select>
                             <input 
                               type="number" 
                               className="form-input !py-1 !px-2 text-xs w-16 text-center" 

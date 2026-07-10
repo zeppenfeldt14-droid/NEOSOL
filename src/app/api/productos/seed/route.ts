@@ -2,26 +2,52 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
-const PRODUCTOS_MAYO = [
-  { codigoInterno: '33001', nombre: 'SIN SAL 160 PAQ X 25 GR',           linea: 'pack_individual', precioPaquete: 94.27,  paqPorCaja: 160, precioCaja: 15083.04 },
-  { codigoInterno: '33024', nombre: 'SANDW. 176 PAQ X 25 GR',             linea: 'pack_individual', precioPaquete: 94.27,  paqPorCaja: 176, precioCaja: 16591.34 },
-  { codigoInterno: '33077', nombre: 'DULCE 156 PAQ X 25 GR',              linea: 'pack_individual', precioPaquete: 98.12,  paqPorCaja: 156, precioCaja: 15307.11 },
-  { codigoInterno: '66033', nombre: 'SANDW. 15 PAQ X 330 GR',             linea: 'tripack',         precioPaquete: 700.77, paqPorCaja: 15,  precioCaja: 10511.55 },
-  { codigoInterno: '66034', nombre: 'SALVADO 15 PAQ X 360 GR',            linea: 'tripack',         precioPaquete: 767.45, paqPorCaja: 15,  precioCaja: 11511.68 },
-  { codigoInterno: '99001', nombre: 'DULCE 16 PAQ X 360 GR',              linea: 'tripack',         precioPaquete: 879.90, paqPorCaja: 16,  precioCaja: 14078.40 },
-  { codigoInterno: '77001', nombre: 'MIX SEMILLA 16 PAQ X 250 GR',        linea: 'minis',           precioPaquete: 582.12, paqPorCaja: 16,  precioCaja: 9313.92  },
-  { codigoInterno: '77002', nombre: 'MINI SALVADO 16 PAQ X 250 GR',       linea: 'minis',           precioPaquete: 551.20, paqPorCaja: 16,  precioCaja: 8819.15  },
-  { codigoInterno: '77003', nombre: 'MINI SANDWICH 16 PAQ X 250 GR',      linea: 'minis',           precioPaquete: 515.34, paqPorCaja: 16,  precioCaja: 8245.44  },
-  { codigoInterno: '80000', nombre: 'BAGUETINES Original 24 PAQ X 70 GR', linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80001', nombre: 'BAGUETINES Queso 24 PAQ X 70 GR',    linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80002', nombre: 'BAGUETINES Jamon 24 PAQ X 70 GR',    linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80003', nombre: 'BAGUETINES Pizza 24 PAQ X 70 GR',    linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80004', nombre: 'NEOX 24 PAQ X 70 GR',                linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80005', nombre: 'NEOLITAS Queso 24 PAQ X 70 GR',      linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80006', nombre: 'NEOLITAS Jamon 24 PAQ X 70 GR',      linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
-  { codigoInterno: '80007', nombre: 'NEOLITAS Pizza 24 PAQ X 70 GR',      linea: 'snacks',          precioPaquete: 493.50, paqPorCaja: 24,  precioCaja: 11844.00 },
+const PRODUCTOS_BASE = [
+  { codigoInterno: '33001', nombre: 'SIN SAL 160 PAQ X 25 GR',           linea: 'pack_individual', paqPorCaja: 160, precioPaquete: 94.27, precioCaja: 15083.04 },
+  { codigoInterno: '33024', nombre: 'SANDW. 176 PAQ X 25 GR',             linea: 'pack_individual', paqPorCaja: 176, precioPaquete: 94.27, precioCaja: 16591.34 },
+  { codigoInterno: '33077', nombre: 'DULCE 156 PAQ X 25 GR',              linea: 'pack_individual', paqPorCaja: 156, precioPaquete: 98.12, precioCaja: 15307.11 },
+  { codigoInterno: '66033', nombre: 'SANDW. 15 PAQ X 330 GR',             linea: 'tripack',         paqPorCaja: 15,  precioPaquete: 700.77, precioCaja: 10511.55 },
+  { codigoInterno: '66034', nombre: 'SALVADO 15 PAQ X 360 GR',            linea: 'tripack',         paqPorCaja: 15,  precioPaquete: 767.45, precioCaja: 11511.68 },
+  { codigoInterno: '99001', nombre: 'DULCE 16 PAQ X 360 GR',              linea: 'tripack',         paqPorCaja: 16,  precioPaquete: 879.90, precioCaja: 14078.40 },
+  { codigoInterno: '77001', nombre: 'MIX SEMILLA 16 PAQ X 250 GR',        linea: 'minis',           paqPorCaja: 16,  precioPaquete: 582.12, precioCaja: 9313.92 },
+  { codigoInterno: '77002', nombre: 'MINI SALVADO 16 PAQ X 250 GR',       linea: 'minis',           paqPorCaja: 16,  precioPaquete: 551.20, precioCaja: 8819.15 },
+  { codigoInterno: '77003', nombre: 'MINI SANDWICH 16 PAQ X 250 GR',      linea: 'minis',           paqPorCaja: 16,  precioPaquete: 515.34, precioCaja: 8245.44 },
+  { codigoInterno: '80000', nombre: 'BAGUETINES Original 24 PAQ X 70 GR', linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80001', nombre: 'BAGUETINES Queso 24 PAQ X 70 GR',    linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80002', nombre: 'BAGUETINES Jamon 24 PAQ X 70 GR',    linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80003', nombre: 'BAGUETINES Pizza 24 PAQ X 70 GR',    linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80004', nombre: 'NEOX 24 PAQ X 70 GR',                linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80005', nombre: 'NEOLITAS Queso 24 PAQ X 70 GR',      linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80006', nombre: 'NEOLITAS Jamon 24 PAQ X 70 GR',      linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
+  { codigoInterno: '80007', nombre: 'NEOLITAS Pizza 24 PAQ X 70 GR',      linea: 'snacks',          paqPorCaja: 24,  precioPaquete: 493.50, precioCaja: 11844.00 },
 ]
 
+// Mayo 2026 Prices:
+// Min (Standard < 300) = PDF 1 (higher prices)
+// Max (Volume >= 300) = PDF 2 (lower prices)
+const PRECIOS_MAYO: Record<string, { minPaq: number; minCaja: number; maxPaq: number; maxCaja: number }> = {
+  '33001': { minPaq: 94.27, minCaja: 15083.04, maxPaq: 81.36, maxCaja: 13017.60 },
+  '33024': { minPaq: 94.27, minCaja: 16591.34, maxPaq: 81.36, maxCaja: 14319.36 },
+  '33077': { minPaq: 98.12, minCaja: 15307.11, maxPaq: 84.76, maxCaja: 13221.94 },
+  '66033': { minPaq: 700.77, minCaja: 10511.55, maxPaq: 637.02, maxCaja: 9555.30 },
+  '66034': { minPaq: 767.45, minCaja: 11511.68, maxPaq: 697.69, maxCaja: 10465.35 },
+  '99001': { minPaq: 879.90, minCaja: 14078.40, maxPaq: 799.93, maxCaja: 12798.88 },
+  '77001': { minPaq: 582.12, minCaja: 9313.92,  maxPaq: 529.17, maxCaja: 8466.69  },
+  '77002': { minPaq: 551.20, minCaja: 8819.15,  maxPaq: 501.08, maxCaja: 8017.28  },
+  '77003': { minPaq: 515.34, minCaja: 8245.44,  maxPaq: 468.50, maxCaja: 7495.98  },
+  '80000': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80001': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80002': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80003': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80004': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80005': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80006': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+  '80007': { minPaq: 493.50, minCaja: 11844.00, maxPaq: 418.95, maxCaja: 10054.80 },
+}
+
+// Agosto 2026 Prices:
+// Min (Standard < 300) = PDF 4 (higher prices)
+// Max (Volume >= 300) = PDF 3 (lower prices)
 const PRECIOS_AGOSTO: Record<string, { minPaq: number; minCaja: number; maxPaq: number; maxCaja: number }> = {
   '33001': { minPaq: 100.00, minCaja: 16000.00, maxPaq: 87.00, maxCaja: 13920.00 },
   '33024': { minPaq: 100.00, minCaja: 17600.00, maxPaq: 87.00, maxCaja: 15312.00 },
@@ -73,7 +99,7 @@ export async function POST() {
       listAgostoId = l.id
     }
 
-    for (const p of PRODUCTOS_MAYO) {
+    for (const p of PRODUCTOS_BASE) {
       const exists = await prisma.producto.findUnique({ where: { codigoInterno: p.codigoInterno } })
       let dbProd
       if (exists) {
@@ -82,29 +108,30 @@ export async function POST() {
         dbProd = await prisma.producto.create({ data: p })
       }
 
-      // Mayo prices mapping
-      const minPaqueteMayo = Number((p.precioPaquete * 1.15).toFixed(2))
-      const minCajaMayo = Number((p.precioCaja * 1.15).toFixed(2))
-      await prisma.precioProducto.upsert({
-        where: { listaId_productoId: { listaId: listMayoId, productoId: dbProd.id } },
-        update: {
-          precioPaqueteMin: minPaqueteMayo,
-          precioCajaMin: minCajaMayo,
-          precioPaqueteMax: p.precioPaquete,
-          precioCajaMax: p.precioCaja
-        },
-        create: {
-          listaId: listMayoId,
-          productoId: dbProd.id,
-          productoCodigo: p.codigoInterno,
-          precioPaqueteMin: minPaqueteMayo,
-          precioCajaMin: minCajaMayo,
-          precioPaqueteMax: p.precioPaquete,
-          precioCajaMax: p.precioCaja
-        }
-      })
+      // Mayo prices mapping (Min = high standard, Max = low volume)
+      const mayo = PRECIOS_MAYO[p.codigoInterno]
+      if (mayo) {
+        await prisma.precioProducto.upsert({
+          where: { listaId_productoId: { listaId: listMayoId, productoId: dbProd.id } },
+          update: {
+            precioPaqueteMin: mayo.minPaq,
+            precioCajaMin: mayo.minCaja,
+            precioPaqueteMax: mayo.maxPaq,
+            precioCajaMax: mayo.maxCaja
+          },
+          create: {
+            listaId: listMayoId,
+            productoId: dbProd.id,
+            productoCodigo: p.codigoInterno,
+            precioPaqueteMin: mayo.minPaq,
+            precioCajaMin: mayo.minCaja,
+            precioPaqueteMax: mayo.maxPaq,
+            precioCajaMax: mayo.maxCaja
+          }
+        })
+      }
 
-      // Agosto prices mapping
+      // Agosto prices mapping (Min = high standard, Max = low volume)
       const ago = PRECIOS_AGOSTO[p.codigoInterno]
       if (ago) {
         await prisma.precioProducto.upsert({

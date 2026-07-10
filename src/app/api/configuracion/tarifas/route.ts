@@ -175,7 +175,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { action, listaId, porcentaje, recordId, precioPaqueteMin, precioCajaMin, precioPaqueteMax, precioCajaMax } = body
+    const { action, listaId, porcentaje, recordId, precioPaqueteMin, precioCajaMin, precioPaqueteMax, precioCajaMax, tarifaTipo } = body
 
     if (!listaId) {
       return NextResponse.json({ error: 'ID de lista requerido.' }, { status: 400 })
@@ -188,17 +188,27 @@ export async function PUT(request: Request) {
 
       const multiplier = 1 + (porcentaje / 100)
 
-      // Use raw SQL to execute batch multiplication
-      await prisma.$executeRawUnsafe(
-        `UPDATE "PrecioProducto" 
-         SET "precioPaqueteMin" = "precioPaqueteMin" * $1,
-             "precioCajaMin" = "precioCajaMin" * $1,
-             "precioPaqueteMax" = "precioPaqueteMax" * $1,
-             "precioCajaMax" = "precioCajaMax" * $1
-         WHERE "listaId" = $2`,
-        multiplier,
-        listaId
-      )
+      let sql = ''
+      if (tarifaTipo === 'min') {
+        sql = `UPDATE "PrecioProducto" 
+               SET "precioPaqueteMin" = "precioPaqueteMin" * $1,
+                   "precioCajaMin" = "precioCajaMin" * $1
+               WHERE "listaId" = $2`
+      } else if (tarifaTipo === 'max') {
+        sql = `UPDATE "PrecioProducto" 
+               SET "precioPaqueteMax" = "precioPaqueteMax" * $1,
+                   "precioCajaMax" = "precioCajaMax" * $1
+               WHERE "listaId" = $2`
+      } else {
+        sql = `UPDATE "PrecioProducto" 
+               SET "precioPaqueteMin" = "precioPaqueteMin" * $1,
+                   "precioCajaMin" = "precioCajaMin" * $1,
+                   "precioPaqueteMax" = "precioPaqueteMax" * $1,
+                   "precioCajaMax" = "precioCajaMax" * $1
+               WHERE "listaId" = $2`
+      }
+
+      await prisma.$executeRawUnsafe(sql, multiplier, listaId)
 
       return NextResponse.json({ success: true, message: `Aumento de ${porcentaje}% aplicado masivamente.` })
     }
