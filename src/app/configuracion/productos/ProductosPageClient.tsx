@@ -436,23 +436,23 @@ export function ProductosPageClient({ userNivel }: Props) {
           <div className="flex gap-2 bg-black/30 p-1 rounded-xl border border-white/5">
             <button
               onClick={() => setTarifaVer('min')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${
                 tarifaVer === 'min'
-                  ? 'bg-primary text-white shadow-md'
+                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
                   : 'text-secondary hover:text-white'
               }`}
             >
-              Menos de 300 Cajas
+              Menos de 300 Cajas (Estándar)
             </button>
             <button
               onClick={() => setTarifaVer('max')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${
                 tarifaVer === 'max'
-                  ? 'bg-primary text-white shadow-md'
+                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
                   : 'text-secondary hover:text-white'
               }`}
             >
-              Más de 300 Cajas
+              Más de 300 Cajas (Volumen)
             </button>
           </div>
         </div>

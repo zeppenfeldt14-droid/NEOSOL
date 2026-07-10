@@ -7,7 +7,25 @@ export async function GET(request: Request) {
     const session = await getSessionUser()
     if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
+    const now = new Date()
+    // Find the currently active list
+    const activeList = await prisma.listaPrecio.findFirst({
+      where: {
+        activa: true,
+        vigenteDesde: { lte: now }
+      },
+      orderBy: { vigenteDesde: 'desc' }
+    })
+
+    let whereFilter: any = {}
+    if (activeList) {
+      whereFilter = {
+        vigenteDesde: { gte: activeList.vigenteDesde }
+      }
+    }
+
     const listas = await prisma.listaPrecio.findMany({
+      where: whereFilter,
       include: {
         precios: {
           orderBy: { productoCodigo: 'asc' }

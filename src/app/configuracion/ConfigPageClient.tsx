@@ -665,7 +665,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
           <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '300px' }}>
             <div>
               <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
-                Importar Tarifario Agosto (CSV)
+                Cargar Nuevo Tarifario / Lista de Precios (CSV)
               </h3>
               <form onSubmit={handleUploadTarifas} className="flex flex-col gap-4">
                 <div className="form-group mb-0">

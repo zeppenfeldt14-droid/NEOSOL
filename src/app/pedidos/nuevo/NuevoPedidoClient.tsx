@@ -99,6 +99,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const [negociarTarifaVolumen, setNegociarTarifaVolumen] = useState(false)
   const [promosActivas, setPromosActivas] = useState<any[]>([])
   const [promosSeleccionadas, setPromosSeleccionadas] = useState<{ [key: number]: boolean }>({})
+  const [priceLists, setPriceLists] = useState<any[]>([])
+  const [selectedListId, setSelectedListId] = useState<number | null>(null)
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
@@ -108,17 +110,25 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   useEffect(() => {
     const fetchData = async () => {
       const zoneQueryParam = userNivel === 3 ? (userZona || '') : ''
-      const [prodRes, empRes, promoRes] = await Promise.all([
+      const [prodRes, empRes, promoRes, listsRes] = await Promise.all([
         fetch('/api/productos'),
         fetch(`/api/empresas?estado=activo&zona=${zoneQueryParam}&limit=200`),
         fetch('/api/configuracion/promociones'),
+        fetch('/api/configuracion/tarifas'),
       ])
       const prodData = await prodRes.json()
       const empData  = await empRes.json()
       const promoData = await promoRes.json()
+      const listsData = await listsRes.json()
       setProductos(Array.isArray(prodData) ? prodData : [])
       setEmpresas(Array.isArray(empData) ? empData : (empData.empresas || []))
       setPromosActivas(Array.isArray(promoData) ? promoData.filter((p: any) => p.activa) : [])
+      if (Array.isArray(listsData)) {
+        setPriceLists(listsData)
+        const now = new Date()
+        const active = listsData.find((l: any) => l.activa && new Date(l.vigenteDesde) <= now) || listsData[0]
+        if (active) setSelectedListId(active.id)
+      }
       setLoading(false)
     }
     fetchData()
@@ -162,14 +172,29 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     return { cajasBonus, descripcionBonus }
   }
 
+  const getListPriceForProduct = useCallback((prod: Producto, isVolume: boolean) => {
+    const selectedList = priceLists.find(l => l.id === selectedListId)
+    const priceRecord = selectedList?.precios.find((pr: any) => pr.productoId === prod.id)
+    if (priceRecord) {
+      return isVolume ? priceRecord.precioCajaMax : priceRecord.precioCajaMin
+    }
+    return isVolume
+      ? (prod.precioCajaMax !== undefined ? prod.precioCajaMax : prod.precioCaja)
+      : (prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja)
+  }, [priceLists, selectedListId])
+
+  const isSelectedListUpcoming = useCallback(() => {
+    const selectedList = priceLists.find(l => l.id === selectedListId)
+    if (!selectedList) return false
+    return new Date(selectedList.vigenteDesde) > new Date()
+  }, [priceLists, selectedListId])
+
   // ── Add product line ─────────────────────────────────────────────────────
   const agregarProducto = (prod: Producto) => {
     if (lineasPedido.find(l => l.producto.id === prod.id)) return
     
     const isVolume = totalCajas >= 300 || negociarTarifaVolumen
-    const listPrice = isVolume
-      ? (prod.precioCajaMax !== undefined ? prod.precioCajaMax : prod.precioCaja)
-      : (prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja)
+    const listPrice = getListPriceForProduct(prod, isVolume)
 
     setLineasPedido(prev => [...prev, {
       producto: prod,
@@ -222,9 +247,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     setLineasPedido(prev => {
       const exists = prev.find(l => l.producto.id === prodId)
       const prod = productos.find(p => p.id === prodId)!
-      const listPrice = (totalCajas >= 300 || negociarTarifaVolumen)
-        ? (prod.precioCajaMax !== undefined ? prod.precioCajaMax : prod.precioCaja)
-        : (prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja)
+      const listPrice = getListPriceForProduct(prod, totalCajas >= 300 || negociarTarifaVolumen)
 
       const hasCustom = Math.abs(nuevoPrecio - listPrice) > 0.01
 
@@ -266,15 +289,13 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     }))
   }, [promosSeleccionadas, promosActivas])
 
-  // Dynamic prices sync when volume tier switches
+  // Dynamic prices sync when volume tier or price list switches
   useEffect(() => {
     const isVolume = totalCajas >= 300 || negociarTarifaVolumen
     setLineasPedido(prev => prev.map(l => {
       if (l.hasCustomPrice) return l
       
-      const listPrice = isVolume
-        ? (l.producto.precioCajaMax !== undefined ? l.producto.precioCajaMax : l.producto.precioCaja)
-        : (l.producto.precioCajaMin !== undefined ? l.producto.precioCajaMin : l.producto.precioCaja)
+      const listPrice = getListPriceForProduct(l.producto, isVolume)
 
       return {
         ...l,
@@ -282,7 +303,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         subtotal: l.cantidadCajas * listPrice
       }
     }))
-  }, [totalCajas, negociarTarifaVolumen])
+  }, [totalCajas, negociarTarifaVolumen, selectedListId, priceLists, getListPriceForProduct])
 
   // ── Custom pct sync ──────────────────────────────────────────────────────
   const handlePctAChange = (v: number) => {
@@ -307,7 +328,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresaId: empresaSeleccionada.id,
-          tieneTarifaNegociada: negociarTarifaVolumen && totalCajas < 300,
+          tieneTarifaNegociada: (negociarTarifaVolumen && totalCajas < 300) || isSelectedListUpcoming(),
           detalles: lineasPedido
             .filter(l => l.cantidadCajas > 0)
             .map(l => ({
@@ -477,6 +498,46 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Tarifario Selector */}
+          <div className="glass-panel card border border-white/5 p-6 flex flex-col gap-4">
+            <h2 className="text-white font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-3">
+              <FileText size={15} className="text-primary" />
+              Tarifario del Pedido
+            </h2>
+            
+            <div className="form-group mb-0">
+              <label className="form-label text-[10px] uppercase font-black text-secondary">
+                Seleccionar Tarifario *
+              </label>
+              {priceLists.length === 0 ? (
+                <div className="text-secondary text-xs italic">Cargando tarifarios...</div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <select
+                    value={selectedListId || ''}
+                    onChange={(e) => setSelectedListId(Number(e.target.value))}
+                    className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                  >
+                    {priceLists.map((l: any) => (
+                      <option key={l.id} value={l.id} className="bg-black text-white">
+                        {l.nombre} {new Date(l.vigenteDesde) > new Date() ? '(Próxima - Requiere Aprobación N1)' : '(Vigente)'}
+                      </option>
+                    ))}
+                  </select>
+
+                  {isSelectedListUpcoming() && (
+                    <div className="px-3 py-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-semibold flex items-start gap-2">
+                      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Atención:</strong> Has seleccionado un tarifario no vigente. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Sección 2: Lista de productos ────────────────────────────── */}
@@ -913,11 +974,11 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
             </div>
 
             {/* Warning if price is negotiated */}
-            {(lineasPedido.some(l => l.hasCustomPrice) || (negociarTarifaVolumen && totalCajas < 300)) && (
+            {(lineasPedido.some(l => l.hasCustomPrice) || (negociarTarifaVolumen && totalCajas < 300) || isSelectedListUpcoming()) && (
               <div className="p-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20 text-[10px] text-yellow-400 font-semibold flex items-start gap-2">
                 <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Atención:</strong> Has negociado precios o tarifas especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
+                  <strong>Atención:</strong> Has seleccionado un tarifario no vigente, o negociado precios o tarifas especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
                 </span>
               </div>
             )}
