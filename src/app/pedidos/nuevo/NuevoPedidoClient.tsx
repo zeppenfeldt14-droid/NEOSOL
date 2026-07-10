@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ShoppingCart, Search, ChevronDown, Plus, Minus, Trash2,
   CheckCircle2, AlertCircle, Info, Send, Save, X, Package,
@@ -74,6 +74,8 @@ interface Props {
 
 export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
 
   // Data
   const [productos, setProductos]   = useState<Producto[]>([])
@@ -120,19 +122,91 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       const empData  = await empRes.json()
       const promoData = await promoRes.json()
       const listsData = await listsRes.json()
-      setProductos(Array.isArray(prodData) ? prodData : [])
-      setEmpresas(Array.isArray(empData) ? empData : (empData.empresas || []))
-      setPromosActivas(Array.isArray(promoData) ? promoData.filter((p: any) => p.activa) : [])
+      
+      const prodsList = Array.isArray(prodData) ? prodData : []
+      const empsList = Array.isArray(empData) ? empData : (empData.empresas || [])
+      const activePromos = Array.isArray(promoData) ? promoData.filter((p: any) => p.activa) : []
+
+      setProductos(prodsList)
+      setEmpresas(empsList)
+      setPromosActivas(activePromos)
+
       if (Array.isArray(listsData)) {
         setPriceLists(listsData)
         const now = new Date()
         const active = listsData.find((l: any) => l.activa && new Date(l.vigenteDesde) <= now) || listsData[0]
         if (active) setSelectedListId(active.id)
       }
+
+      // If in edit mode, fetch order details
+      if (editId) {
+        try {
+          const orderRes = await fetch(`/api/pedidos/${editId}`)
+          if (orderRes.ok) {
+            const orderToEdit = await orderRes.json()
+            if (orderToEdit) {
+              // Populate order details
+              const matchedEmpresa = empsList.find((e: any) => e.id === orderToEdit.empresaId)
+              if (matchedEmpresa) setEmpresaSeleccionada(matchedEmpresa)
+              
+              setNegociarTarifaVolumen(orderToEdit.tieneTarifaNegociada)
+              setAplicaFinanciera(orderToEdit.aplicaFinanciera)
+              setPlazosPago(orderToEdit.plazosPago || '')
+              setObservaciones(orderToEdit.observaciones || '')
+              setAcuerdosComerciales(orderToEdit.acuerdosComerciales || '')
+              setRequierePresupuesto(orderToEdit.requierePresupuesto)
+              setTurnoEntrega(orderToEdit.turnoEntrega || '')
+
+              // Match payment condition
+              const matchIdx = CONDICIONES_PAGO.findIndex(
+                c => c.pA === orderToEdit.porcentajePagoA && c.pB === orderToEdit.porcentajePagoB
+              )
+              if (matchIdx !== -1) {
+                setCondicionIdx(matchIdx)
+              } else {
+                setCondicionIdx(CONDICIONES_PAGO.length - 1) // Personalizada
+                setPctACustom(orderToEdit.porcentajePagoA)
+                setPctBCustom(orderToEdit.porcentajePagoB)
+              }
+
+              // Mapped lines
+              const mappedLines = orderToEdit.detalles.map((d: any) => {
+                const prod = prodsList.find((p: any) => p.id === d.productoId)
+                return {
+                  producto: prod || d.producto,
+                  cantidadCajas: d.cantidadCajas,
+                  cajasBonus: d.cajasBonus || 0,
+                  descripcionBonus: d.descripcionBonus || '',
+                  precioCajaNegociado: d.precioCajaSnapshot,
+                  subtotal: d.subtotal,
+                  hasCustomPrice: Math.abs(d.precioCajaSnapshot - d.precioCajaOriginal) > 0.01
+                }
+              })
+              setLineasPedido(mappedLines)
+
+              // Parse selected promotions
+              const selectedPromos: { [key: number]: boolean } = {}
+              orderToEdit.detalles.forEach((d: any) => {
+                if (d.descripcionBonus) {
+                  activePromos.forEach((p: any) => {
+                    if (d.descripcionBonus.includes(p.nombre)) {
+                      selectedPromos[p.id] = true
+                    }
+                  })
+                }
+              })
+              setPromosSeleccionadas(selectedPromos)
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching order to edit', err)
+        }
+      }
+
       setLoading(false)
     }
     fetchData()
-  }, [userZona])
+  }, [userZona, editId])
 
   // ── Derived values ───────────────────────────────────────────────────────
   const condicion = CONDICIONES_PAGO[condicionIdx]
@@ -360,8 +434,11 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     setError('')
 
     try {
-      const res = await fetch('/api/pedidos', {
-        method: 'POST',
+      const url = editId ? `/api/pedidos/${editId}` : '/api/pedidos'
+      const method = editId ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresaId: empresaSeleccionada.id,
@@ -392,7 +469,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
       // If sending to supervisor, patch status
       if (enviarAlSupervisor) {
-        await fetch(`/api/pedidos/${data.pedido.id}`, {
+        const orderId = editId ? Number(editId) : data.pedido.id
+        await fetch(`/api/pedidos/${orderId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ accion: 'enviar' }),
@@ -439,10 +517,10 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <ShoppingCart className="text-primary" size={26} />
-            Nuevo Pedido
+            {editId ? 'Editar Pedido' : 'Nuevo Pedido'}
           </h1>
           <p className="text-secondary text-sm mt-1">
-            Nota de Pedido · NEOSOL
+            {editId ? 'Modificando Nota de Pedido' : 'Nota de Pedido'} · NEOSOL
           </p>
         </div>
         <button onClick={() => router.back()} className="btn btn-secondary text-xs flex items-center gap-2">

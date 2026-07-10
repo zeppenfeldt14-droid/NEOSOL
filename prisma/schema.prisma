@@ -219,6 +219,7 @@ model Pedido {
   acuerdosComerciales String?
   requierePresupuesto Boolean @default(false)
   turnoEntrega    String?  // 'SI' | 'NO'
+  fechaEntrega    String?  // Fecha/Día de entrega acordado
   
   // Auditoría
   aprobadoPorId   Int?

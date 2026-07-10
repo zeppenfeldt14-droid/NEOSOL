@@ -69,10 +69,10 @@ export async function PATCH(request: Request, { params }: Params) {
       if (pedido.estado !== 'pendiente_supervisor')
         return NextResponse.json({ error: 'Solo se puede aprobar un pedido pendiente.' }, { status: 400 })
       
-      // Enforce Nivel 1 approval for negotiated prices or negotiated volume tariffs
-      if ((pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada) && session.nivel === 2) {
+      // Enforce Nivel 1 approval for negotiated prices, negotiated volume tariffs, or if it contains Part B payment (porcentajePagoB > 0)
+      if ((pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada || (pedido.porcentajePagoB && pedido.porcentajePagoB > 0)) && session.nivel === 2) {
         return NextResponse.json({
-          error: 'Este pedido contiene precios o tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).'
+          error: 'Este pedido contiene precios/tarifas negociadas o pago Parte B, y requiere aprobación de Gerencia (Nivel 1).'
         }, { status: 403 })
       }
 
@@ -81,6 +81,7 @@ export async function PATCH(request: Request, { params }: Params) {
         aprobadoPorId: session.id,
         aprobadoPorAlias: session.alias,
         aprobadoEn: new Date(),
+        fechaEntrega: body.fechaEntrega || null,
       }
     } else if (accion === 'cancelar') {
       if (pedido.estado === 'aprobado' && session.nivel > 1)
@@ -154,20 +155,171 @@ async function generarFacturasYCobranzas(pedido: any, alias: string) {
       },
     })
   }
+ 
+  // Generar Cobranza (cuenta por cobrar) solo por el total de la parte A (con IVA y recargo)
+  const pctA = (pedido.porcentajePagoA || 0) / 100
+  const subtotalA = pedido.subtotalSinIVA * pctA
+  const ivaA = subtotalA * 0.21
+  const recargoA = pedido.aplicaFinanciera ? (subtotalA + ivaA) * 0.03 : 0
+  const totalA = subtotalA + ivaA + recargoA
 
-  // Generar Cobranza (cuenta por cobrar) por el total del pedido
-  await prisma.cobranza.create({
-    data: {
-      pedidoId: pedido.id,
-      empresaId: pedido.empresaId,
-      empresaNombre: '', // populated from empresa relation if needed
-      vendedorAlias: pedido.vendedorAlias,
-      zona: pedido.zona,
-      montoOriginal: pedido.totalGeneral,
-      saldoPendiente: pedido.totalGeneral,
-      cuota: 1,
-      totalCuotas: 1,
-      estado: 'pendiente',
-    },
-  })
+  if (totalA > 0) {
+    await prisma.cobranza.create({
+      data: {
+        pedidoId: pedido.id,
+        empresaId: pedido.empresaId,
+        empresaNombre: '', // populated from relation if needed
+        vendedorAlias: pedido.vendedorAlias,
+        zona: pedido.zona,
+        montoOriginal: totalA,
+        saldoPendiente: totalA,
+        cuota: 1,
+        totalCuotas: 1,
+        estado: 'pendiente',
+      },
+    })
+  }
+}
+
+// ─── PUT: Actualizar un pedido completo (borrador) ──────────────────────────
+export async function PUT(request: Request, { params }: Params) {
+  try {
+    const session = await getSessionUser()
+    if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+    const { id } = await params
+    const pedidoId = Number(id)
+
+    const existing = await prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      include: { detalles: true }
+    })
+    if (!existing) return NextResponse.json({ error: 'Pedido no encontrado.' }, { status: 404 })
+
+    // Check if the order is in borrador state
+    if (existing.estado !== 'borrador') {
+      return NextResponse.json({ error: 'Solo se pueden editar pedidos en estado borrador.' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const {
+      empresaId,
+      tieneTarifaNegociada,
+      detalles, // [{ productoId, cantidadCajas, cajasBonus, descripcionBonus, precioCajaSnapshot }]
+      condicionPago,
+      porcentajePagoA,
+      porcentajePagoB,
+      aplicaFinanciera,
+      plazosPago,
+      observaciones,
+      acuerdosComerciales,
+      requierePresupuesto,
+      turnoEntrega,
+    } = body
+
+    if (!empresaId || !detalles?.length) {
+      return NextResponse.json({ error: 'Empresa y al menos un producto son requeridos.' }, { status: 400 })
+    }
+
+    // Verify company exists
+    const empresa = await prisma.empresa.findUnique({ where: { id: empresaId } })
+    if (!empresa) return NextResponse.json({ error: 'Empresa no encontrada.' }, { status: 404 })
+
+    // Find active price list
+    const activeList = await prisma.listaPrecio.findFirst({
+      where: {
+        activa: true,
+        vigenteDesde: { lte: new Date() }
+      },
+      orderBy: { vigenteDesde: 'desc' },
+      include: { precios: true }
+    })
+
+    // Fetch products
+    const productoIds = detalles.map((d: any) => d.productoId)
+    const productos = await prisma.producto.findMany({ where: { id: { in: productoIds } } })
+    const productoMap = Object.fromEntries(productos.map(p => [p.id, p]))
+
+    // Check volume tier
+    const totalCajas = detalles.reduce((sum: number, d: any) => sum + (d.cantidadCajas || 0), 0)
+    const isVolume = totalCajas >= 300 || tieneTarifaNegociada
+
+    let subtotalSinIVA = 0
+    let tienePrecioNegociado = false
+
+    const detallesConCalculo = detalles.map((d: any) => {
+      const prod = productoMap[d.productoId]
+      if (!prod) throw new Error(`Producto ${d.productoId} no encontrado`)
+
+      const priceRecord = activeList?.precios.find(pr => pr.productoId === prod.id)
+      const defaultCajaPrice = isVolume
+        ? (priceRecord ? priceRecord.precioCajaMax : prod.precioCaja)
+        : (priceRecord ? priceRecord.precioCajaMin : prod.precioCaja)
+
+      const defaultPaqPrice = isVolume
+        ? (priceRecord ? priceRecord.precioPaqueteMax : prod.precioPaquete)
+        : (priceRecord ? priceRecord.precioPaqueteMin : prod.precioPaquete)
+
+      const customPrice = parseFloat(d.precioCajaSnapshot)
+      const hasCustomPrice = !isNaN(customPrice) && Math.abs(customPrice - defaultCajaPrice) > 0.01
+      const priceToUse = hasCustomPrice ? customPrice : defaultCajaPrice
+      if (hasCustomPrice) {
+        tienePrecioNegociado = true
+      }
+
+      const subtotal = priceToUse * (d.cantidadCajas || 0)
+      subtotalSinIVA += subtotal
+      return {
+        productoId: prod.id,
+        productoNombre: prod.nombre,
+        precioCajaSnapshot: priceToUse,
+        precioPaqSnapshot: defaultPaqPrice,
+        paqPorCajaSnapshot: prod.paqPorCaja,
+        precioCajaOriginal: defaultCajaPrice,
+        cantidadCajas: d.cantidadCajas || 0,
+        subtotal,
+        cajasBonus: d.cajasBonus || 0,
+        descripcionBonus: d.descripcionBonus || null,
+      }
+    })
+
+    // Financial calculations
+    const pctA = (porcentajePagoA || 20) / 100
+    const montoIVA = subtotalSinIVA * pctA * 0.21
+    const montoFinanciera = aplicaFinanciera ? (subtotalSinIVA + montoIVA) * 0.03 : 0
+    const totalGeneral = subtotalSinIVA + montoIVA + montoFinanciera
+
+    // Delete old details and recreate
+    await prisma.detallePedido.deleteMany({ where: { pedidoId } })
+
+    const updated = await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        empresaId,
+        tienePrecioNegociado,
+        tieneTarifaNegociada: tieneTarifaNegociada || false,
+        condicionPago: condicionPago || `${porcentajePagoA || 20}/${porcentajePagoB || 80}`,
+        porcentajePagoA: porcentajePagoA || 20,
+        porcentajePagoB: porcentajePagoB || 80,
+        aplicaFinanciera: aplicaFinanciera || false,
+        plazosPago: plazosPago || null,
+        observaciones: observaciones || null,
+        acuerdosComerciales: acuerdosComerciales || null,
+        requierePresupuesto: requierePresupuesto || false,
+        turnoEntrega: turnoEntrega || null,
+        subtotalSinIVA,
+        montoIVA,
+        montoFinanciera,
+        totalGeneral,
+        detalles: { create: detallesConCalculo },
+      },
+      include: { detalles: true }
+    })
+
+    await registrarAccion(session.id, session.alias, 'UPDATE_PEDIDO', `Pedido ${updated.numeroPedido} actualizado por vendedor`)
+
+    return NextResponse.json({ success: true, pedido: updated })
+  } catch (error: any) {
+    console.error('[API PUT Pedido]', error)
+    return NextResponse.json({ error: error.message || 'Error al actualizar el pedido.' }, { status: 500 })
+  }
 }

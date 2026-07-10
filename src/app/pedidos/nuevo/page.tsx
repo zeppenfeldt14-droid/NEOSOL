@@ -14,15 +14,26 @@ async function getSession() {
   } catch { return null }
 }
 
+import { Suspense } from 'react'
+
 export default async function NuevoPedidoPage() {
   const session = await getSession()
   if (!session) redirect('/login')
 
   return (
-    <NuevoPedidoClient
-      userNivel={session.nivel}
-      userAlias={session.alias}
-      userZona={session.zona}
-    />
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-secondary text-sm">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <NuevoPedidoClient
+        userNivel={session.nivel}
+        userAlias={session.alias}
+        userZona={session.zona}
+      />
+    </Suspense>
   )
 }

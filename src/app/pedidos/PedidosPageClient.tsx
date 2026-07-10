@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ShoppingCart, Filter, Plus, Clock, CheckCircle2,
-  XCircle, Globe, Send, AlertCircle
+  XCircle, Globe, Send, AlertCircle, Eye, Edit3, Calendar,
+  Info, FileText, Check, DollarSign, Gift, User, Package, Calculator
 } from 'lucide-react'
 
 interface Props {
@@ -14,10 +15,22 @@ interface Props {
   availableZones: string[]
 }
 
+interface PedidoDetalle {
+  id: number
+  productoNombre: string
+  producto: { codigoInterno: string; paqPorCaja: number }
+  precioCajaSnapshot: number
+  precioCajaOriginal: number
+  cantidadCajas: number
+  subtotal: number
+  cajasBonus: number
+  descripcionBonus: string | null
+}
+
 interface Pedido {
   id: number
   numeroPedido: string
-  empresa: { nombre: string }
+  empresa: { nombre: string; cuit: string | null }
   zona: string
   vendedorAlias: string
   totalGeneral: number
@@ -26,6 +39,21 @@ interface Pedido {
   tienePrecioNegociado: boolean
   tieneTarifaNegociada: boolean
   creadoEn: string
+  porcentajePagoA: number
+  porcentajePagoB: number
+  aplicaFinanciera: boolean
+  plazosPago: string | null
+  observaciones: string | null
+  acuerdosComerciales: string | null
+  requierePresupuesto: boolean
+  turnoEntrega: string | null
+  fechaEntrega: string | null
+  subtotalSinIVA: number
+  montoIVA: number
+  montoFinanciera: number
+  aprobadoPorAlias: string | null
+  aprobadoEn: string | null
+  detalles: PedidoDetalle[]
 }
 
 const ESTADOS = [
@@ -58,6 +86,9 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
   const [pedidos, setPedidos]   = useState<Pedido[]>([])
   const [loading, setLoading]   = useState(true)
   const [actionId, setActionId] = useState<number | null>(null)
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null)
+  const [pedidoAprobar, setPedidoAprobar] = useState<Pedido | null>(null)
+  const [fechaEntrega, setFechaEntrega] = useState('')
 
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
@@ -75,13 +106,13 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
 
   useEffect(() => { fetchPedidos() }, [selectedZone, selectedEstado])
 
-  const handleAction = async (id: number, accion: string) => {
+  const handleAction = async (id: number, accion: string, customData?: any) => {
     setActionId(id)
     try {
       const res = await fetch(`/api/pedidos/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion }),
+        body: JSON.stringify({ accion, ...customData }),
       })
       if (res.ok) await fetchPedidos()
       else { const d = await res.json(); alert(d.error) }
@@ -272,43 +303,72 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                       {new Date(p.creadoEn).toLocaleDateString('es-AR')}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Ver detalles */}
+                        <button
+                          onClick={() => setSelectedPedido(p)}
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-secondary hover:text-white transition-all flex items-center justify-center border border-white/10"
+                          title="Ver detalles"
+                        >
+                          <Eye size={12} />
+                        </button>
+
+                        {/* Editar borrador */}
+                        {p.estado === 'borrador' && (
+                          <button
+                            onClick={() => router.push(`/pedidos/nuevo?edit=${p.id}`)}
+                            className="p-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 transition-all flex items-center justify-center"
+                            title="Editar pedido"
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                        )}
+
+                        {/* Aprobar */}
                         {userNivel < 3 && p.estado === 'pendiente_supervisor' && (
                           <button
                             onClick={() => {
-                              if ((p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2) {
-                                alert('Este pedido contiene precios o tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
+                              const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)
+                              if (requiresNivel1 && userNivel === 2) {
+                                alert('Este pedido contiene precios/tarifas negociadas o pago Parte B, y requiere aprobación de Gerencia (Nivel 1).');
                                 return;
                               }
-                               handleAction(p.id, 'aprobar');
+                              setPedidoAprobar(p)
+                              setFechaEntrega('')
                             }}
-                            disabled={actionId === p.id || ((p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2)}
+                            disabled={actionId === p.id}
                             className={`px-2 py-1 rounded-lg text-[10px] font-black border transition-all flex items-center gap-1 ${
-                              (p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2
+                              (p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2
                                 ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                                 : 'bg-green-400/10 text-green-400 border-green-400/20 hover:bg-green-400/20'
                             }`}
-                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
+                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
                           >
-                            <CheckCircle2 size={11} /> {(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Bloqueado' : 'Aprobar'}
+                            <CheckCircle2 size={11} /> {(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Bloqueado' : 'Aprobar'}
                           </button>
                         )}
+
+                        {/* Enviar */}
                         {p.estado === 'borrador' && (
                           <button
                             onClick={() => handleAction(p.id, 'enviar')}
                             disabled={actionId === p.id}
                             className="px-2 py-1 rounded-lg bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 text-[10px] font-black border border-blue-400/20 transition-all flex items-center gap-1"
+                            title="Enviar al Supervisor"
                           >
                             <Send size={11} /> Enviar
                           </button>
                         )}
+
+                        {/* Cancelar */}
                         {(p.estado === 'borrador' || (p.estado === 'pendiente_supervisor' && userNivel < 3)) && (
                           <button
                             onClick={() => { if (confirm('¿Cancelar este pedido?')) handleAction(p.id, 'cancelar') }}
                             disabled={actionId === p.id}
-                            className="p-1.5 rounded-lg text-secondary hover:text-red-400 hover:bg-red-400/10 transition-all"
+                            className="p-1.5 rounded-lg text-secondary hover:text-red-400 hover:bg-red-400/10 transition-all flex items-center justify-center"
+                            title="Cancelar pedido"
                           >
-                            <XCircle size={13} />
+                            <XCircle size={12} />
                           </button>
                         )}
                       </div>
@@ -320,6 +380,308 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
           </table>
         </div>
       </div>
+
+      {/* ── Modal: Detalle de Pedido ───────────────────────────────── */}
+      {selectedPedido && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="text-primary" size={20} />
+                <h3 className="text-white font-bold text-lg">Pedido {selectedPedido.numeroPedido}</h3>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${ESTADO_BADGES[selectedPedido.estado] || ''}`}>
+                  {ESTADO_LABELS[selectedPedido.estado] || selectedPedido.estado}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedPedido(null)}
+                className="text-secondary hover:text-white transition-colors"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 flex flex-col gap-6 overflow-y-auto">
+              {/* Info General */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-xl text-xs">
+                <div>
+                  <span className="text-secondary block mb-1">Cliente</span>
+                  <strong className="text-white text-sm">{selectedPedido.empresa.nombre}</strong>
+                  {selectedPedido.empresa.cuit && <span className="block text-[10px] text-white/50 mt-0.5">CUIT: {selectedPedido.empresa.cuit}</span>}
+                </div>
+                <div>
+                  <span className="text-secondary block mb-1">Zona</span>
+                  <strong className="text-white text-sm uppercase">{selectedPedido.zona}</strong>
+                </div>
+                <div>
+                  <span className="text-secondary block mb-1">Vendedor</span>
+                  <strong className="text-white text-sm">{selectedPedido.vendedorAlias}</strong>
+                </div>
+                <div>
+                  <span className="text-secondary block mb-1">Fecha de Creación</span>
+                  <strong className="text-white text-sm">{new Date(selectedPedido.creadoEn).toLocaleDateString('es-AR')} {new Date(selectedPedido.creadoEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</strong>
+                </div>
+              </div>
+
+              {/* Detalles de Productos */}
+              <div>
+                <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Package size={14} className="text-primary" /> Productos del Pedido
+                </h4>
+                <div className="border border-white/5 rounded-xl overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="bg-white/[0.02] border-b border-white/5 text-[10px] font-black text-secondary uppercase tracking-widest">
+                        <th className="px-4 py-2">Cód</th>
+                        <th className="px-4 py-2">Producto</th>
+                        <th className="px-4 py-2 text-center">Paq/Caja</th>
+                        <th className="px-4 py-2 text-right">Precio Caja</th>
+                        <th className="px-4 py-2 text-center">Cantidad</th>
+                        <th className="px-4 py-2 text-center">Bonus</th>
+                        <th className="px-4 py-2 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPedido.detalles.map(d => {
+                        const isCustom = Math.abs(d.precioCajaSnapshot - d.precioCajaOriginal) > 0.01
+                        return (
+                          <tr key={d.id} className="border-b border-white/5 text-white/90">
+                            <td className="px-4 py-3 text-primary font-bold">{d.producto?.codigoInterno || '—'}</td>
+                            <td className="px-4 py-3 font-semibold">{d.productoNombre}</td>
+                            <td className="px-4 py-3 text-center text-secondary">{d.producto?.paqPorCaja || '—'}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              {fmt(d.precioCajaSnapshot)}
+                              {isCustom && <span className="block text-[8px] text-yellow-400 font-bold">Negociado</span>}
+                            </td>
+                            <td className="px-4 py-3 text-center font-bold text-white">{d.cantidadCajas}</td>
+                            <td className="px-4 py-3 text-center">
+                              {d.cajasBonus > 0 ? (
+                                <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-black" title={d.descripcionBonus || ''}>
+                                  +{d.cajasBonus} reg
+                                </span>
+                              ) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right font-black text-white">{fmt(d.subtotal)}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Negociación & Logística */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/[0.02] border border-white/5 p-5 rounded-xl flex flex-col gap-3">
+                  <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b border-white/5 pb-2">
+                    <FileText size={14} className="text-secondary" /> Condiciones de Venta
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="text-secondary block mb-0.5">Condición de Pago</span>
+                      <strong className="text-white">{selectedPedido.condicionPago || '—'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-secondary block mb-0.5">Recargo Financiera (3%)</span>
+                      <strong className={selectedPedido.aplicaFinanciera ? 'text-primary font-black' : 'text-white/40'}>
+                        {selectedPedido.aplicaFinanciera ? 'SÍ' : 'NO'}
+                      </strong>
+                    </div>
+                    {selectedPedido.plazosPago && (
+                      <div className="col-span-2">
+                        <span className="text-secondary block mb-0.5">Plazos Especiales</span>
+                        <strong className="text-white">{selectedPedido.plazosPago}</strong>
+                      </div>
+                    )}
+                    {selectedPedido.acuerdosComerciales && (
+                      <div className="col-span-2">
+                        <span className="text-secondary block mb-0.5">Acuerdos Comerciales</span>
+                        <strong className="text-yellow-400 font-semibold">{selectedPedido.acuerdosComerciales}</strong>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white/[0.02] border border-white/5 p-5 rounded-xl flex flex-col gap-3">
+                  <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b border-white/5 pb-2">
+                    <Globe size={14} className="text-secondary" /> Logística e Indicadores
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="text-secondary block mb-0.5">Requiere Presupuesto</span>
+                      <strong className="text-white">{selectedPedido.requierePresupuesto ? 'SÍ' : 'NO'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-secondary block mb-0.5">Turno de Entrega</span>
+                      <strong className="text-white">{selectedPedido.turnoEntrega || '—'}</strong>
+                    </div>
+                    {selectedPedido.fechaEntrega && (
+                      <div className="col-span-2">
+                        <span className="text-secondary block mb-0.5">Día de Entrega Acordado</span>
+                        <strong className="text-green-400 flex items-center gap-1 font-bold text-sm bg-green-400/10 border border-green-400/20 px-2 py-1 rounded-lg w-max mt-1">
+                          <Calendar size={13} />
+                          {new Date(selectedPedido.fechaEntrega).toLocaleDateString('es-AR')}
+                        </strong>
+                      </div>
+                    )}
+                    {selectedPedido.observaciones && (
+                      <div className="col-span-2">
+                        <span className="text-secondary block mb-0.5">Observaciones</span>
+                        <strong className="text-white font-normal">{selectedPedido.observaciones}</strong>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Totales y Facturación Split */}
+              <div className="bg-primary/5 border border-primary/20 p-5 rounded-xl flex flex-col gap-4">
+                <h4 className="text-primary font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b border-primary/20 pb-2">
+                  <Calculator size={14} className="text-primary" /> Liquidación e Impuestos
+                </h4>
+                
+                {/* Resumen Totales */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs border-b border-primary/10 pb-4">
+                  <div>
+                    <span className="text-secondary block mb-0.5">Subtotal Neto</span>
+                    <strong className="text-white text-sm">{fmt(selectedPedido.subtotalSinIVA)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-secondary block mb-0.5">IVA Parte A (21%)</span>
+                    <strong className="text-white text-sm">{fmt(selectedPedido.montoIVA)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-secondary block mb-0.5">Recargo Financiera</span>
+                    <strong className="text-white text-sm">{fmt(selectedPedido.montoFinanciera)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-secondary block mb-0.5">Total General</span>
+                    <strong className="text-primary text-base font-black">{fmt(selectedPedido.totalGeneral)}</strong>
+                  </div>
+                </div>
+
+                {/* Split Factura A y B */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
+                  {/* Factura A */}
+                  <div className="bg-black/30 border border-white/5 p-3 rounded-lg flex flex-col gap-1.5">
+                    <span className="text-white font-bold flex items-center gap-1.5">
+                      <FileText size={12} className="text-blue-400" /> Factura A (Con IVA) — Cuenta por Cobrar
+                    </span>
+                    <div className="flex items-center justify-between text-secondary">
+                      <span>Porcentaje:</span>
+                      <span className="text-white font-semibold">{selectedPedido.porcentajePagoA}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-secondary">
+                      <span>Total A (Con IVA):</span>
+                      <strong className="text-blue-400 font-bold">
+                        {fmt(
+                          (selectedPedido.subtotalSinIVA * (selectedPedido.porcentajePagoA / 100)) +
+                          selectedPedido.montoIVA +
+                          (selectedPedido.aplicaFinanciera ? ((selectedPedido.subtotalSinIVA * (selectedPedido.porcentajePagoA / 100)) + selectedPedido.montoIVA) * 0.03 : 0)
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Factura B */}
+                  <div className="bg-black/30 border border-white/5 p-3 rounded-lg flex flex-col gap-1.5">
+                    <span className="text-white font-bold flex items-center gap-1.5">
+                      <FileText size={12} className="text-yellow-400" /> Factura B / Remito (Sin IVA) — Aprob. Nivel 1
+                    </span>
+                    <div className="flex items-center justify-between text-secondary">
+                      <span>Porcentaje:</span>
+                      <span className="text-white font-semibold">{selectedPedido.porcentajePagoB}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-secondary">
+                      <span>Total B (Sin IVA):</span>
+                      <strong className="text-yellow-400 font-bold">
+                        {fmt(
+                          (selectedPedido.subtotalSinIVA * (selectedPedido.porcentajePagoB / 100)) +
+                          (selectedPedido.aplicaFinanciera ? (selectedPedido.subtotalSinIVA * (selectedPedido.porcentajePagoB / 100)) * 0.03 : 0)
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Auditoría */}
+              {selectedPedido.aprobadoPorAlias && (
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400 flex items-center gap-2">
+                  <User size={13} />
+                  Aprobado por: <strong>{selectedPedido.aprobadoPorAlias}</strong> el <strong>{selectedPedido.aprobadoEn ? new Date(selectedPedido.aprobadoEn).toLocaleDateString('es-AR') : '—'}</strong>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/5 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setSelectedPedido(null)}
+                className="btn btn-secondary text-xs"
+              >
+                Cerrar Ventana
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Selector de Fecha de Entrega ────────────────────────── */}
+      {pedidoAprobar && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-md w-full p-6 flex flex-col gap-5 shadow-2xl">
+            <div>
+              <h3 className="text-white font-bold text-base flex items-center gap-2">
+                <Calendar size={18} className="text-primary" />
+                Día de Entrega del Pedido
+              </h3>
+              <p className="text-secondary text-xs mt-1">
+                Indicá la fecha estimada de entrega para el pedido <strong>{pedidoAprobar.numeroPedido}</strong>. El vendedor será notificado.
+              </p>
+            </div>
+
+            <div className="form-group mb-0">
+              <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha de Entrega</label>
+              <input
+                type="date"
+                value={fechaEntrega}
+                onChange={e => setFechaEntrega(e.target.value)}
+                className="form-input bg-black/40 border border-white/10 rounded-xl text-sm mt-1 w-full text-white"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-2">
+              <button
+                onClick={() => {
+                  setPedidoAprobar(null)
+                  setFechaEntrega('')
+                }}
+                className="btn btn-secondary text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (!fechaEntrega) {
+                    alert('Por favor selecciona una fecha de entrega.')
+                    return
+                  }
+                  handleAction(pedidoAprobar.id, 'aprobar', { fechaEntrega })
+                  setPedidoAprobar(null)
+                  setFechaEntrega('')
+                }}
+                className="btn btn-primary text-xs flex items-center gap-1.5"
+              >
+                <Check size={13} /> Aprobar Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
