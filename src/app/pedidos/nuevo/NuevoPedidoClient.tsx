@@ -449,10 +449,19 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left">
-                        {['Cód.', 'Producto', 'Paq/Caja', 'Precio Caja (sin IVA)', 'Cantidad', 'Bonus', 'Subtotal', ''].map(col => (
-                          <th key={col} className="px-2 py-1.5 text-[9px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap">
-                            {col}
+                      <tr>
+                        {[
+                          { label: 'Cód.', align: 'text-left' },
+                          { label: 'Producto', align: 'text-left' },
+                          { label: 'Paq/Caja', align: 'text-center' },
+                          { label: 'Precio Caja (sin IVA)', align: 'text-right' },
+                          { label: 'Cantidad', align: 'text-center' },
+                          { label: 'Bonus', align: 'text-center' },
+                          { label: 'Subtotal', align: 'text-right' },
+                          { label: '', align: 'text-center' }
+                        ].map((col, idx) => (
+                          <th key={idx} className={`px-2 py-1.5 text-[9px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap ${col.align}`}>
+                            {col.label}
                           </th>
                         ))}
                       </tr>
@@ -462,34 +471,36 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                         const linea_ = lineasPedido.find(l => l.producto.id === prod.id)
                         return (
                           <tr key={prod.id} className={`border-t border-white/5 transition-colors ${linea_ && linea_.cantidadCajas > 0 ? 'bg-primary/5' : 'hover:bg-white/[0.02]'}`}>
-                            <td className="px-2 py-2 text-primary font-bold text-[10px]">{prod.codigoInterno}</td>
-                            <td className="px-2 py-2 text-white text-[11px] font-semibold whitespace-nowrap">{prod.nombre}</td>
+                            <td className="px-2 py-2 text-primary font-bold text-[10px] text-left">{prod.codigoInterno}</td>
+                            <td className="px-2 py-2 text-white text-[11px] font-semibold whitespace-nowrap text-left">{prod.nombre}</td>
                             <td className="px-2 py-2 text-secondary text-[11px] text-center">{prod.paqPorCaja}</td>
                             {/* Negotiated Price Input */}
-                            <td className="px-2 py-2">
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={linea_ ? linea_.precioCajaNegociado : prod.precioCaja}
-                                onChange={e => {
-                                  const val = parseFloat(e.target.value) || 0
-                                  actualizarPrecioNegociado(prod.id, val)
-                                }}
-                                className={`w-24 bg-black/40 border rounded-lg px-2 py-1 text-xs text-white font-semibold text-right focus:border-primary focus:outline-none ${
-                                  linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01
-                                    ? 'border-yellow-400/50 text-yellow-400 font-bold bg-yellow-400/[0.03]'
-                                    : 'border-white/10'
-                                }`}
-                              />
-                              {linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01 && (
-                                <span className="block text-[8px] text-yellow-400 font-bold text-right mt-0.5">Negociado</span>
-                              )}
+                            <td className="px-2 py-2 text-right">
+                              <div className="inline-block text-right">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={linea_ ? linea_.precioCajaNegociado : prod.precioCaja}
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value) || 0
+                                    actualizarPrecioNegociado(prod.id, val)
+                                  }}
+                                  className={`w-24 bg-black/40 border rounded-lg px-2 py-1 text-xs text-white font-semibold text-right focus:border-primary focus:outline-none ${
+                                    linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01
+                                      ? 'border-yellow-400/50 text-yellow-400 font-bold bg-yellow-400/[0.03]'
+                                      : 'border-white/10'
+                                  }`}
+                                />
+                                {linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01 && (
+                                  <span className="block text-[8px] text-yellow-400 font-bold text-right mt-0.5">Negociado</span>
+                                )}
+                              </div>
                             </td>
 
                             {/* Quantity input */}
-                            <td className="px-2 py-2">
-                              <div className="flex items-center gap-1">
+                            <td className="px-2 py-2 text-center">
+                              <div className="flex items-center justify-center gap-1">
                                 <button
                                   onClick={() => linea_ ? actualizarCantidad(prod.id, -1) : null}
                                   className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-secondary hover:text-white transition-all"
@@ -531,12 +542,12 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                             </td>
 
                             {/* Subtotal */}
-                            <td className="px-2 py-2 text-white text-[11px] font-black whitespace-nowrap">
+                            <td className="px-2 py-2 text-white text-[11px] font-black whitespace-nowrap text-right">
                               {linea_ && linea_.cantidadCajas > 0 ? fmt(linea_.subtotal) : '—'}
                             </td>
 
                             {/* Remove */}
-                            <td className="px-2 py-2">
+                            <td className="px-2 py-2 text-center">
                               {linea_ && (
                                 <button
                                   onClick={() => eliminarLinea(prod.id)}

@@ -431,10 +431,21 @@ export function ProductosPageClient({ userNivel }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 text-left">
-                    {['Código', 'Descripción', 'Paq/Caja', 'Precio Paquete', 'Precio Caja', 'Total c/IVA 21%', userNivel === 1 ? 'Estado' : '', userNivel === 1 ? 'Acciones' : ''].filter(Boolean).map(col => (
-                      <th key={col} className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider whitespace-nowrap">
-                        {col}
+                  <tr className="border-b border-white/5">
+                    {[
+                      { label: 'Código', align: 'text-left' },
+                      { label: 'Descripción', align: 'text-left' },
+                      { label: 'Paq/Caja', align: 'text-center' },
+                      { label: 'Precio Paquete', align: 'text-right' },
+                      { label: 'Precio Caja', align: 'text-right' },
+                      { label: 'Total c/IVA 21%', align: 'text-right' },
+                      ...(userNivel === 1 ? [
+                        { label: 'Estado', align: 'text-left' },
+                        { label: 'Acciones', align: 'text-center' }
+                      ] : [])
+                    ].map(col => (
+                      <th key={col.label} className={`px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider whitespace-nowrap ${col.align}`}>
+                        {col.label}
                       </th>
                     ))}
                   </tr>
@@ -445,15 +456,15 @@ export function ProductosPageClient({ userNivel }: Props) {
                       key={p.id}
                       className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${!p.activo ? 'opacity-40' : ''}`}
                     >
-                      <td className="px-4 py-3 text-primary font-black text-xs">{p.codigoInterno}</td>
-                      <td className="px-4 py-3 text-white font-semibold text-xs">{p.nombre}</td>
+                      <td className="px-4 py-3 text-primary font-black text-xs text-left">{p.codigoInterno}</td>
+                      <td className="px-4 py-3 text-white font-semibold text-xs text-left">{p.nombre}</td>
                       <td className="px-4 py-3 text-secondary text-xs text-center">{p.paqPorCaja}</td>
-                      <td className="px-4 py-3 text-white text-xs">{fmt(p.precioPaquete)}</td>
-                      <td className="px-4 py-3 text-white font-bold text-xs">{fmt(p.precioCaja)}</td>
-                      <td className="px-4 py-3 text-primary font-black text-xs">{fmt(p.precioCaja * (1 + IVA))}</td>
+                      <td className="px-4 py-3 text-white text-xs text-right">{fmt(p.precioPaquete)}</td>
+                      <td className="px-4 py-3 text-white font-bold text-xs text-right">{fmt(p.precioCaja)}</td>
+                      <td className="px-4 py-3 text-primary font-black text-xs text-right">{fmt(p.precioCaja * (1 + IVA))}</td>
                       {userNivel === 1 && (
                         <>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-left">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
                               p.activo
                                 ? 'bg-green-400/10 text-green-400 border-green-400/20'
@@ -462,8 +473,8 @@ export function ProductosPageClient({ userNivel }: Props) {
                               {p.activo ? 'Activo' : 'Inactivo'}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5">
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => openEditar(p)}
                                 title="Editar"

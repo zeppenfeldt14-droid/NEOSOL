@@ -22,7 +22,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
   const params = useParams()
   const zonaName = params.zonaName as string
   const [searchQuery, setSearchQuery] = useState('')
-  const [estadoFilter, setEstadoFilter] = useState<'todos' | 'prospecto' | 'activo' | 'descartada'>('todos')
+  const [estadoFilter, setEstadoFilter] = useState<'todos' | 'prospecto' | 'activo' | 'baja' | 'descartada'>('todos')
   const [zonaFilter, setZonaFilter] = useState<string>('todas')
 
   const filteredEmpresas = useMemo(() => {
@@ -99,6 +99,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                 { id: 'todos', label: 'Todas' },
                 { id: 'prospecto', label: 'Prospectos' },
                 { id: 'activo', label: 'Clientes' },
+                { id: 'baja', label: 'Bajas' },
                 { id: 'descartada', label: 'Descartadas' }
               ].map(tab => (
                 <button
@@ -181,6 +182,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                   <span className={`badge ${
                     empresa.estado === 'activo' ? 'badge-success' : 
                     empresa.estado === 'descartada' ? 'badge-danger' :
+                    empresa.estado === 'baja' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                     'badge-warning'
                   }`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>
                     {empresa.estado.toUpperCase()}
