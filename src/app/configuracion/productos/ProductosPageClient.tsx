@@ -16,6 +16,10 @@ interface Producto {
   paqPorCaja: number
   precioCaja: number
   activo: boolean
+  precioPaqueteMin?: number
+  precioCajaMin?: number
+  precioPaqueteMax?: number
+  precioCajaMax?: number
 }
 
 interface Props {
@@ -44,6 +48,9 @@ export function ProductosPageClient({ userNivel }: Props) {
   const [search, setSearch]       = useState('')
   const [filtroLinea, setFiltroLinea] = useState<string>('todas')
   const [showInactivos, setShowInactivos] = useState(false)
+  const [tarifaVer, setTarifaVer] = useState<'min' | 'max'>('max')
+  const [priceLists, setPriceLists] = useState<any[]>([])
+  const [selectedListId, setSelectedListId] = useState<number | null>(null)
 
   // Modal state
   const [modal, setModal] = useState<'crear' | 'editar' | null>(null)
@@ -58,13 +65,44 @@ export function ProductosPageClient({ userNivel }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
+  const getProductPrices = useCallback((p: Producto) => {
+    const selectedList = priceLists.find(l => l.id === selectedListId)
+    const priceRecord = selectedList?.precios.find((pr: any) => pr.productoId === p.id)
+    
+    if (priceRecord) {
+      return {
+        precioPaquete: tarifaVer === 'min' ? priceRecord.precioPaqueteMin : priceRecord.precioPaqueteMax,
+        precioCaja: tarifaVer === 'min' ? priceRecord.precioCajaMin : priceRecord.precioCajaMax,
+      }
+    }
+    
+    return {
+      precioPaquete: tarifaVer === 'min' ? Number((p.precioPaquete * 1.15).toFixed(2)) : p.precioPaquete,
+      precioCaja: tarifaVer === 'min' ? Number((p.precioCaja * 1.15).toFixed(2)) : p.precioCaja,
+    }
+  }, [priceLists, selectedListId, tarifaVer])
+
   // ─── Fetch products ────────────────────────────────────────────────────
   const fetchProductos = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/productos')
-    const data = await res.json()
-    setProductos(Array.isArray(data) ? data : [])
-    setLoading(false)
+    try {
+      const res = await fetch('/api/productos')
+      const data = await res.json()
+      setProductos(Array.isArray(data) ? data : [])
+      
+      const listsRes = await fetch('/api/configuracion/tarifas')
+      const listsData = await listsRes.json()
+      if (Array.isArray(listsData)) {
+        setPriceLists(listsData)
+        const now = new Date()
+        const active = listsData.find((l: any) => l.activa && new Date(l.vigenteDesde) <= now) || listsData[0]
+        if (active) setSelectedListId(active.id)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetchProductos() }, [fetchProductos])
@@ -207,17 +245,24 @@ export function ProductosPageClient({ userNivel }: Props) {
         return acc
       }, {} as Record<string, Producto[]>)
 
+    const selectedList = priceLists.find(l => l.id === selectedListId)
+    const listLabel = selectedList?.nombre || 'Mayo 2026'
+    const tarifaLabel = tarifaVer === 'min' ? 'Menos de 300 Cajas (Estándar)' : 'Más de 300 Cajas (Volumen)'
+
     const tableRows = (prods: Producto[]) =>
-      prods.map(p => `
-        <tr>
-          <td>${p.codigoInterno}</td>
-          <td>${p.nombre}</td>
-          <td style="text-align:center">${p.paqPorCaja}</td>
-          <td style="text-align:right">${fmt(p.precioPaquete)}</td>
-          <td style="text-align:right">${fmt(p.precioCaja)}</td>
-          <td style="text-align:right">${fmt(p.precioCaja * (1 + IVA))}</td>
-        </tr>
-      `).join('')
+      prods.map(p => {
+        const { precioPaquete, precioCaja } = getProductPrices(p)
+        return `
+          <tr>
+            <td>${p.codigoInterno}</td>
+            <td>${p.nombre}</td>
+            <td style="text-align:center">${p.paqPorCaja}</td>
+            <td style="text-align:right">${fmt(precioPaquete)}</td>
+            <td style="text-align:right">${fmt(precioCaja)}</td>
+            <td style="text-align:right">${fmt(precioCaja * (1 + IVA))}</td>
+          </tr>
+        `
+      }).join('')
 
     const sectionsHTML = Object.entries(productosPorLinea).map(([linea, prods]) => `
       <div class="section">
@@ -239,7 +284,7 @@ export function ProductosPageClient({ userNivel }: Props) {
       <html lang="es">
       <head>
         <meta charset="UTF-8"/>
-        <title>Lista de Precios NEOSOL — ${today}</title>
+        <title>Lista de Precios NEOSOL — ${listLabel} [${tarifaLabel}] — ${today}</title>
         <style>
           * { margin:0; padding:0; box-sizing:border-box; }
           body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a2e; font-size: 10px; padding: 20px; }
@@ -264,7 +309,7 @@ export function ProductosPageClient({ userNivel }: Props) {
       <body>
         <div class="header">
           <div>
-            <div class="brand">NEOSOL<span>Lista de Precios Oficial</span></div>
+            <div class="brand">NEOSOL<span>Lista de Precios Oficial · ${listLabel} · ${tarifaLabel}</span></div>
             <p class="note">* Precios sin IVA. Total c/IVA incluye el 21% sobre precio de caja.</p>
           </div>
           <div class="date">
@@ -317,7 +362,7 @@ export function ProductosPageClient({ userNivel }: Props) {
             Lista de Precios
           </h1>
           <p className="text-secondary text-sm mt-1">
-            Mayo 2026 · {productos.filter(p => p.activo).length} productos activos
+            {priceLists.find(l => l.id === selectedListId)?.nombre || 'Mayo 2026'} · {productos.filter(p => p.activo).length} productos activos
             {userNivel === 1 && <span className="text-primary ml-2">· Edición habilitada</span>}
           </p>
         </div>
@@ -346,6 +391,70 @@ export function ProductosPageClient({ userNivel }: Props) {
           >
             <Printer size={14} /> Imprimir / PDF
           </button>
+        </div>
+      </div>
+
+      {/* List Selection & Tariff Selection */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white/5 border border-white/5 p-4 rounded-2xl">
+        <div className="flex flex-col gap-1.5 flex-1">
+          <label className="text-[10px] uppercase font-black text-secondary tracking-wider">Período / Tarifario</label>
+          <div className="flex gap-2 flex-wrap">
+            {priceLists.length === 0 ? (
+              <span className="text-secondary text-xs italic">No hay listas creadas</span>
+            ) : (
+              priceLists.map((l: any) => {
+                const isUpcoming = new Date(l.vigenteDesde) > new Date()
+                return (
+                  <button
+                    key={l.id}
+                    onClick={() => setSelectedListId(l.id)}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                      selectedListId === l.id
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                        : 'border-white/10 text-secondary hover:text-white hover:border-white/20 bg-black/20'
+                    }`}
+                  >
+                    <span>{l.nombre}</span>
+                    {isUpcoming ? (
+                      <span className="px-1 py-0.5 rounded bg-blue-400/20 text-blue-400 text-[8px] font-black uppercase">
+                        Próxima (Ago)
+                      </span>
+                    ) : (
+                      <span className="px-1 py-0.5 rounded bg-green-400/20 text-green-400 text-[8px] font-black uppercase">
+                        Vigente
+                      </span>
+                    )}
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] uppercase font-black text-secondary tracking-wider text-left md:text-right">Volumen del Pedido</label>
+          <div className="flex gap-2 bg-black/30 p-1 rounded-xl border border-white/5">
+            <button
+              onClick={() => setTarifaVer('min')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                tarifaVer === 'min'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-secondary hover:text-white'
+              }`}
+            >
+              Menos de 300 Cajas
+            </button>
+            <button
+              onClick={() => setTarifaVer('max')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                tarifaVer === 'max'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-secondary hover:text-white'
+              }`}
+            >
+              Más de 300 Cajas
+            </button>
+          </div>
         </div>
       </div>
 
@@ -482,9 +591,16 @@ export function ProductosPageClient({ userNivel }: Props) {
                       <td className="px-4 py-3 text-primary font-black text-xs text-left">{p.codigoInterno}</td>
                       <td className="px-4 py-3 text-white font-semibold text-xs text-left">{p.nombre}</td>
                       <td className="px-4 py-3 text-secondary text-xs text-center">{p.paqPorCaja}</td>
-                      <td className="px-4 py-3 text-white text-xs text-right">{fmt(p.precioPaquete)}</td>
-                      <td className="px-4 py-3 text-white font-bold text-xs text-right">{fmt(p.precioCaja)}</td>
-                      <td className="px-4 py-3 text-primary font-black text-xs text-right">{fmt(p.precioCaja * (1 + IVA))}</td>
+                      {(() => {
+                        const { precioPaquete, precioCaja } = getProductPrices(p)
+                        return (
+                          <>
+                            <td className="px-4 py-3 text-white text-xs text-right">{fmt(precioPaquete)}</td>
+                            <td className="px-4 py-3 text-white font-bold text-xs text-right">{fmt(precioCaja)}</td>
+                            <td className="px-4 py-3 text-primary font-black text-xs text-right">{fmt(precioCaja * (1 + IVA))}</td>
+                          </>
+                        )
+                      })()}
                       {userNivel === 1 && (
                         <>
                           <td className="px-4 py-3 text-left">
