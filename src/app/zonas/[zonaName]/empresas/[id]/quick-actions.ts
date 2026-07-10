@@ -50,3 +50,33 @@ export async function eliminarEmpresaDefinitivamente(id: number) {
   revalidatePath('/planificador')
   revalidatePath('/')
 }
+
+export async function darDeBajaEmpresa(id: number, motivoBaja: string) {
+  await prisma.empresa.update({
+    where: { id },
+    data: {
+      estado: 'baja',
+      motivoBaja: motivoBaja.trim()
+    }
+  })
+  
+  revalidatePath(`/empresas/${id}`)
+  revalidatePath('/empresas')
+  revalidatePath('/planificador')
+  revalidatePath('/')
+}
+
+export async function reactivarCliente(id: number) {
+  await prisma.empresa.update({
+    where: { id },
+    data: {
+      estado: 'activo',
+      motivoBaja: null
+    }
+  })
+  
+  revalidatePath(`/empresas/${id}`)
+  revalidatePath('/empresas')
+  revalidatePath('/planificador')
+  revalidatePath('/')
+}

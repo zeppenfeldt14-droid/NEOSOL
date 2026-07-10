@@ -1,7 +1,7 @@
 'use client'
 
-import { setEmpresaEstado, descartarEmpresa, eliminarEmpresaDefinitivamente } from './quick-actions'
-import { CheckCircle2, UserCheck, Printer, Ban, Trash2 } from 'lucide-react'
+import { setEmpresaEstado, descartarEmpresa, eliminarEmpresaDefinitivamente, darDeBajaEmpresa, reactivarCliente } from './quick-actions'
+import { CheckCircle2, UserCheck, Printer, Ban, Trash2, ArrowUpCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -13,12 +13,14 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
   const handleConvertToClient = async () => {
     setIsUpdating(true)
     await setEmpresaEstado(id, 'activo')
+    router.refresh()
     setIsUpdating(false)
   }
 
   const handleConvertToProspect = async () => {
     setIsUpdating(true)
     await setEmpresaEstado(id, 'prospecto')
+    router.refresh()
     setIsUpdating(false)
   }
 
@@ -28,6 +30,24 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
 
     setIsUpdating(true)
     await descartarEmpresa(id, motivo)
+    router.refresh()
+    setIsUpdating(false)
+  }
+
+  const handleDarDeBaja = async () => {
+    const motivo = prompt('Por favor, ingresa el motivo por el cual se da de baja a este cliente:')
+    if (!motivo) return // Cancelado o vacío
+
+    setIsUpdating(true)
+    await darDeBajaEmpresa(id, motivo)
+    router.refresh()
+    setIsUpdating(false)
+  }
+
+  const handleReactivar = async () => {
+    setIsUpdating(true)
+    await reactivarCliente(id)
+    router.refresh()
     setIsUpdating(false)
   }
 
@@ -57,14 +77,37 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
       )}
       
       {estado === 'activo' && (
+        <>
+          <button 
+            onClick={handleConvertToProspect}
+            disabled={isUpdating}
+            className="btn btn-secondary"
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+          >
+            <UserCheck size={16} /> 
+            {isUpdating ? 'Actualizando...' : 'Volver a Prospecto'}
+          </button>
+          <button 
+            onClick={handleDarDeBaja}
+            disabled={isUpdating}
+            className="btn btn-outline border-error text-error hover:bg-error hover:text-white"
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+          >
+            <Ban size={16} /> 
+            {isUpdating ? 'Actualizando...' : 'Dar de Baja'}
+          </button>
+        </>
+      )}
+
+      {estado === 'baja' && (
         <button 
-          onClick={handleConvertToProspect}
+          onClick={handleReactivar}
           disabled={isUpdating}
-          className="btn btn-secondary"
+          className="btn btn-primary"
           style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
         >
-          <UserCheck size={16} /> 
-          {isUpdating ? 'Actualizando...' : 'Volver a Prospecto'}
+          <ArrowUpCircle size={16} /> 
+          {isUpdating ? 'Actualizando...' : 'Reactivar Cliente'}
         </button>
       )}
 
