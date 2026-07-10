@@ -155,6 +155,47 @@ export async function POST() {
       }
     }
 
+    // Ensure July 2026 Promotions
+    const promos = [
+      {
+        nombre: 'Promo 10x1 Dulce 99001',
+        descripcion: 'Llevando 10 cajas de Dulce 16 Paq x 360g (99001), te llevas 1 caja de bonificación.',
+        tipo: 'bonificacion',
+        compraMinima: 10,
+        bonificacion: 1,
+        activa: true,
+        vigenciaDesde: new Date('2026-07-01T00:00:00Z'),
+        vigenciaHasta: new Date('2026-07-31T23:59:59Z'),
+      },
+      {
+        nombre: 'Promo 10x1 Minis (77001/2/3)',
+        descripcion: 'Llevando 10 cajas de cualquier producto de la línea Minis, te llevas 1 caja de bonificación.',
+        tipo: 'bonificacion',
+        compraMinima: 10,
+        bonificacion: 1,
+        activa: true,
+        vigenciaDesde: new Date('2026-07-01T00:00:00Z'),
+        vigenciaHasta: new Date('2026-07-31T23:59:59Z'),
+      },
+      {
+        nombre: 'Promo 10x1 Snacks Horneados (80000-80007)',
+        descripcion: 'Llevando 10 cajas de cualquier producto de la línea Snacks Horneados (Baguetines/Neox/Neolitas), te llevas 1 caja de bonificación.',
+        tipo: 'bonificacion',
+        compraMinima: 10,
+        bonificacion: 1,
+        activa: true,
+        vigenciaDesde: new Date('2026-07-01T00:00:00Z'),
+        vigenciaHasta: new Date('2026-07-31T23:59:59Z'),
+      }
+    ]
+
+    for (const pr of promos) {
+      const existing = await prisma.promocion.findFirst({ where: { nombre: pr.nombre } })
+      if (!existing) {
+        await prisma.promocion.create({ data: pr })
+      }
+    }
+
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('[API Seed Productos]', error)

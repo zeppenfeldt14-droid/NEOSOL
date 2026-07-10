@@ -153,24 +153,61 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
+  // Helper to check if a promotion applies to a specific product
+  const doesPromoApplyToProduct = useCallback((promo: any, prod: Producto) => {
+    const promoNameLower = promo.nombre.toLowerCase()
+    const prodNombreLower = prod.nombre.toLowerCase()
+    const prodLineaLower = (prod.linea || '').toLowerCase()
+    const prodCodigo = prod.codigoInterno
+
+    // If the promo name specifies a specific code (e.g. "99001")
+    if (promoNameLower.includes(prodCodigo)) {
+      return true
+    }
+
+    // If the promo name contains any product code, but not this one, then it does not apply to this one
+    const anyCodeMatch = ['33001', '33024', '33077', '66033', '66034', '99001', '77001', '77002', '77003', '80000', '80001', '80002', '80003', '80004', '80005', '80006', '80007']
+    const hasOtherCode = anyCodeMatch.some(code => code !== prodCodigo && promoNameLower.includes(code))
+    if (hasOtherCode) return false
+
+    // If the promo name mentions "minis" and product is in minis line
+    if (promoNameLower.includes('minis') || promoNameLower.includes('mini')) {
+      return prodLineaLower === 'minis' || prodNombreLower.includes('mini')
+    }
+
+    // If the promo name mentions "dulce"
+    if (promoNameLower.includes('dulce') && !prodNombreLower.includes('dulce')) {
+      return false
+    }
+
+    // If the promo name mentions "snacks" or "baguetines" or "neolitas" or "neox"
+    if (promoNameLower.includes('snacks') || promoNameLower.includes('baguetines') || promoNameLower.includes('neox') || promoNameLower.includes('neolitas') || promoNameLower.includes('horneados')) {
+      return prodLineaLower === 'snacks' || prodNombreLower.includes('baguetine') || prodNombreLower.includes('neolita') || prodNombreLower.includes('neox')
+    }
+
+    return true
+  }, [])
+
   // Helper to calculate bonus details for a line
-  const getLineaBonusDetails = (l: LineaPedido) => {
+  const getLineaBonusDetails = useCallback((l: LineaPedido) => {
     let cajasBonus = 0
     let descripcionBonus = ''
     let appliedPromos: string[] = []
 
     for (const promo of promosActivas) {
       if (promosSeleccionadas[promo.id]) {
-        if (promo.compraMinima && l.cantidadCajas >= promo.compraMinima) {
-          const bonusCount = Math.floor(l.cantidadCajas / promo.compraMinima) * (promo.bonificacion || 1)
-          cajasBonus += bonusCount
-          appliedPromos.push(`${promo.nombre}: +${bonusCount} reg`)
+        if (doesPromoApplyToProduct(promo, l.producto)) {
+          if (promo.compraMinima && l.cantidadCajas >= promo.compraMinima) {
+            const bonusCount = Math.floor(l.cantidadCajas / promo.compraMinima) * (promo.bonificacion || 1)
+            cajasBonus += bonusCount
+            appliedPromos.push(`${promo.nombre}: +${bonusCount} reg`)
+          }
         }
       }
     }
     descripcionBonus = appliedPromos.join(', ')
     return { cajasBonus, descripcionBonus }
-  }
+  }, [promosActivas, promosSeleccionadas, doesPromoApplyToProduct])
 
   const getListPriceForProduct = useCallback((prod: Producto, isVolume: boolean) => {
     const selectedList = priceLists.find(l => l.id === selectedListId)
@@ -287,7 +324,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         descripcionBonus
       }
     }))
-  }, [promosSeleccionadas, promosActivas])
+  }, [promosSeleccionadas, promosActivas, getLineaBonusDetails])
 
   // Dynamic prices sync when volume tier or price list switches
   useEffect(() => {
@@ -582,14 +619,14 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                   {LINEAS_LABELS[linea] || linea}
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm table-fixed">
+                  <table className="w-full text-[11px] table-fixed">
                     <colgroup>
                       <col style={{ width: '8%' }} />
-                      <col style={{ width: '32%' }} />
-                      <col style={{ width: '10%' }} />
-                      <col style={{ width: '16%' }} />
-                      <col style={{ width: '14%' }} />
+                      <col style={{ width: '38%' }} />
                       <col style={{ width: '8%' }} />
+                      <col style={{ width: '16%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '6%' }} />
                       <col style={{ width: '10%' }} />
                       <col style={{ width: '2%' }} />
                     </colgroup>
@@ -605,7 +642,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                           { label: 'Subtotal', align: 'text-right' },
                           { label: '', align: 'text-center' }
                         ].map((col, idx) => (
-                          <th key={idx} className={`px-2 py-1.5 text-[9px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap ${col.align}`}>
+                          <th key={idx} className={`px-2 py-1.5 text-[8px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap ${col.align}`}>
                             {col.label}
                           </th>
                         ))}
@@ -614,11 +651,12 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                     <tbody>
                       {prods.map(prod => {
                         const linea_ = lineasPedido.find(l => l.producto.id === prod.id)
+                        const listPrice = getListPriceForProduct(prod, totalCajas >= 300 || negociarTarifaVolumen)
                         return (
                           <tr key={prod.id} className={`border-t border-white/5 transition-colors ${linea_ && linea_.cantidadCajas > 0 ? 'bg-primary/5' : 'hover:bg-white/[0.02]'}`}>
                             <td className="px-2 py-2 text-primary font-bold text-[10px] text-left">{prod.codigoInterno}</td>
-                            <td className="px-2 py-2 text-white text-[11px] font-semibold text-left">{prod.nombre}</td>
-                            <td className="px-2 py-2 text-secondary text-[11px] text-center">{prod.paqPorCaja}</td>
+                            <td className="px-2 py-2 text-white font-semibold text-left leading-tight">{prod.nombre}</td>
+                            <td className="px-2 py-2 text-secondary text-center">{prod.paqPorCaja}</td>
                             {/* Negotiated Price Input */}
                             <td className="px-2 py-2 text-right">
                               <div className="inline-block text-right">
@@ -626,18 +664,18 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                                   type="number"
                                   step="0.01"
                                   min="0"
-                                  value={linea_ ? linea_.precioCajaNegociado : prod.precioCaja}
+                                  value={linea_ ? linea_.precioCajaNegociado : listPrice}
                                   onChange={e => {
                                     const val = parseFloat(e.target.value) || 0
                                     actualizarPrecioNegociado(prod.id, val)
                                   }}
-                                  className={`w-24 bg-black/40 border rounded-lg px-2 py-1 text-xs text-white font-semibold text-right focus:border-primary focus:outline-none ${
-                                    linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01
+                                  className={`w-20 bg-black/40 border rounded-lg px-1.5 py-0.5 text-[10px] text-white font-semibold text-right focus:border-primary focus:outline-none ${
+                                    linea_ && linea_.hasCustomPrice
                                       ? 'border-yellow-400/50 text-yellow-400 font-bold bg-yellow-400/[0.03]'
                                       : 'border-white/10'
                                   }`}
                                 />
-                                {linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01 && (
+                                {linea_ && linea_.hasCustomPrice && (
                                   <span className="block text-[8px] text-yellow-400 font-bold text-right mt-0.5">Negociado</span>
                                 )}
                               </div>
@@ -645,12 +683,12 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
                             {/* Quantity input */}
                             <td className="px-2 py-2 text-center">
-                              <div className="flex items-center justify-center gap-1">
+                              <div className="flex items-center justify-center gap-0.5">
                                 <button
                                   onClick={() => linea_ ? actualizarCantidad(prod.id, -1) : null}
-                                  className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-secondary hover:text-white transition-all"
+                                  className="w-5 h-5 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-secondary hover:text-white transition-all"
                                 >
-                                  <Minus size={10} />
+                                  <Minus size={9} />
                                 </button>
                                 <input
                                   type="number"
@@ -661,16 +699,16 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                                     setCantidadDirecta(prod.id, parseInt(e.target.value) || 0)
                                   }}
                                   onFocus={() => !linea_ && agregarProducto(prod)}
-                                  className="w-14 text-center bg-black/40 border border-white/10 rounded-lg py-1 text-xs text-white font-bold focus:border-primary focus:outline-none"
+                                  className="w-10 text-center bg-black/40 border border-white/10 rounded-lg py-0.5 text-[10px] text-white font-bold focus:border-primary focus:outline-none"
                                 />
                                 <button
                                   onClick={() => {
                                     if (!linea_) agregarProducto(prod)
                                     actualizarCantidad(prod.id, 1)
                                   }}
-                                  className="w-6 h-6 rounded-lg bg-white/5 hover:bg-primary/30 flex items-center justify-center text-secondary hover:text-primary transition-all"
+                                  className="w-5 h-5 rounded-lg bg-white/5 hover:bg-primary/30 flex items-center justify-center text-secondary hover:text-primary transition-all"
                                 >
-                                  <Plus size={10} />
+                                  <Plus size={9} />
                                 </button>
                               </div>
                             </td>
