@@ -15,6 +15,25 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [isSaving, setIsSaving] = useState(false)
   const [dragActive, setDragActive] = useState(false)
 
+  // Tariffs state
+  const [listasTarifas, setListasTarifas] = useState<any[]>([])
+  const [newTarifaName, setNewTarifaName] = useState('')
+  const [newTarifaVigencia, setNewTarifaVigencia] = useState('')
+  const [csvFileMin, setCsvFileMin] = useState<File | null>(null)
+  const [csvFileMax, setCsvFileMax] = useState<File | null>(null)
+  const [aumentoPorcentaje, setAumentoPorcentaje] = useState<{ [key: number]: string }>({})
+  const [isLoadingTarifas, setIsLoadingTarifas] = useState(false)
+
+  // Promotions state
+  const [promociones, setPromociones] = useState<any[]>([])
+  const [newPromoNombre, setNewPromoNombre] = useState('')
+  const [newPromoDesc, setNewPromoDesc] = useState('')
+  const [newPromoMin, setNewPromoMin] = useState('')
+  const [newPromoBonus, setNewPromoBonus] = useState('')
+  const [newPromoDesde, setNewPromoDesde] = useState('')
+  const [newPromoHasta, setNewPromoHasta] = useState('')
+  const [isLoadingPromos, setIsLoadingPromos] = useState(false)
+
   // Zones management state
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([])
   const [newZonaName, setNewZonaName] = useState('')
@@ -34,7 +53,218 @@ export function ConfigPageClient({ currentLogo }: Props) {
       .catch(e => console.error('Error fetching auth me:', e))
     
     fetchZonas()
+    fetchTarifas()
+    fetchPromociones()
   }, [])
+
+  const fetchTarifas = async () => {
+    setIsLoadingTarifas(true)
+    try {
+      const res = await fetch('/api/configuracion/tarifas')
+      const data = await res.json()
+      if (Array.isArray(data)) setListasTarifas(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoadingTarifas(false)
+    }
+  }
+
+  const fetchPromociones = async () => {
+    setIsLoadingPromos(true)
+    try {
+      const res = await fetch('/api/configuracion/promociones')
+      const data = await res.json()
+      if (Array.isArray(data)) setPromociones(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoadingPromos(false)
+    }
+  }
+
+  const handleUploadTarifas = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newTarifaName.trim() || !newTarifaVigencia || !csvFileMin || !csvFileMax) {
+      alert('Por favor completa todos los campos de la tarifa e ingresa ambos archivos CSV.')
+      return
+    }
+    setIsSaving(true)
+    try {
+      const formData = new FormData()
+      formData.append('nombre', newTarifaName.trim())
+      formData.append('vigenteDesde', newTarifaVigencia)
+      formData.append('fileMin', csvFileMin)
+      formData.append('fileMax', csvFileMax)
+
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al subir tarifas')
+      
+      alert('Tarifario importado y creado exitosamente.')
+      setNewTarifaName('')
+      setNewTarifaVigencia('')
+      setCsvFileMin(null)
+      setCsvFileMax(null)
+      // reset file inputs
+      const inputMin = document.getElementById('csv-min') as HTMLInputElement
+      const inputMax = document.getElementById('csv-max') as HTMLInputElement
+      if (inputMin) inputMin.value = ''
+      if (inputMax) inputMax.value = ''
+
+      fetchTarifas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleApplyAumento = async (listaId: number) => {
+    const pct = parseFloat(aumentoPorcentaje[listaId] || '')
+    if (isNaN(pct)) {
+      alert('Por favor ingresa un porcentaje de aumento válido.')
+      return
+    }
+    if (!confirm(`¿Estás seguro de que deseas aplicar un aumento global del ${pct}% sobre esta lista de precios?`)) {
+      return
+    }
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'aumento_global', listaId, porcentaje: pct })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al aplicar aumento')
+      alert(`Aumento del ${pct}% aplicado correctamente.`)
+      setAumentoPorcentaje(prev => ({ ...prev, [listaId]: '' }))
+      fetchTarifas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleToggleActivaTarifa = async (listaId: number) => {
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_activa', listaId })
+      })
+      if (!res.ok) throw new Error('Error al cambiar estado')
+      fetchTarifas()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleDeleteTarifa = async (listaId: number, nombre: string) => {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la lista '${nombre}'?`)) return
+    try {
+      const res = await fetch(`/api/configuracion/tarifas?id=${listaId}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) throw new Error('Error al eliminar')
+      alert('Lista eliminada.')
+      fetchTarifas()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleCreatePromo = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newPromoNombre.trim() || !newPromoMin || !newPromoBonus) {
+      alert('Por favor completa los campos requeridos de la promoción.')
+      return
+    }
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/configuracion/promociones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: newPromoNombre.trim(),
+          descripcion: newPromoDesc.trim() || null,
+          compraMinima: parseInt(newPromoMin),
+          bonificacion: parseInt(newPromoBonus),
+          vigenciaDesdeStr: newPromoDesde || null,
+          vigenciaHastaStr: newPromoHasta || null
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al crear promo')
+      alert('Promoción creada correctamente.')
+      setNewPromoNombre('')
+      setNewPromoDesc('')
+      setNewPromoMin('')
+      setNewPromoBonus('')
+      setNewPromoDesde('')
+      setNewPromoHasta('')
+      fetchPromociones()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdatePromoDate = async (id: number, desdeStr: string, hastaStr: string) => {
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/configuracion/promociones', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          vigenciaDesdeStr: desdeStr || null,
+          vigenciaHastaStr: hastaStr || null
+        })
+      })
+      if (!res.ok) throw new Error('Error al guardar fecha')
+      alert('Vigencia de la promoción guardada.')
+      fetchPromociones()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleToggleActivaPromo = async (id: number) => {
+    try {
+      const res = await fetch('/api/configuracion/promociones', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'toggle_activa' })
+      })
+      if (!res.ok) throw new Error('Error al cambiar estado')
+      fetchPromociones()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleDeletePromo = async (id: number, nombre: string) => {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la promoción '${nombre}'?`)) return
+    try {
+      const res = await fetch(`/api/configuracion/promociones?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) throw new Error('Error al eliminar')
+      alert('Promoción eliminada.')
+      fetchPromociones()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
 
   const fetchZonas = async () => {
     setIsLoadingZonas(true)
@@ -353,6 +583,297 @@ export function ConfigPageClient({ currentLogo }: Props) {
             </div>
             <div className="text-secondary text-center mt-4" style={{ fontSize: '0.75rem' }}>
               Al crear una nueva zona principal, aparecerá de forma inmediata en el menú de navegación y en los formularios de alta/edición.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Tariffs and Pricing Lists */}
+      {userNivel === 1 && (
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in mt-6">
+          <div className="glass-panel card md:col-span-2">
+            <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+              Listas de Tarifas y Precios por Volumen
+            </h3>
+
+            <div className="flex flex-col gap-4">
+              {isLoadingTarifas ? (
+                <p className="text-secondary text-sm">Cargando tarifas...</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {listasTarifas.map(l => {
+                    const actDate = new Date(l.vigenteDesde).toLocaleDateString('es-AR')
+                    return (
+                      <div key={l.id} className="p-4 rounded-lg border border-white/5 bg-black/10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-bold text-sm">{l.nombre}</span>
+                            <span className={`badge ${l.activa ? 'badge-success' : 'badge-neutral'}`}>
+                              {l.activa ? 'Vigente' : 'Inactiva'}
+                            </span>
+                          </div>
+                          <div className="text-secondary text-xs mt-1">
+                            Vigente desde: {actDate} · {l.precios?.length || 0} productos
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
+                          {/* Aumento Global */}
+                          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-lg border border-white/5">
+                            <input 
+                              type="number" 
+                              className="form-input !py-1 !px-2 text-xs w-16 text-center" 
+                              placeholder="+ %"
+                              value={aumentoPorcentaje[l.id] || ''}
+                              onChange={(e) => setAumentoPorcentaje(prev => ({ ...prev, [l.id]: e.target.value }))}
+                            />
+                            <button 
+                              onClick={() => handleApplyAumento(l.id)} 
+                              className="btn btn-secondary !py-1 !px-2 text-xs"
+                              title="Aplicar Aumento Porcentual Masivo"
+                            >
+                              Aplicar
+                            </button>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleToggleActivaTarifa(l.id)} 
+                              className="btn btn-secondary !py-1.5 !px-2.5 text-xs"
+                            >
+                              {l.activa ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteTarifa(l.id, l.nombre)} 
+                              className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1.5 !px-2.5 text-xs"
+                            >
+                              Borrar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {listasTarifas.length === 0 && (
+                    <p className="text-secondary text-sm">No hay listas de tarifas importadas.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '300px' }}>
+            <div>
+              <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                Importar Tarifario Agosto (CSV)
+              </h3>
+              <form onSubmit={handleUploadTarifas} className="flex flex-col gap-4">
+                <div className="form-group mb-0">
+                  <label className="form-label">Nombre del Tarifario</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Ej. Tarifario Agosto 2026" 
+                    value={newTarifaName} 
+                    onChange={(e) => setNewTarifaName(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label">Vigente Desde</label>
+                  <input 
+                    type="date" 
+                    className="form-input" 
+                    value={newTarifaVigencia} 
+                    onChange={(e) => setNewTarifaVigencia(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-xs">CSV Tarifa Menor Volumen (&lt; 300 cajas)</label>
+                  <input 
+                    id="csv-min"
+                    type="file" 
+                    accept=".csv"
+                    className="form-input !py-1 text-xs"
+                    onChange={(e) => setCsvFileMin(e.target.files?.[0] || null)}
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-xs">CSV Tarifa Mayor Volumen (&gt;= 300 cajas)</label>
+                  <input 
+                    id="csv-max"
+                    type="file" 
+                    accept=".csv"
+                    className="form-input !py-1 text-xs"
+                    onChange={(e) => setCsvFileMax(e.target.files?.[0] || null)}
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary w-full" disabled={isSaving}>
+                  Importar Tarifario
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Promotions */}
+      {userNivel === 1 && (
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in mt-6">
+          <div className="glass-panel card md:col-span-2">
+            <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+              Gestión de Promociones Mensuales
+            </h3>
+
+            <div className="flex flex-col gap-4">
+              {isLoadingPromos ? (
+                <p className="text-secondary text-sm">Cargando promociones...</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {promociones.map(p => {
+                    const desdeVal = p.vigenciaDesde ? new Date(p.vigenciaDesde).toISOString().split('T')[0] : ''
+                    const hastaVal = p.vigenciaHasta ? new Date(p.vigenciaHasta).toISOString().split('T')[0] : ''
+                    return (
+                      <div key={p.id} className="p-4 rounded-lg border border-white/5 bg-black/10 flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-bold text-sm">{p.nombre}</span>
+                              <span className={`badge ${p.activa ? 'badge-success' : 'badge-neutral'}`}>
+                                {p.activa ? 'Activa' : 'Inactiva'}
+                              </span>
+                            </div>
+                            {p.descripcion && <p className="text-secondary text-xs mt-0.5">{p.descripcion}</p>}
+                            <p className="text-primary font-semibold text-xs mt-1">
+                              Compra Mínima: {p.compraMinima} cajas ➔ Bonificación: {p.bonificacion} cajas de regalo
+                            </p>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleToggleActivaPromo(p.id)} 
+                              className="btn btn-secondary !py-1 !px-2 text-xs"
+                            >
+                              {p.activa ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button 
+                              onClick={() => handleDeletePromo(p.id, p.nombre)} 
+                              className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs"
+                            >
+                              Borrar
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Extend Validity Form */}
+                        <div className="flex items-center gap-3 bg-black/30 p-2.5 rounded-lg border border-white/5 flex-wrap">
+                          <span className="text-secondary text-[11px] font-bold">Vigencia:</span>
+                          <div className="flex items-center gap-1.5">
+                            <input 
+                              type="date" 
+                              className="form-input !py-1 text-xs w-28 text-center" 
+                              defaultValue={desdeVal}
+                              id={`promo-desde-${p.id}`}
+                            />
+                            <span className="text-white/20 text-xs">a</span>
+                            <input 
+                              type="date" 
+                              className="form-input !py-1 text-xs w-28 text-center" 
+                              defaultValue={hastaVal}
+                              id={`promo-hasta-${p.id}`}
+                            />
+                          </div>
+                          <button 
+                            onClick={() => {
+                              const dVal = (document.getElementById(`promo-desde-${p.id}`) as HTMLInputElement).value
+                              const hVal = (document.getElementById(`promo-hasta-${p.id}`) as HTMLInputElement).value
+                              handleUpdatePromoDate(p.id, dVal, hVal)
+                            }}
+                            className="btn btn-primary !py-1 !px-3 text-xs"
+                          >
+                            Guardar Vigencia
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {promociones.length === 0 && (
+                    <p className="text-secondary text-sm">No hay promociones registradas en el sistema.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '300px' }}>
+            <div>
+              <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                Nueva Promoción Mensual
+              </h3>
+              <form onSubmit={handleCreatePromo} className="flex flex-col gap-3">
+                <div className="form-group mb-0">
+                  <label className="form-label text-xs">Nombre de la Promo *</label>
+                  <input 
+                    type="text" 
+                    className="form-input text-xs" 
+                    placeholder="Ej. Promo 10x1 Belgrano" 
+                    value={newPromoNombre} 
+                    onChange={(e) => setNewPromoNombre(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-xs">Descripción</label>
+                  <input 
+                    type="text" 
+                    className="form-input text-xs" 
+                    placeholder="Ej. 1 caja de regalo por cada 10 compradas" 
+                    value={newPromoDesc} 
+                    onChange={(e) => setNewPromoDesc(e.target.value)} 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px]">Compra Mín. (Cajas)</label>
+                    <input 
+                      type="number" 
+                      className="form-input text-xs" 
+                      placeholder="10" 
+                      value={newPromoMin} 
+                      onChange={(e) => setNewPromoMin(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px]">Bonif. (Cajas de Regalo)</label>
+                    <input 
+                      type="number" 
+                      className="form-input text-xs" 
+                      placeholder="1" 
+                      value={newPromoBonus} 
+                      onChange={(e) => setNewPromoBonus(e.target.value)} 
+                    />
+                  </div>
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px]">Vigencia Desde</label>
+                  <input 
+                    type="date" 
+                    className="form-input text-xs !py-1" 
+                    value={newPromoDesde} 
+                    onChange={(e) => setNewPromoDesde(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px]">Vigencia Hasta</label>
+                  <input 
+                    type="date" 
+                    className="form-input text-xs !py-1" 
+                    value={newPromoHasta} 
+                    onChange={(e) => setNewPromoHasta(e.target.value)} 
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary w-full mt-2" disabled={isSaving}>
+                  Crear Promoción
+                </button>
+              </form>
             </div>
           </div>
         </div>

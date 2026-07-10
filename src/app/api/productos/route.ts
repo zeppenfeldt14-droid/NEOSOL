@@ -8,12 +8,35 @@ export async function GET() {
     const session = await getSessionUser()
     if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
+    // Find active price list (vigenteDesde <= hoy)
+    const activeList = await prisma.listaPrecio.findFirst({
+      where: {
+        activa: true,
+        vigenteDesde: { lte: new Date() }
+      },
+      orderBy: { vigenteDesde: 'desc' },
+      include: { precios: true }
+    })
+
     const productos = await prisma.producto.findMany({
       where: { activo: true },
       orderBy: [{ linea: 'asc' }, { nombre: 'asc' }],
     })
 
-    return NextResponse.json(productos)
+    const mapped = productos.map(p => {
+      const priceRecord = activeList?.precios.find(pr => pr.productoId === p.id)
+      return {
+        ...p,
+        // Standard / < 300 boxes
+        precioPaqueteMin: priceRecord ? priceRecord.precioPaqueteMin : p.precioPaquete,
+        precioCajaMin: priceRecord ? priceRecord.precioCajaMin : p.precioCaja,
+        // Volume / >= 300 boxes
+        precioPaqueteMax: priceRecord ? priceRecord.precioPaqueteMax : p.precioPaquete,
+        precioCajaMax: priceRecord ? priceRecord.precioCajaMax : p.precioCaja,
+      }
+    })
+
+    return NextResponse.json(mapped)
   } catch (error: any) {
     console.error('[API GET Productos]', error)
     return NextResponse.json({ error: 'Error al listar productos.' }, { status: 500 })

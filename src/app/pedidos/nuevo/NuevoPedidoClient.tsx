@@ -17,6 +17,10 @@ interface Producto {
   precioPaquete: number
   paqPorCaja: number
   precioCaja: number
+  precioPaqueteMin?: number
+  precioCajaMin?: number
+  precioPaqueteMax?: number
+  precioCajaMax?: number
 }
 
 interface Empresa {
@@ -37,6 +41,7 @@ interface LineaPedido {
   descripcionBonus: string
   precioCajaNegociado: number
   subtotal: number
+  hasCustomPrice: boolean
 }
 
 const LINEAS_LABELS: Record<string, string> = {
@@ -91,7 +96,9 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const [acuerdosComerciales, setAcuerdosComerciales] = useState('')
   const [requierePresupuesto, setRequierePresupuesto] = useState(false)
   const [turnoEntrega, setTurnoEntrega]       = useState<'SI' | 'NO' | ''>('')
-  const [aplicaPromo10x1, setAplicaPromo10x1] = useState(false)
+  const [negociarTarifaVolumen, setNegociarTarifaVolumen] = useState(false)
+  const [promosActivas, setPromosActivas] = useState<any[]>([])
+  const [promosSeleccionadas, setPromosSeleccionadas] = useState<{ [key: number]: boolean }>({})
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
@@ -101,14 +108,17 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   useEffect(() => {
     const fetchData = async () => {
       const zoneQueryParam = userNivel === 3 ? (userZona || '') : ''
-      const [prodRes, empRes] = await Promise.all([
+      const [prodRes, empRes, promoRes] = await Promise.all([
         fetch('/api/productos'),
         fetch(`/api/empresas?estado=activo&zona=${zoneQueryParam}&limit=200`),
+        fetch('/api/configuracion/promociones'),
       ])
       const prodData = await prodRes.json()
       const empData  = await empRes.json()
+      const promoData = await promoRes.json()
       setProductos(Array.isArray(prodData) ? prodData : [])
       setEmpresas(Array.isArray(empData) ? empData : (empData.empresas || []))
+      setPromosActivas(Array.isArray(promoData) ? promoData.filter((p: any) => p.activa) : [])
       setLoading(false)
     }
     fetchData()
@@ -133,16 +143,42 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
+  // Helper to calculate bonus details for a line
+  const getLineaBonusDetails = (l: LineaPedido) => {
+    let cajasBonus = 0
+    let descripcionBonus = ''
+    let appliedPromos: string[] = []
+
+    for (const promo of promosActivas) {
+      if (promosSeleccionadas[promo.id]) {
+        if (promo.compraMinima && l.cantidadCajas >= promo.compraMinima) {
+          const bonusCount = Math.floor(l.cantidadCajas / promo.compraMinima) * (promo.bonificacion || 1)
+          cajasBonus += bonusCount
+          appliedPromos.push(`${promo.nombre}: +${bonusCount} reg`)
+        }
+      }
+    }
+    descripcionBonus = appliedPromos.join(', ')
+    return { cajasBonus, descripcionBonus }
+  }
+
   // ── Add product line ─────────────────────────────────────────────────────
   const agregarProducto = (prod: Producto) => {
     if (lineasPedido.find(l => l.producto.id === prod.id)) return
+    
+    const isVolume = totalCajas >= 300 || negociarTarifaVolumen
+    const listPrice = isVolume
+      ? (prod.precioCajaMax !== undefined ? prod.precioCajaMax : prod.precioCaja)
+      : (prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja)
+
     setLineasPedido(prev => [...prev, {
       producto: prod,
       cantidadCajas: 0,
       cajasBonus: 0,
       descripcionBonus: '',
-      precioCajaNegociado: prod.precioCaja,
+      precioCajaNegociado: listPrice,
       subtotal: 0,
+      hasCustomPrice: false
     }])
   }
 
@@ -150,12 +186,15 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     setLineasPedido(prev => prev.map(l => {
       if (l.producto.id !== prodId) return l
       const nuevaCantidad = Math.max(0, l.cantidadCajas + delta)
-      const bonus = aplicaPromo10x1 ? Math.floor(nuevaCantidad / PROMO_10x1_TRIGGER) : 0
-      return {
+      const updatedLine = {
         ...l,
         cantidadCajas: nuevaCantidad,
-        cajasBonus: bonus,
-        descripcionBonus: bonus > 0 ? `Bonificación 10x1: ${bonus} caja(s)` : '',
+      }
+      const { cajasBonus, descripcionBonus } = getLineaBonusDetails(updatedLine)
+      return {
+        ...updatedLine,
+        cajasBonus,
+        descripcionBonus,
         subtotal: nuevaCantidad * l.precioCajaNegociado,
       }
     }))
@@ -165,12 +204,15 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     const nuevaCantidad = Math.max(0, valor || 0)
     setLineasPedido(prev => prev.map(l => {
       if (l.producto.id !== prodId) return l
-      const bonus = aplicaPromo10x1 ? Math.floor(nuevaCantidad / PROMO_10x1_TRIGGER) : 0
-      return {
+      const updatedLine = {
         ...l,
         cantidadCajas: nuevaCantidad,
-        cajasBonus: bonus,
-        descripcionBonus: bonus > 0 ? `Bonificación 10x1: ${bonus} caja(s)` : '',
+      }
+      const { cajasBonus, descripcionBonus } = getLineaBonusDetails(updatedLine)
+      return {
+        ...updatedLine,
+        cajasBonus,
+        descripcionBonus,
         subtotal: nuevaCantidad * l.precioCajaNegociado,
       }
     }))
@@ -179,8 +221,14 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const actualizarPrecioNegociado = (prodId: number, nuevoPrecio: number) => {
     setLineasPedido(prev => {
       const exists = prev.find(l => l.producto.id === prodId)
+      const prod = productos.find(p => p.id === prodId)!
+      const listPrice = (totalCajas >= 300 || negociarTarifaVolumen)
+        ? (prod.precioCajaMax !== undefined ? prod.precioCajaMax : prod.precioCaja)
+        : (prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja)
+
+      const hasCustom = Math.abs(nuevoPrecio - listPrice) > 0.01
+
       if (!exists) {
-        const prod = productos.find(p => p.id === prodId)!
         return [...prev, {
           producto: prod,
           cantidadCajas: 0,
@@ -188,6 +236,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
           descripcionBonus: '',
           precioCajaNegociado: nuevoPrecio,
           subtotal: 0,
+          hasCustomPrice: hasCustom
         }]
       }
       return prev.map(l => {
@@ -196,6 +245,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
           ...l,
           precioCajaNegociado: nuevoPrecio,
           subtotal: l.cantidadCajas * nuevoPrecio,
+          hasCustomPrice: hasCustom
         }
       })
     })
@@ -204,17 +254,35 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const eliminarLinea = (prodId: number) =>
     setLineasPedido(prev => prev.filter(l => l.producto.id !== prodId))
 
-  // Recalculate bonuses when promo toggled
+  // Recalculate bonuses when selected promotions change
   useEffect(() => {
     setLineasPedido(prev => prev.map(l => {
-      const bonus = aplicaPromo10x1 ? Math.floor(l.cantidadCajas / PROMO_10x1_TRIGGER) : 0
+      const { cajasBonus, descripcionBonus } = getLineaBonusDetails(l)
       return {
         ...l,
-        cajasBonus: bonus,
-        descripcionBonus: bonus > 0 ? `Bonificación 10x1: ${bonus} caja(s)` : '',
+        cajasBonus,
+        descripcionBonus
       }
     }))
-  }, [aplicaPromo10x1])
+  }, [promosSeleccionadas, promosActivas])
+
+  // Dynamic prices sync when volume tier switches
+  useEffect(() => {
+    const isVolume = totalCajas >= 300 || negociarTarifaVolumen
+    setLineasPedido(prev => prev.map(l => {
+      if (l.hasCustomPrice) return l
+      
+      const listPrice = isVolume
+        ? (l.producto.precioCajaMax !== undefined ? l.producto.precioCajaMax : l.producto.precioCaja)
+        : (l.producto.precioCajaMin !== undefined ? l.producto.precioCajaMin : l.producto.precioCaja)
+
+      return {
+        ...l,
+        precioCajaNegociado: listPrice,
+        subtotal: l.cantidadCajas * listPrice
+      }
+    }))
+  }, [totalCajas, negociarTarifaVolumen])
 
   // ── Custom pct sync ──────────────────────────────────────────────────────
   const handlePctAChange = (v: number) => {
@@ -239,6 +307,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresaId: empresaSeleccionada.id,
+          tieneTarifaNegociada: negociarTarifaVolumen && totalCajas < 300,
           detalles: lineasPedido
             .filter(l => l.cantidadCajas > 0)
             .map(l => ({
@@ -412,33 +481,38 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
           {/* ── Sección 2: Lista de productos ────────────────────────────── */}
           <div className="glass-panel card border border-white/5 p-6 flex flex-col gap-5">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <h2 className="text-white font-bold text-sm flex items-center gap-2">
-                <Package size={15} className="text-primary" />
-                Productos · Lista de Precios Mayo 2026
-              </h2>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div
-                    onClick={() => setAplicaPromo10x1(!aplicaPromo10x1)}
-                    className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${aplicaPromo10x1 ? 'bg-primary' : 'bg-white/10'}`}
-                  >
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${aplicaPromo10x1 ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            <div className="flex flex-col gap-3 border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-white font-bold text-sm flex items-center gap-2">
+                  <Package size={15} className="text-primary" />
+                  Productos y Promociones Activas
+                </h2>
+              </div>
+              
+              {promosActivas.length > 0 ? (
+                <div className="flex flex-col gap-2 bg-black/20 p-3 rounded-lg border border-white/5">
+                  <p className="text-[10px] font-black uppercase text-secondary tracking-wider">Promociones Disponibles (Seleccioná para aplicar)</p>
+                  <div className="flex flex-wrap gap-x-6 gap-y-2 mt-1">
+                    {promosActivas.map(p => (
+                      <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          onClick={() => setPromosSeleccionadas(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                          className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${promosSeleccionadas[p.id] ? 'bg-primary' : 'bg-white/10'}`}
+                        >
+                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${promosSeleccionadas[p.id] ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        </div>
+                        <span className="text-xs font-bold text-secondary flex items-center gap-1">
+                          <Gift size={12} className={promosSeleccionadas[p.id] ? 'text-primary' : ''} />
+                          {p.nombre} (Mín. {p.compraMinima})
+                        </span>
+                      </label>
+                    ))}
                   </div>
-                  <span className="text-xs font-bold text-secondary flex items-center gap-1">
-                    <Gift size={12} className={aplicaPromo10x1 ? 'text-primary' : ''} />
-                    Promo 10x1
-                  </span>
-                </label>
-              </div>
+                </div>
+              ) : (
+                <p className="text-secondary text-xs">No hay promociones activas actualmente.</p>
+              )}
             </div>
-
-            {aplicaPromo10x1 && (
-              <div className="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold flex items-center gap-2">
-                <Gift size={13} />
-                Activa: por cada 10 cajas se regala 1 automáticamente
-              </div>
-            )}
 
             {/* Product table per line */}
             {Object.entries(productosPorLinea).map(([linea, prods]) => (
@@ -748,6 +822,38 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
               />
             </div>
 
+            {/* Dynamic Volume Tier and Negotiation */}
+            <div className="p-4 rounded-xl border flex flex-col gap-3 bg-black/30 border-white/5">
+              <p className="text-[10px] font-black uppercase text-secondary tracking-wider">Tarifa del Pedido</p>
+              
+              {totalCajas >= 300 ? (
+                <div className="px-3 py-2 rounded-lg bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-semibold flex items-center gap-2">
+                  <Package size={14} />
+                  ¡Tarifa por Volumen Aplicada! (≥ 300 cajas)
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="px-3 py-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-semibold">
+                    Tarifa Estándar activa. Faltan {300 - totalCajas} cajas para descuento por volumen.
+                  </div>
+                  
+                  {/* Negotiated override */}
+                  <label className="flex items-center gap-2 cursor-pointer mt-1 p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-white/10 bg-black/40 text-primary focus:ring-0"
+                      checked={negociarTarifaVolumen}
+                      onChange={(e) => setNegociarTarifaVolumen(e.target.checked)}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-white text-xs font-bold">Negociar Tarifa por Volumen</span>
+                      <span className="text-secondary text-[9px]">Aplica precios de ≥ 300 cajas (Aprobación N1)</span>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+
             {/* ── Resumen financiero ──────────────────────────────────────── */}
             <div className="flex flex-col gap-2 p-4 rounded-xl bg-black/30 border border-white/5">
               <p className="text-[10px] font-black uppercase text-secondary tracking-wider mb-1">Resumen del Pedido</p>
@@ -807,11 +913,11 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
             </div>
 
             {/* Warning if price is negotiated */}
-            {lineasPedido.some(l => Math.abs(l.precioCajaNegociado - l.producto.precioCaja) > 0.01) && (
+            {(lineasPedido.some(l => l.hasCustomPrice) || (negociarTarifaVolumen && totalCajas < 300)) && (
               <div className="p-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20 text-[10px] text-yellow-400 font-semibold flex items-start gap-2">
                 <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Atención:</strong> Has negociado precios especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
+                  <strong>Atención:</strong> Has negociado precios o tarifas especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
                 </span>
               </div>
             )}

@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const {
       empresaId,
+      tieneTarifaNegociada,
       detalles, // [{ productoId, cantidadCajas, cajasBonus, descripcionBonus }]
       condicionPago,
       porcentajePagoA,
@@ -75,10 +76,24 @@ export async function POST(request: Request) {
     const empresa = await prisma.empresa.findUnique({ where: { id: empresaId } })
     if (!empresa) return NextResponse.json({ error: 'Empresa no encontrada.' }, { status: 404 })
 
+    // Find active price list (vigenteDesde <= hoy)
+    const activeList = await prisma.listaPrecio.findFirst({
+      where: {
+        activa: true,
+        vigenteDesde: { lte: new Date() }
+      },
+      orderBy: { vigenteDesde: 'desc' },
+      include: { precios: true }
+    })
+
     // Fetch all products for price snapshots
     const productoIds = detalles.map((d: any) => d.productoId)
     const productos = await prisma.producto.findMany({ where: { id: { in: productoIds } } })
     const productoMap = Object.fromEntries(productos.map(p => [p.id, p]))
+
+    // Check volume tier
+    const totalCajas = detalles.reduce((sum: number, d: any) => sum + (d.cantidadCajas || 0), 0)
+    const isVolume = totalCajas >= 300 || tieneTarifaNegociada
 
     // Calculate totals
     let subtotalSinIVA = 0
@@ -87,9 +102,18 @@ export async function POST(request: Request) {
       const prod = productoMap[d.productoId]
       if (!prod) throw new Error(`Producto ${d.productoId} no encontrado`)
       
+      const priceRecord = activeList?.precios.find(pr => pr.productoId === prod.id)
+      const defaultCajaPrice = isVolume
+        ? (priceRecord ? priceRecord.precioCajaMax : prod.precioCaja)
+        : (priceRecord ? priceRecord.precioCajaMin : prod.precioCaja)
+
+      const defaultPaqPrice = isVolume
+        ? (priceRecord ? priceRecord.precioPaqueteMax : prod.precioPaquete)
+        : (priceRecord ? priceRecord.precioPaqueteMin : prod.precioPaquete)
+
       const customPrice = parseFloat(d.precioCajaSnapshot)
-      const hasCustomPrice = !isNaN(customPrice) && Math.abs(customPrice - prod.precioCaja) > 0.01
-      const priceToUse = hasCustomPrice ? customPrice : prod.precioCaja
+      const hasCustomPrice = !isNaN(customPrice) && Math.abs(customPrice - defaultCajaPrice) > 0.01
+      const priceToUse = hasCustomPrice ? customPrice : defaultCajaPrice
       if (hasCustomPrice) {
         tienePrecioNegociado = true
       }
@@ -100,9 +124,9 @@ export async function POST(request: Request) {
         productoId: prod.id,
         productoNombre: prod.nombre,
         precioCajaSnapshot: priceToUse,
-        precioPaqSnapshot: prod.precioPaquete,
+        precioPaqSnapshot: defaultPaqPrice,
         paqPorCajaSnapshot: prod.paqPorCaja,
-        precioCajaOriginal: prod.precioCaja,
+        precioCajaOriginal: defaultCajaPrice,
         cantidadCajas: d.cantidadCajas || 0,
         subtotal,
         cajasBonus: d.cajasBonus || 0,
@@ -131,6 +155,7 @@ export async function POST(request: Request) {
         zona: empresa.zona || session.zona || 'Sin Zona',
         estado: 'borrador',
         tienePrecioNegociado,
+        tieneTarifaNegociada: tieneTarifaNegociada || false,
         condicionPago: condicionPago || `${porcentajePagoA || 20}/${porcentajePagoB || 80}`,
         porcentajePagoA: porcentajePagoA || 20,
         porcentajePagoB: porcentajePagoB || 80,

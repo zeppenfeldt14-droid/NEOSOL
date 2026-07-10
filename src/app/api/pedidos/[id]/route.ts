@@ -69,10 +69,10 @@ export async function PATCH(request: Request, { params }: Params) {
       if (pedido.estado !== 'pendiente_supervisor')
         return NextResponse.json({ error: 'Solo se puede aprobar un pedido pendiente.' }, { status: 400 })
       
-      // Enforce Nivel 1 approval for negotiated prices
-      if (pedido.tienePrecioNegociado && session.nivel === 2) {
+      // Enforce Nivel 1 approval for negotiated prices or negotiated volume tariffs
+      if ((pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada) && session.nivel === 2) {
         return NextResponse.json({
-          error: 'Este pedido contiene precios negociados y requiere aprobación de Gerencia (Nivel 1).'
+          error: 'Este pedido contiene precios o tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).'
         }, { status: 403 })
       }
 

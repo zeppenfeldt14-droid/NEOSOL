@@ -24,6 +24,7 @@ interface Pedido {
   condicionPago: string | null
   estado: string
   tienePrecioNegociado: boolean
+  tieneTarifaNegociada: boolean
   creadoEn: string
 }
 
@@ -248,7 +249,12 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                       {p.numeroPedido}
                       {p.tienePrecioNegociado && (
                         <span className="block text-[8px] text-yellow-400 font-bold uppercase tracking-wider mt-0.5">
-                          ⚠️ Negociado
+                          ⚠️ Precio Negociado
+                        </span>
+                      )}
+                      {p.tieneTarifaNegociada && (
+                        <span className="block text-[8px] text-yellow-400 font-bold uppercase tracking-wider mt-0.5">
+                          ⚠️ Tarifa Negociada
                         </span>
                       )}
                     </td>
@@ -270,21 +276,21 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         {userNivel < 3 && p.estado === 'pendiente_supervisor' && (
                           <button
                             onClick={() => {
-                              if (p.tienePrecioNegociado && userNivel === 2) {
-                                alert('Este pedido contiene precios negociados y requiere aprobación de Gerencia (Nivel 1).');
+                              if ((p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2) {
+                                alert('Este pedido contiene precios o tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
                                 return;
                               }
-                              handleAction(p.id, 'aprobar');
+                               handleAction(p.id, 'aprobar');
                             }}
-                            disabled={actionId === p.id || (p.tienePrecioNegociado && userNivel === 2)}
+                            disabled={actionId === p.id || ((p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2)}
                             className={`px-2 py-1 rounded-lg text-[10px] font-black border transition-all flex items-center gap-1 ${
-                              p.tienePrecioNegociado && userNivel === 2
+                              (p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2
                                 ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                                 : 'bg-green-400/10 text-green-400 border-green-400/20 hover:bg-green-400/20'
                             }`}
-                            title={p.tienePrecioNegociado && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
+                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
                           >
-                            <CheckCircle2 size={11} /> {p.tienePrecioNegociado && userNivel === 2 ? 'Bloqueado' : 'Aprobar'}
+                            <CheckCircle2 size={11} /> {(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Bloqueado' : 'Aprobar'}
                           </button>
                         )}
                         {p.estado === 'borrador' && (

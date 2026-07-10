@@ -196,6 +196,7 @@ model Pedido {
   // 'borrador' | 'pendiente_supervisor' | 'aprobado' | 'cancelado'
   
   tienePrecioNegociado Boolean @default(false)
+  tieneTarifaNegociada Boolean @default(false)
   
   // Condiciones de negociación
   porcentajePagoA Float    @default(20)  // % que va con IVA (Factura A)
@@ -317,4 +318,34 @@ model Pago {
   registradoPorAlias String
   
   creadoEn      DateTime @default(now())
+}
+
+model ListaPrecio {
+  id           Int              @id @default(autoincrement())
+  nombre       String
+  vigenteDesde DateTime
+  activa       Boolean          @default(true)
+  creadoEn     DateTime         @default(now())
+  
+  precios      PrecioProducto[]
+}
+
+model PrecioProducto {
+  id               Int         @id @default(autoincrement())
+  listaId          Int
+  lista            ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  productoId       Int
+  productoCodigo   String      // For fast matching
+  
+  // Pricing for under 300 boxes
+  precioPaqueteMin Float
+  precioCajaMin    Float
+  
+  // Pricing for 300 boxes or more
+  precioPaqueteMax Float
+  precioCajaMax    Float
+  
+  creadoEn         DateTime    @default(now())
+
+  @@unique([listaId, productoId])
 }
