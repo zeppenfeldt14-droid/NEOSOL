@@ -69,12 +69,12 @@ export function ProductosPageClient({ userNivel }: Props) {
 
   useEffect(() => { fetchProductos() }, [fetchProductos])
 
-  // Auto-seed if empty and nivel 1
+  // Auto-seed if empty
   useEffect(() => {
-    if (!loading && productos.length === 0 && userNivel === 1) {
+    if (!loading && productos.length === 0) {
       handleSeed()
     }
-  }, [loading, productos.length, userNivel])
+  }, [loading, productos.length])
 
   // ─── Seed handler ──────────────────────────────────────────────────────
   const handleSeed = async () => {

@@ -26,7 +26,11 @@ const PRODUCTOS_SEED = [
 export async function POST() {
   try {
     const session = await getSessionUser()
-    if (!session || session.nivel !== 1)
+    if (!session)
+      return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+    const count = await prisma.producto.count()
+    if (count > 0 && session.nivel !== 1)
       return NextResponse.json({ error: 'Acceso denegado.' }, { status: 403 })
 
     let created = 0
