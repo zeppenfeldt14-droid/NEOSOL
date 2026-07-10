@@ -185,6 +185,8 @@ model Pedido {
   estado          String   @default("borrador")
   // 'borrador' | 'pendiente_supervisor' | 'aprobado' | 'cancelado'
   
+  tienePrecioNegociado Boolean @default(false)
+  
   // Condiciones de negociación
   porcentajePagoA Float    @default(20)  // % que va con IVA (Factura A)
   porcentajePagoB Float    @default(80)  // % que va sin IVA (Factura B / Remito)
@@ -231,6 +233,7 @@ model DetallePedido {
   precioCajaSnapshot Float
   precioPaqSnapshot  Float
   paqPorCajaSnapshot Int
+  precioCajaOriginal Float @default(0)
   
   cantidadCajas   Int      @default(0)
   subtotal        Float    @default(0) // cantidadCajas * precioCajaSnapshot

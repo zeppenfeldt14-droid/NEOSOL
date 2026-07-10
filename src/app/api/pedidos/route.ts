@@ -82,17 +82,27 @@ export async function POST(request: Request) {
 
     // Calculate totals
     let subtotalSinIVA = 0
+    let tienePrecioNegociado = false
     const detallesConCalculo = detalles.map((d: any) => {
       const prod = productoMap[d.productoId]
       if (!prod) throw new Error(`Producto ${d.productoId} no encontrado`)
-      const subtotal = prod.precioCaja * (d.cantidadCajas || 0)
+      
+      const customPrice = parseFloat(d.precioCajaSnapshot)
+      const hasCustomPrice = !isNaN(customPrice) && Math.abs(customPrice - prod.precioCaja) > 0.01
+      const priceToUse = hasCustomPrice ? customPrice : prod.precioCaja
+      if (hasCustomPrice) {
+        tienePrecioNegociado = true
+      }
+      
+      const subtotal = priceToUse * (d.cantidadCajas || 0)
       subtotalSinIVA += subtotal
       return {
         productoId: prod.id,
         productoNombre: prod.nombre,
-        precioCajaSnapshot: prod.precioCaja,
+        precioCajaSnapshot: priceToUse,
         precioPaqSnapshot: prod.precioPaquete,
         paqPorCajaSnapshot: prod.paqPorCaja,
+        precioCajaOriginal: prod.precioCaja,
         cantidadCajas: d.cantidadCajas || 0,
         subtotal,
         cajasBonus: d.cajasBonus || 0,
@@ -120,6 +130,7 @@ export async function POST(request: Request) {
         vendedorAlias: session.alias,
         zona: empresa.zona || session.zona || 'Sin Zona',
         estado: 'borrador',
+        tienePrecioNegociado,
         condicionPago: condicionPago || `${porcentajePagoA || 20}/${porcentajePagoB || 80}`,
         porcentajePagoA: porcentajePagoA || 20,
         porcentajePagoB: porcentajePagoB || 80,

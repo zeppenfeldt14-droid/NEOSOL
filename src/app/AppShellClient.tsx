@@ -329,13 +329,11 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
               <span>Configuración</span>
             </Link>
           )}
-          {/* Lista de Precios - Level 1 only */}
-          {user.nivel === 1 && (
-            <Link href="/configuracion/productos" className={`nav-item ${isLinkActive('/configuracion/productos') ? 'active' : ''}`}>
-              <Package className="nav-icon" />
-              <span>Lista de Precios</span>
-            </Link>
-          )}
+          {/* Lista de Precios - All levels */}
+          <Link href="/configuracion/productos" className={`nav-item ${isLinkActive('/configuracion/productos') ? 'active' : ''}`}>
+            <Package className="nav-icon" />
+            <span>Lista de Precios</span>
+          </Link>
           <button onClick={handleLogout} className="nav-item" style={{ background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}>
             <LogOut className="nav-icon" style={{ color: 'var(--danger)' }} />
             <span style={{ color: 'var(--danger)' }}>Salir</span>

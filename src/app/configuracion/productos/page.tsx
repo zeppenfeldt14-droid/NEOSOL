@@ -17,8 +17,5 @@ async function getSession() {
 export default async function ProductosPage() {
   const session = await getSession()
   if (!session) redirect('/login')
-  // Only Level 1 can access price list management
-  if (session.nivel !== 1) redirect('/configuracion')
-
   return <ProductosPageClient userNivel={session.nivel} />
 }

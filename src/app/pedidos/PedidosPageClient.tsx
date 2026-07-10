@@ -23,6 +23,7 @@ interface Pedido {
   totalGeneral: number
   condicionPago: string | null
   estado: string
+  tienePrecioNegociado: boolean
   creadoEn: string
 }
 
@@ -243,7 +244,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
               ) : (
                 pedidos.map(p => (
                   <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3 text-primary font-black text-xs">{p.numeroPedido}</td>
+                    <td className="px-4 py-3 text-primary font-black text-xs">
+                      {p.numeroPedido}
+                      {p.tienePrecioNegociado && (
+                        <span className="block text-[8px] text-yellow-400 font-bold uppercase tracking-wider mt-0.5">
+                          ⚠️ Negociado
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-white font-semibold text-xs">{p.empresa.nombre}</td>
                     <td className="px-4 py-3 text-secondary text-xs">{p.zona}</td>
                     <td className="px-4 py-3 text-secondary text-xs">{p.vendedorAlias}</td>
@@ -261,11 +269,22 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                       <div className="flex items-center gap-1.5">
                         {userNivel < 3 && p.estado === 'pendiente_supervisor' && (
                           <button
-                            onClick={() => handleAction(p.id, 'aprobar')}
-                            disabled={actionId === p.id}
-                            className="px-2 py-1 rounded-lg bg-green-400/10 text-green-400 hover:bg-green-400/20 text-[10px] font-black border border-green-400/20 transition-all flex items-center gap-1"
+                            onClick={() => {
+                              if (p.tienePrecioNegociado && userNivel === 2) {
+                                alert('Este pedido contiene precios negociados y requiere aprobación de Gerencia (Nivel 1).');
+                                return;
+                              }
+                              handleAction(p.id, 'aprobar');
+                            }}
+                            disabled={actionId === p.id || (p.tienePrecioNegociado && userNivel === 2)}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black border transition-all flex items-center gap-1 ${
+                              p.tienePrecioNegociado && userNivel === 2
+                                ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
+                                : 'bg-green-400/10 text-green-400 border-green-400/20 hover:bg-green-400/20'
+                            }`}
+                            title={p.tienePrecioNegociado && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
                           >
-                            <CheckCircle2 size={11} /> Aprobar
+                            <CheckCircle2 size={11} /> {p.tienePrecioNegociado && userNivel === 2 ? 'Bloqueado' : 'Aprobar'}
                           </button>
                         )}
                         {p.estado === 'borrador' && (

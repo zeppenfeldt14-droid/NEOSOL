@@ -35,6 +35,7 @@ interface LineaPedido {
   cantidadCajas: number
   cajasBonus: number
   descripcionBonus: string
+  precioCajaNegociado: number
   subtotal: number
 }
 
@@ -140,6 +141,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       cantidadCajas: 0,
       cajasBonus: 0,
       descripcionBonus: '',
+      precioCajaNegociado: prod.precioCaja,
       subtotal: 0,
     }])
   }
@@ -154,7 +156,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         cantidadCajas: nuevaCantidad,
         cajasBonus: bonus,
         descripcionBonus: bonus > 0 ? `Bonificación 10x1: ${bonus} caja(s)` : '',
-        subtotal: nuevaCantidad * l.producto.precioCaja,
+        subtotal: nuevaCantidad * l.precioCajaNegociado,
       }
     }))
   }
@@ -169,9 +171,34 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         cantidadCajas: nuevaCantidad,
         cajasBonus: bonus,
         descripcionBonus: bonus > 0 ? `Bonificación 10x1: ${bonus} caja(s)` : '',
-        subtotal: nuevaCantidad * l.producto.precioCaja,
+        subtotal: nuevaCantidad * l.precioCajaNegociado,
       }
     }))
+  }
+
+  const actualizarPrecioNegociado = (prodId: number, nuevoPrecio: number) => {
+    setLineasPedido(prev => {
+      const exists = prev.find(l => l.producto.id === prodId)
+      if (!exists) {
+        const prod = productos.find(p => p.id === prodId)!
+        return [...prev, {
+          producto: prod,
+          cantidadCajas: 0,
+          cajasBonus: 0,
+          descripcionBonus: '',
+          precioCajaNegociado: nuevoPrecio,
+          subtotal: 0,
+        }]
+      }
+      return prev.map(l => {
+        if (l.producto.id !== prodId) return l
+        return {
+          ...l,
+          precioCajaNegociado: nuevoPrecio,
+          subtotal: l.cantidadCajas * nuevoPrecio,
+        }
+      })
+    })
   }
 
   const eliminarLinea = (prodId: number) =>
@@ -219,6 +246,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
               cantidadCajas: l.cantidadCajas,
               cajasBonus: l.cajasBonus,
               descripcionBonus: l.descripcionBonus,
+              precioCajaSnapshot: l.precioCajaNegociado,
             })),
           condicionPago: condicion.label === 'Personalizada' ? `${pctA}/${pctB}` : condicion.label,
           porcentajePagoA: pctA,
@@ -437,7 +465,27 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                             <td className="px-2 py-2 text-primary font-bold text-[10px]">{prod.codigoInterno}</td>
                             <td className="px-2 py-2 text-white text-[11px] font-semibold whitespace-nowrap">{prod.nombre}</td>
                             <td className="px-2 py-2 text-secondary text-[11px] text-center">{prod.paqPorCaja}</td>
-                            <td className="px-2 py-2 text-white text-[11px] font-semibold whitespace-nowrap">{fmt(prod.precioCaja)}</td>
+                            {/* Negotiated Price Input */}
+                            <td className="px-2 py-2">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={linea_ ? linea_.precioCajaNegociado : prod.precioCaja}
+                                onChange={e => {
+                                  const val = parseFloat(e.target.value) || 0
+                                  actualizarPrecioNegociado(prod.id, val)
+                                }}
+                                className={`w-24 bg-black/40 border rounded-lg px-2 py-1 text-xs text-white font-semibold text-right focus:border-primary focus:outline-none ${
+                                  linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01
+                                    ? 'border-yellow-400/50 text-yellow-400 font-bold bg-yellow-400/[0.03]'
+                                    : 'border-white/10'
+                                }`}
+                              />
+                              {linea_ && Math.abs(linea_.precioCajaNegociado - prod.precioCaja) > 0.01 && (
+                                <span className="block text-[8px] text-yellow-400 font-bold text-right mt-0.5">Negociado</span>
+                              )}
+                            </td>
 
                             {/* Quantity input */}
                             <td className="px-2 py-2">
@@ -736,6 +784,16 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                 <span className="text-primary font-black text-lg">{fmt(totalGeneral)}</span>
               </div>
             </div>
+
+            {/* Warning if price is negotiated */}
+            {lineasPedido.some(l => Math.abs(l.precioCajaNegociado - l.producto.precioCaja) > 0.01) && (
+              <div className="p-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20 text-[10px] text-yellow-400 font-semibold flex items-start gap-2">
+                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                <span>
+                  <strong>Atención:</strong> Has negociado precios especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
+                </span>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex flex-col gap-2 mt-2">
