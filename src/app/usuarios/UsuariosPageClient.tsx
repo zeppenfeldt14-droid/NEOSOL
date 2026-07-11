@@ -356,7 +356,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
             
             <button 
               onClick={() => { setShowLogsModal('GLOBAL'); fetchLogs(); }} 
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/40 hover:bg-white/10 text-white border border-white/10 transition-all text-sm font-medium"
+              className="btn btn-secondary flex items-center gap-2"
             >
               <Activity size={16} className="text-primary" /> 
               <span className="hidden sm:inline">Bitácora Global</span>
@@ -364,7 +364,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
             
             <button 
               onClick={handleOpenCreate} 
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary hover:bg-orange-600 text-white shadow-lg shadow-primary/20 transition-all text-sm font-bold"
+              className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 font-bold"
             >
               <Plus size={16} /> 
               <span>Nuevo Perfil</span>
