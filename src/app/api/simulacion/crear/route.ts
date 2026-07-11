@@ -143,7 +143,7 @@ export async function POST() {
                 vendedorId: vendedor.id,
                 vendedorAlias: vendedor.alias,
                 zona: conf.zona,
-                estado: 'aprobado',
+                estado: randomItem(['aprobado', 'aprobado', 'aprobado', 'aprobado', 'pendiente_aprobacion', 'borrador']),
                 porcentajePagoA: pA,
                 porcentajePagoB: pB,
                 metodoPagoA,
@@ -182,8 +182,10 @@ export async function POST() {
             })
             totalPedidos++
 
-            // Simular Factura A
-            if (pA > 0) {
+            // Solo generamos Factura A y B si está aprobado
+            if (pedido.estado === 'aprobado') {
+              // Simular Factura A
+              if (pA > 0) {
               await prisma.factura.create({
                 data: {
                   pedidoId: pedido.id,
@@ -256,7 +258,8 @@ export async function POST() {
                   creadoEn: fechaTransaccion
                 }
               })
-            }
+              }
+            } // Fin de if(estado === 'aprobado')
           }
         }
       }

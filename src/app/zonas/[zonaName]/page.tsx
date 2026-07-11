@@ -24,7 +24,11 @@ export default async function DashboardPage({ params, searchParams }: { params: 
 
   // Verify access permissions to this zone
   if (user.nivel === 3 && user.zona !== decodedZona) {
-    redirect(`/zonas/${user.zona || 'CABA'}`)
+    if (user.zona && user.zona !== decodedZona) {
+      redirect(`/zonas/${encodeURIComponent(user.zona)}`)
+    } else if (!user.zona && decodedZona !== 'CABA') {
+      redirect('/zonas/CABA')
+    }
   } else if (user.nivel === 2) {
     let enabledZones: string[] = []
     try {
