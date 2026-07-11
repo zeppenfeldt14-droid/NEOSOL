@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Camera, Plus, Search, Trash2, X, User, Download, Clock, Edit, LogIn, Activity, Check, Shield } from 'lucide-react'
+import { Camera, Plus, Search, Trash2, X, User, Download, Clock, Edit, LogIn, Activity, Check, Shield, Printer } from 'lucide-react'
 
 interface Usuario {
   id: number
