@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { DailyRouteChart } from '@/components/charts/DailyRouteChart'
 import { MonthlyVisitsChart } from '@/components/charts/MonthlyVisitsChart'
 import { WeeklyVisitsChart } from '@/components/charts/WeeklyVisitsChart'
+import { PeriodFilter } from '@/components/PeriodFilter'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage({ params }: { params: Promise<{ zonaName: string }> }) {
+export default async function DashboardPage({ params, searchParams }: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string }> }) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
@@ -17,6 +18,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
 
   const { zonaName } = await params
   const decodedZona = decodeURIComponent(zonaName)
+  
+  const { period } = await searchParams
+  const currentPeriod = period || String(new Date().getMonth())
 
   // Verify access permissions to this zone
   if (user.nivel === 3 && user.zona !== decodedZona) {
@@ -61,8 +65,22 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
 
   // Efectividad: nuevos clientes este mes / empresas contactadas este mes × 100
   const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  let startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  let endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  let labelPeriodo = "este mes"
+
+  if (currentPeriod.startsWith('Q')) {
+    const q = parseInt(currentPeriod.charAt(1))
+    startOfMonth = new Date(now.getFullYear(), (q - 1) * 3, 1)
+    endOfMonth = new Date(now.getFullYear(), q * 3, 0, 23, 59, 59)
+    labelPeriodo = `en Q${q}`
+  } else {
+    const m = parseInt(currentPeriod)
+    startOfMonth = new Date(now.getFullYear(), m, 1)
+    endOfMonth = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59)
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+    labelPeriodo = `en ${monthNames[m]}`
+  }
 
   const visitasMesQuery = await prisma.visita.findMany({
     where: { 
@@ -93,7 +111,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
   for (const emp of activasParaEfectividad) {
     const primeraVenta = emp.visitas[0]
     const fechaAlta = primeraVenta ? new Date(primeraVenta.fecha) : new Date(emp.creadoEn)
-    if (fechaAlta.getFullYear() === now.getFullYear() && fechaAlta.getMonth() === now.getMonth()) {
+    if (fechaAlta >= startOfMonth && fechaAlta <= endOfMonth) {
       nuevosClientesMes++
     }
   }
@@ -294,9 +312,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Resumen de actividad y métricas clave.</p>
         </div>
-        <Link href="/empresas/nueva" className="btn btn-primary">
-          + Nueva Empresa
-        </Link>
+        <div className="flex items-center gap-4">
+          <PeriodFilter />
+          <Link href="/empresas/nueva" className="btn btn-primary">
+            + Nueva Empresa
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -342,13 +363,13 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
             <span className="stat-label" style={{ fontSize: '0.75rem' }}>Efectividad</span>
             <div className="badge badge-success" style={{ padding: '0.15rem 0.4rem' }}><CheckCircle size={12} /></div>
           </div>
-          <div className="stat-value" style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-            {efectividad !== null ? `${efectividad}%` : '--'}
+          <div className="stat-value text-accent" style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
+            {efectividad !== null ? `${efectividad}%` : '-'}
           </div>
           <div className="text-secondary" style={{ fontSize: '0.7rem' }}>
             {empresasContactadasMes > 0 
-              ? `${nuevosClientesMes} cliente${nuevosClientesMes !== 1 ? 's' : ''} nuevo${nuevosClientesMes !== 1 ? 's' : ''} / ${empresasContactadasMes} emp. contactadas` 
-              : 'Sin contactos este mes'}
+              ? `${nuevosClientesMes} nuevo(s) / ${empresasContactadasMes} contactadas ${labelPeriodo}` 
+              : `Sin contactos ${labelPeriodo}`}
           </div>
         </div>
       </div>

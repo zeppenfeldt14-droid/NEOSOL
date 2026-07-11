@@ -2,11 +2,12 @@ import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth'
 import { ZonaVentasClient } from './ZonaVentasClient'
 
-export default async function ZonaVentasPage({ params }: { params: { zonaName: string } }) {
+export default async function ZonaVentasPage({ params }: { params: Promise<{ zonaName: string }> }) {
   const user = await getSessionUser()
   if (!user) redirect('/login')
 
-  const decodedZona = decodeURIComponent(params.zonaName)
+  const resolvedParams = await params
+  const decodedZona = decodeURIComponent(resolvedParams.zonaName)
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto flex flex-col gap-8 fade-in">
