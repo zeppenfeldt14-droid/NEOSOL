@@ -684,7 +684,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                   <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Módulos Autorizados</h4>
                   <p className="text-xs text-secondary mb-4">Selecciona los módulos a los que el usuario tendrá acceso.</p>
                   
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap justify-center gap-2.5">
                     {Object.entries(formModulos).filter(([mod]) => mod !== 'alertas').map(([mod, active]) => (
                       <button
                         key={mod}
@@ -700,11 +700,11 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                 </div>
 
                 <div className="border-t border-white/5 pt-6 mt-6">
-                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Zonas Autorizadas / Asignadas</h4>
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1 text-center">Zonas Autorizadas / Asignadas</h4>
                   
                   {formNivel === 3 ? (
-                    <>
-                      <p className="text-xs text-secondary mb-4">Selecciona la zona única asignada para este vendedor.</p>
+                    <div className="flex flex-col items-center">
+                      <p className="text-xs text-secondary mb-4 text-center">Selecciona la zona única asignada para este vendedor.</p>
                       <select
                         value={formZona}
                         onChange={(e) => setFormZona(e.target.value)}
@@ -714,11 +714,11 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                           <option key={z} value={z} className="bg-[#0B132B]">{z}</option>
                         ))}
                       </select>
-                    </>
+                    </div>
                   ) : (
                     <>
-                      <p className="text-xs text-secondary mb-4">Selecciona las zonas que el supervisor podrá gestionar.</p>
-                      <div className="flex flex-wrap gap-2.5">
+                      <p className="text-xs text-secondary mb-4 text-center">Selecciona las zonas que el supervisor podrá gestionar.</p>
+                      <div className="flex flex-wrap justify-center gap-2.5">
                         {zones.map(z => {
                           const active = formZonasHabilitadas.includes(z)
                           return (

@@ -567,11 +567,7 @@ export function ProductosPageClient({ userNivel }: Props) {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFiltroLinea('todas')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-              filtroLinea === 'todas'
-                ? 'bg-primary text-white border-primary'
-                : 'border-white/10 text-secondary hover:text-white'
-            }`}
+            className={`btn-toggle ${filtroLinea === 'todas' ? 'active' : ''}`}
           >
             Todas
           </button>
@@ -579,11 +575,7 @@ export function ProductosPageClient({ userNivel }: Props) {
             <button
               key={key}
               onClick={() => setFiltroLinea(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                filtroLinea === key
-                  ? 'bg-primary text-white border-primary'
-                  : 'border-white/10 text-secondary hover:text-white'
-              }`}
+              className={`btn-toggle ${filtroLinea === key ? 'active' : ''}`}
             >
               {label.replace('Línea ', '')}
             </button>

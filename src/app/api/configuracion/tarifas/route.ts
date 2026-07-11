@@ -18,11 +18,8 @@ export async function GET(request: Request) {
     })
 
     let whereFilter: any = {}
-    if (activeList) {
-      whereFilter = {
-        vigenteDesde: { gte: activeList.vigenteDesde }
-      }
-    }
+    // Eliminado el filtro que forzaba vigenteDesde >= activeList.vigenteDesde
+    // para permitir ver el historial y las futuras simultáneamente.
 
     const listas = await prisma.listaPrecio.findMany({
       where: whereFilter,

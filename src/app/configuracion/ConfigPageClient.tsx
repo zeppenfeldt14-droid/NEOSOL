@@ -401,10 +401,10 @@ export function ConfigPageClient({ currentLogo }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* TABS NAVIGATION */}
-      <div className="flex gap-2 border-b border-white/10 pb-2 mb-2 overflow-x-auto custom-scrollbar">
+      <div className="flex flex-wrap justify-center gap-2 border-b border-white/10 pb-4 mb-6">
         <button
           onClick={() => setActiveTab('lista')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'lista' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+          className={`btn-toggle ${activeTab === 'lista' ? 'active' : ''}`}
         >
           Lista (Tarifas y Precios)
         </button>
@@ -412,13 +412,13 @@ export function ConfigPageClient({ currentLogo }: Props) {
           <>
             <button
               onClick={() => setActiveTab('zonas')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'zonas' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+              className={`btn-toggle ${activeTab === 'zonas' ? 'active' : ''}`}
             >
               Zonas
             </button>
             <button
               onClick={() => setActiveTab('promos')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'promos' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+              className={`btn-toggle ${activeTab === 'promos' ? 'active' : ''}`}
             >
               Promociones
             </button>
@@ -426,7 +426,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
         )}
         <button
           onClick={() => setActiveTab('config')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+          className={`btn-toggle ${activeTab === 'config' ? 'active' : ''}`}
         >
           Configuración Pag.
         </button>
@@ -648,8 +648,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-white font-bold text-sm">{l.nombre}</span>
-                            <span className={`badge ${l.activa ? 'badge-success' : 'badge-neutral'}`}>
-                              {l.activa ? 'Vigente' : 'Inactiva'}
+                            <span className={`badge ${!l.activa ? 'badge-neutral' : (new Date(l.vigenteDesde) > new Date() ? 'badge-info bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'badge-success')}`}>
+                              {!l.activa ? 'Cancelada (Historial)' : (new Date(l.vigenteDesde) > new Date() ? 'Próxima' : 'Vigente')}
                             </span>
                           </div>
                           <div className="text-secondary text-xs mt-1">
