@@ -54,7 +54,9 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   const defaultLimits = {
     AUSENCIA_COMIDA: 60,
     AUSENCIA_BANO: 15,
-    AUSENCIA_GESTION: 30
+    AUSENCIA_GESTION: 30,
+    horasObjetivo: 8,
+    metaVentas: 100000
   }
 
   const [zones, setZones] = useState<string[]>(['CABA', 'SUR', 'NORTE', 'OESTE'])
@@ -652,12 +654,38 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                   </div>
                 </div>
 
+                <div className="mb-10">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Configuración Operativa</h4>
+                  <div className="bg-black/20 rounded-2xl p-5 border border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                    <div className="form-group">
+                      <label className="form-label">Horas Objetivo (al día)</label>
+                      <input 
+                        type="number" 
+                        value={formLimits.horasObjetivo || 8} 
+                        onChange={(e) => setFormLimits(prev => ({...prev, horasObjetivo: Number(e.target.value)}))} 
+                        className="form-input bg-[#0B132B]/50 border-white/10" 
+                        min="1" max="24"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Meta de Ventas Mensual ($)</label>
+                      <input 
+                        type="number" 
+                        value={formLimits.metaVentas || 0} 
+                        onChange={(e) => setFormLimits(prev => ({...prev, metaVentas: Number(e.target.value)}))} 
+                        className="form-input bg-[#0B132B]/50 border-white/10" 
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Módulos Autorizados</h4>
                   <p className="text-xs text-secondary mb-4">Selecciona los módulos a los que el usuario tendrá acceso.</p>
                   
                   <div className="flex flex-wrap gap-2.5">
-                    {Object.entries(formModulos).map(([mod, active]) => (
+                    {Object.entries(formModulos).filter(([mod]) => mod !== 'alertas').map(([mod, active]) => (
                       <button
                         key={mod}
                         type="button"
@@ -665,7 +693,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                         className={`btn-toggle ${active ? 'active' : ''}`}
                       >
                         {active && <Check size={12} strokeWidth={4} />}
-                        {mod}
+                        {mod.toUpperCase()}
                       </button>
                     ))}
                   </div>
@@ -762,8 +790,28 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => window.print()} className="btn btn-secondary text-xs px-4">
-                  <Printer size={14} /> Imprimir
+                <button
+                  onClick={() => {
+                    const win = window.open('', '_blank')
+                    if (!win) return
+                    const html = `
+                      <html><head><title>Bitácora de Actividad</title><style>
+                        body { font-family: system-ui, sans-serif; padding: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background: #f5f5f5; }
+                      </style></head><body>
+                        <h2>Bitácora de Auditoría: ${showLogsModal === 'GLOBAL' ? 'Global' : showLogsModal.nombre}</h2>
+                        <table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
+                        <tbody>${(showLogsModal === 'GLOBAL' ? logs : logs.filter(l => l.user_id === showLogsModal.id)).map(l => `<tr><td>${new Date(l.created_at).toLocaleString()}</td><td>${l.user_name}</td><td>${l.action_type}</td><td>${l.details}</td></tr>`).join('')}</tbody></table>
+                      </body></html>
+                    `
+                    win.document.write(html)
+                    win.document.close()
+                  }}
+                  className="btn btn-secondary text-xs px-4"
+                >
+                  <Download size={14} /> Descargar PDF
                 </button>
                 <button onClick={handleExportCSV} className="btn btn-secondary text-xs px-4">
                   <Download size={14} /> Exportar CSV
