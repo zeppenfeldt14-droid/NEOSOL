@@ -311,19 +311,19 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
               <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-3 mb-1.5">
                 Comercial
               </div>
-              {(user.nivel === 1 || modules.pedidos === true) && (
+              {(user.nivel === 1 || modules.pedidos) && (
                 <Link href="/pedidos" className={`nav-item ${isLinkActive('/pedidos') ? 'active' : ''}`}>
                   <ShoppingCart className="nav-icon" />
                   <span>Pedidos</span>
                 </Link>
               )}
-              {(user.nivel === 1 || modules.ventas === true) && (
+              {(user.nivel === 1 || modules.ventas) && (
                 <Link href="/ventas" className={`nav-item ${isLinkActive('/ventas') ? 'active' : ''}`}>
                   <TrendingUp className="nav-icon" />
                   <span>Ventas</span>
                 </Link>
               )}
-              {(user.nivel === 1 || modules.cobranzas === true) && (
+              {(user.nivel === 1 || modules.cobranzas) && (
                 <Link href="/cobranzas" className={`nav-item ${isLinkActive('/cobranzas') ? 'active' : ''}`}>
                   <Banknote className="nav-icon" />
                   <span>Cobranzas</span>
@@ -333,7 +333,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
           )}
 
           {/* Módulo de Usuarios (Solo si está explícitamente habilitado para Nivel 1/2, o si es Admin Nivel 1) */}
-          {user.nivel < 3 && (user.nivel === 1 || modules.usuarios === true) && (
+          {user.nivel < 3 && (user.nivel === 1 || modules.usuarios) && (
             <>
               <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-3 mb-1.5">
                 Administración
