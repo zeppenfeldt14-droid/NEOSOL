@@ -287,6 +287,35 @@ export function ConfigPageClient({ currentLogo }: Props) {
     }
   }
 
+  const handleLimpiarSimulacion = async () => {
+    if (!confirm('¿Estás seguro de que deseas eliminar TODOS los datos simulados de prueba?')) return
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/simulacion/limpiar', { method: 'POST' })
+      if (!res.ok) throw new Error('Error al limpiar simulación')
+      alert('Simulación limpiada correctamente. Los datos de prueba han sido eliminados.')
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleGenerarSimulacion = async () => {
+    if (!confirm('¿Deseas generar nuevos datos de simulación? (Tardará unos segundos)')) return
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/simulacion/crear', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al generar simulación')
+      alert('¡Simulación generada exitosamente!')
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleCreateZona = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newZonaName.trim()) return
@@ -421,6 +450,12 @@ export function ConfigPageClient({ currentLogo }: Props) {
               className={`btn-toggle ${activeTab === 'promos' ? 'active' : ''}`}
             >
               Promociones
+            </button>
+            <button
+              onClick={() => setActiveTab('simulacion')}
+              className={`btn-toggle ${activeTab === 'simulacion' ? 'active' : ''}`}
+            >
+              Simulación de Datos
             </button>
           </>
         )}
@@ -925,6 +960,48 @@ export function ConfigPageClient({ currentLogo }: Props) {
                 </button>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Simulación Tab */}
+      {activeTab === 'simulacion' && userNivel === 1 && (
+        <div className="grid md:grid-cols-2 gap-6 animate-fade-in">
+          <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '200px' }}>
+            <div>
+              <h3 className="card-title text-error border-b pb-3 border-error/20 mb-4">
+                Limpiar Datos de Prueba
+              </h3>
+              <p className="text-secondary text-sm mb-6">
+                Eliminará todos los usuarios, empresas, pedidos, facturas y cobranzas simulados. 
+                Utiliza esto para vaciar la base de datos de información basura antes de generar nueva simulación o pasar a producción.
+              </p>
+            </div>
+            <button 
+              onClick={handleLimpiarSimulacion} 
+              className="btn btn-outline border-error text-error hover:bg-error hover:text-white w-full"
+              disabled={isSaving}
+            >
+              Limpiar Simulación
+            </button>
+          </div>
+
+          <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '200px' }}>
+            <div>
+              <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                Generar Simulación (Mock Data)
+              </h3>
+              <p className="text-secondary text-sm mb-6">
+                Creará empresas, visitas, pedidos (con diferentes proporciones de Factura A y B), facturas y cobranzas ficticias para todas las zonas, permitiendo ver el dashboard en funcionamiento.
+              </p>
+            </div>
+            <button 
+              onClick={handleGenerarSimulacion} 
+              className="btn btn-primary w-full"
+              disabled={isSaving}
+            >
+              Generar Simulación
+            </button>
           </div>
         </div>
       )}
