@@ -186,78 +186,108 @@ export async function POST() {
             if (pedido.estado === 'aprobado') {
               // Simular Factura A
               if (pA > 0) {
-              await prisma.factura.create({
-                data: {
-                  pedidoId: pedido.id,
-                  numeroFactura: `FAC-A-${randomInt(1000, 9999)}`,
-                  tipo: 'A',
-                  subtotal: montoA,
-                  iva: montoIVA,
-                  recargo: 0,
-                  total: montoA + montoIVA,
-                  estado: 'pendiente',
-                  creadoEn: fechaTransaccion
-                }
-              })
-              
-              const saldoPendienteA = randomItem([0, montoA + montoIVA])
-              let estadoCobA = saldoPendienteA === 0 ? 'pagada' : 'pendiente'
-              if (saldoPendienteA > 0 && fechaPagoA < new Date()) estadoCobA = 'vencida'
+                const saldoPendienteA = randomItem([0, montoA + montoIVA])
+                let estadoCobA = saldoPendienteA === 0 ? 'pagada' : 'pendiente'
+                if (saldoPendienteA > 0 && fechaPagoA < new Date()) estadoCobA = 'vencida'
 
-              await prisma.cobranza.create({
-                data: {
-                  pedidoId: pedido.id,
-                  empresaId: empresa.id,
-                  empresaNombre: empresa.nombre,
-                  vendedorAlias: vendedor.alias,
-                  zona: conf.zona,
-                  montoOriginal: montoA + montoIVA,
-                  saldoPendiente: saldoPendienteA,
-                  estado: estadoCobA,
-                  fechaVencimiento: fechaPagoA,
-                  tipoFactura: 'A',
-                  metodoPago: metodoPagoA,
-                  creadoEn: fechaTransaccion
-                }
-              })
-            }
+                const facturaA = await prisma.factura.create({
+                  data: {
+                    pedidoId: pedido.id,
+                    numeroFactura: `FAC-A-${randomInt(1000, 9999)}`,
+                    tipo: 'A',
+                    subtotal: montoA,
+                    iva: montoIVA,
+                    recargo: 0,
+                    total: montoA + montoIVA,
+                    estado: saldoPendienteA === 0 ? 'pagada' : 'pendiente',
+                    creadoEn: fechaTransaccion
+                  }
+                })
 
-            // Simular Factura B
-            if (pB > 0) {
-              await prisma.factura.create({
-                data: {
-                  pedidoId: pedido.id,
-                  numeroFactura: `FAC-B-${randomInt(1000, 9999)}`,
-                  tipo: 'B',
-                  subtotal: montoB,
-                  iva: 0,
-                  recargo: recargoB,
-                  total: montoB + recargoB,
-                  estado: 'pendiente',
-                  creadoEn: fechaTransaccion
-                }
-              })
+                const cobranzaA = await prisma.cobranza.create({
+                  data: {
+                    pedidoId: pedido.id,
+                    empresaId: empresa.id,
+                    empresaNombre: empresa.nombre,
+                    vendedorAlias: vendedor.alias,
+                    zona: conf.zona,
+                    montoOriginal: montoA + montoIVA,
+                    saldoPendiente: saldoPendienteA,
+                    estado: estadoCobA,
+                    fechaVencimiento: fechaPagoA,
+                    tipoFactura: 'A',
+                    metodoPago: metodoPagoA,
+                    creadoEn: fechaTransaccion
+                  }
+                })
 
-              const saldoPendienteB = randomItem([0, montoB + recargoB])
-              let estadoCobB = saldoPendienteB === 0 ? 'pagada' : 'pendiente'
-              if (saldoPendienteB > 0 && fechaEntregaDate < new Date()) estadoCobB = 'vencida'
-
-              await prisma.cobranza.create({
-                data: {
-                  pedidoId: pedido.id,
-                  empresaId: empresa.id,
-                  empresaNombre: empresa.nombre,
-                  vendedorAlias: vendedor.alias,
-                  zona: conf.zona,
-                  montoOriginal: montoB + recargoB,
-                  saldoPendiente: saldoPendienteB,
-                  estado: estadoCobB,
-                  fechaVencimiento: fechaEntregaDate,
-                  tipoFactura: 'B',
-                  metodoPago: metodoPagoB,
-                  creadoEn: fechaTransaccion
+                if (saldoPendienteA === 0) {
+                  await prisma.pago.create({
+                    data: {
+                      cobranzaId: cobranzaA.id,
+                      facturaId: facturaA.id,
+                      monto: montoA + montoIVA,
+                      metodoPago: metodoPagoA || 'transferencia',
+                      recargoAplicado: 0,
+                      montoFinal: montoA + montoIVA,
+                      registradoPorAlias: vendedor.alias,
+                      creadoEn: fechaTransaccion
+                    }
+                  })
                 }
-              })
+              }
+
+              // Simular Factura B
+              if (pB > 0) {
+                const saldoPendienteB = randomItem([0, montoB + recargoB])
+                let estadoCobB = saldoPendienteB === 0 ? 'pagada' : 'pendiente'
+                if (saldoPendienteB > 0 && fechaEntregaDate < new Date()) estadoCobB = 'vencida'
+
+                const facturaB = await prisma.factura.create({
+                  data: {
+                    pedidoId: pedido.id,
+                    numeroFactura: `FAC-B-${randomInt(1000, 9999)}`,
+                    tipo: 'B',
+                    subtotal: montoB,
+                    iva: 0,
+                    recargo: recargoB,
+                    total: montoB + recargoB,
+                    estado: saldoPendienteB === 0 ? 'pagada' : 'pendiente',
+                    creadoEn: fechaTransaccion
+                  }
+                })
+
+                const cobranzaB = await prisma.cobranza.create({
+                  data: {
+                    pedidoId: pedido.id,
+                    empresaId: empresa.id,
+                    empresaNombre: empresa.nombre,
+                    vendedorAlias: vendedor.alias,
+                    zona: conf.zona,
+                    montoOriginal: montoB + recargoB,
+                    saldoPendiente: saldoPendienteB,
+                    estado: estadoCobB,
+                    fechaVencimiento: fechaEntregaDate,
+                    tipoFactura: 'B',
+                    metodoPago: metodoPagoB,
+                    creadoEn: fechaTransaccion
+                  }
+                })
+
+                if (saldoPendienteB === 0) {
+                  await prisma.pago.create({
+                    data: {
+                      cobranzaId: cobranzaB.id,
+                      facturaId: facturaB.id,
+                      monto: montoB + recargoB,
+                      metodoPago: metodoPagoB || 'efectivo',
+                      recargoAplicado: recargoB,
+                      montoFinal: montoB + recargoB,
+                      registradoPorAlias: vendedor.alias,
+                      creadoEn: fechaTransaccion
+                    }
+                  })
+                }
               }
             } // Fin de if(estado === 'aprobado')
           }
