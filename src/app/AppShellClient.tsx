@@ -142,7 +142,8 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
       .toUpperCase()
   }
 
-  const isLinkActive = (path: string) => {
+  const isLinkActive = (path: string, exact = false) => {
+    if (exact) return pathname === path
     return pathname === path || (path !== '/' && pathname.startsWith(path))
   }
 
@@ -324,7 +325,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
 
         <div className="sidebar-nav" style={{ flex: 'none', borderTop: '1px solid var(--border-light)' }}>
           {modules.configuracion !== false && (
-            <Link href="/configuracion" className={`nav-item ${isLinkActive('/configuracion') ? 'active' : ''}`}>
+            <Link href="/configuracion" className={`nav-item ${isLinkActive('/configuracion', true) ? 'active' : ''}`}>
               <Settings className="nav-icon" />
               <span>Configuración</span>
             </Link>

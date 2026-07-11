@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import {
   ShoppingCart, Filter, Plus, Clock, CheckCircle2,
   XCircle, Globe, Send, AlertCircle, Eye, Edit3, Calendar,
-  Info, FileText, Check, DollarSign, Gift, User, Package, Calculator
+  Info, FileText, Check, DollarSign, Gift, User, Package, Calculator,
+  Trash2, Download
 } from 'lucide-react'
 
 interface Props {
@@ -118,6 +119,94 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
       else { const d = await res.json(); alert(d.error) }
     } catch { alert('Error de conexión') }
     finally { setActionId(null) }
+  }
+
+  const handleDelete = async (id: number) => {
+    setActionId(id)
+    try {
+      const res = await fetch(`/api/pedidos/${id}`, { method: 'DELETE' })
+      if (res.ok) await fetchPedidos()
+      else { const d = await res.json(); alert(d.error) }
+    } catch { alert('Error de conexión') }
+    finally { setActionId(null) }
+  }
+
+  const handlePrintPedido = (p: Pedido) => {
+    const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const html = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8"/>
+        <title>Pedido ${p.numeroPedido}</title>
+        <style>
+          body { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; padding: 20px; color: #222; }
+          .header { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; }
+          .brand { font-size: 20px; font-weight: 900; color: #444; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th, td { border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; }
+          th { background: #f9f9f9; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+          .right { text-align: right; }
+          .center { text-align: center; }
+          .totals { margin-top: 20px; display: flex; justify-content: flex-end; }
+          .totals table { width: 300px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="brand">NEOSOL</div>
+            <p><strong>Pedido:</strong> ${p.numeroPedido}</p>
+            <p><strong>Cliente:</strong> ${p.empresa.nombre} ${p.empresa.cuit ? `(CUIT: ${p.empresa.cuit})` : ''}</p>
+            <p><strong>Vendedor:</strong> ${p.vendedorAlias} | <strong>Zona:</strong> ${p.zona}</p>
+          </div>
+          <div style="text-align: right;">
+            <p><strong>Fecha:</strong> ${new Date(p.creadoEn).toLocaleString('es-AR')}</p>
+            <p><strong>Estado:</strong> ${ESTADO_LABELS[p.estado] || p.estado}</p>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Cód</th><th>Producto</th><th class="center">Paq/Caja</th><th class="center">Cajas</th><th class="center">Bonus</th><th class="right">Precio Caja</th><th class="right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${p.detalles.map(d => `
+              <tr>
+                <td>${d.producto.codigoInterno}</td>
+                <td>${d.productoNombre}</td>
+                <td class="center">${d.producto.paqPorCaja}</td>
+                <td class="center">${d.cantidadCajas}</td>
+                <td class="center">${d.cajasBonus ? `+${d.cajasBonus}` : '-'}</td>
+                <td class="right">${fmt(d.precioCajaSnapshot)}</td>
+                <td class="right">${fmt(d.subtotal)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="totals">
+          <table>
+            <tr><td>Subtotal Neto:</td><td class="right">${fmt(p.subtotalSinIVA)}</td></tr>
+            <tr><td>IVA (21%):</td><td class="right">${fmt(p.montoIVA)}</td></tr>
+            <tr><td>Recargo Financiación:</td><td class="right">${fmt(p.montoFinanciera)}</td></tr>
+            <tr><td><h3>Total General:</h3></td><td class="right"><h3>${fmt(p.totalGeneral)}</h3></td></tr>
+          </table>
+        </div>
+        <div style="margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
+          ${p.observaciones ? `<p><strong>Observaciones:</strong> ${p.observaciones}</p>` : ''}
+          <p>Condición de Pago: ${p.condicionPago || 'N/A'}</p>
+          <p>Impreso el ${today}</p>
+        </div>
+      </body>
+      </html>
+    `
+    const win = window.open('', '_blank', 'width=800,height=600')
+    if (win) {
+      win.document.write(html)
+      win.document.close()
+      win.onload = () => { win.focus(); win.print() }
+    }
   }
 
   const counts = {
@@ -365,10 +454,22 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           <button
                             onClick={() => { if (confirm('¿Cancelar este pedido?')) handleAction(p.id, 'cancelar') }}
                             disabled={actionId === p.id}
-                            className="p-1.5 rounded-lg text-secondary hover:text-red-400 hover:bg-red-400/10 transition-all flex items-center justify-center"
+                            className="p-1.5 rounded-lg text-secondary hover:text-orange-400 hover:bg-orange-400/10 transition-all flex items-center justify-center border border-transparent"
                             title="Cancelar pedido"
                           >
                             <XCircle size={12} />
+                          </button>
+                        )}
+
+                        {/* Borrar (Delete) */}
+                        {((p.estado === 'borrador' || p.estado === 'cancelado') || userNivel < 3) && (
+                          <button
+                            onClick={() => { if (confirm('¿ELIMINAR DEFINITIVAMENTE este pedido del sistema? Esta acción no se puede deshacer.')) handleDelete(p.id) }}
+                            disabled={actionId === p.id}
+                            className="p-1.5 rounded-lg text-secondary hover:text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center border border-transparent"
+                            title="Eliminar pedido definitivamente"
+                          >
+                            <Trash2 size={12} />
                           </button>
                         )}
                       </div>
@@ -394,12 +495,21 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                   {ESTADO_LABELS[selectedPedido.estado] || selectedPedido.estado}
                 </span>
               </div>
-              <button
-                onClick={() => setSelectedPedido(null)}
-                className="text-secondary hover:text-white transition-colors"
-              >
-                <XCircle size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePrintPedido(selectedPedido)}
+                  className="btn btn-secondary text-xs flex items-center gap-1.5 font-bold"
+                >
+                  <Download size={14} />
+                  Descargar
+                </button>
+                <button
+                  onClick={() => setSelectedPedido(null)}
+                  className="text-secondary hover:text-white transition-colors ml-2"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Content */}

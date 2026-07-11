@@ -504,7 +504,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
           <form onSubmit={handleSaveUser} className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in shadow-2xl rounded-3xl border border-white/10 bg-[#0B132B]">
             
             {/* Columna Izquierda: Perfil (Oscura) */}
-            <div className="md:w-1/3 bg-[#0B132B] flex flex-col justify-between border-r border-white/10 relative p-8">
+            <div className="md:w-1/3 bg-[#0B132B] flex flex-col justify-between border-r border-white/10 relative p-8 overflow-y-auto min-h-0">
               
               <div className="absolute top-4 right-4 md:hidden">
                 <button type="button" onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white">
@@ -560,7 +560,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
             </div>
             
             {/* Columna Derecha: Datos y Permisos (Panel Cristalino Oscuro) */}
-            <div className="md:w-2/3 bg-white/[0.03] flex flex-col h-[60vh] md:h-auto">
+            <div className="md:w-2/3 bg-white/[0.03] flex flex-col min-h-0">
               
               <div className="hidden md:flex justify-end p-4 shrink-0">
                 <button type="button" onClick={() => setShowUserModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10 transition-all border border-white/5">

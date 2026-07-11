@@ -323,3 +323,39 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: error.message || 'Error al actualizar el pedido.' }, { status: 500 })
   }
 }
+
+// ─── DELETE: Eliminar un pedido ──────────────────────────────────────────────
+export async function DELETE(_: Request, { params }: Params) {
+  try {
+    const session = await getSessionUser()
+    if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+    const { id } = await params
+    const pedidoId = Number(id)
+
+    const existing = await prisma.pedido.findUnique({ where: { id: pedidoId } })
+    if (!existing) return NextResponse.json({ error: 'Pedido no encontrado.' }, { status: 404 })
+
+    // Only allow deletion if Nivel 1/2, or if it's the seller (Nivel 3) and it's a draft or cancelled
+    if (session.nivel === 3 && existing.vendedorAlias !== session.alias) {
+      return NextResponse.json({ error: 'No puedes borrar pedidos de otro vendedor.' }, { status: 403 })
+    }
+    if (session.nivel === 3 && !['borrador', 'cancelado'].includes(existing.estado)) {
+      return NextResponse.json({ error: 'Solo puedes borrar pedidos en borrador o cancelados.' }, { status: 403 })
+    }
+
+    // Cascade delete is usually configured in Prisma for detalles, facturas, etc.
+    // We will manually delete dependent records if not configured.
+    await prisma.detallePedido.deleteMany({ where: { pedidoId } })
+    await prisma.factura.deleteMany({ where: { pedidoId } })
+    await prisma.cobranza.deleteMany({ where: { pedidoId } })
+    
+    await prisma.pedido.delete({ where: { id: pedidoId } })
+
+    await registrarAccion(session.id, session.alias, 'DELETE_PEDIDO', `Pedido ${existing.numeroPedido} eliminado`)
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('[API DELETE Pedido]', error)
+    return NextResponse.json({ error: 'Error al eliminar el pedido.' }, { status: 500 })
+  }
+}
