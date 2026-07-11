@@ -238,7 +238,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   })
 
   // Chart aggregations
-  // A. Product Sales (Pie Chart)
+  // A. Product Sales (Top 10 list at the bottom)
   const productMap: Record<string, number> = {}
   for (const p of targetPedidos) {
     for (const d of p.detalles) {
@@ -248,7 +248,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const chartProductos = Object.entries(productMap)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 5)
+    .slice(0, 10)
 
   // B. Sales by Zone (Vertical Bar Chart)
   const zoneMap: Record<string, number> = {}
@@ -265,6 +265,16 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     methodMap[method] = (methodMap[method] || 0) + p.monto
   }
   const chartMetodos = Object.entries(methodMap).map(([method, amount]) => ({ method, amount }))
+
+  // G. Cobranza Pendiente por Zona (Pie Chart)
+  const cobranzaZoneMap: Record<string, number> = {}
+  for (const c of cobranzasMes) {
+    const zone = c.zona || 'Sin Zona'
+    cobranzaZoneMap[zone] = (cobranzaZoneMap[zone] || 0) + c.saldoPendiente
+  }
+  const chartCobranzaZonas = Object.entries(cobranzaZoneMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
 
   // D. Promotions in Sales (Horizontal Bar Chart)
   const promos = await prisma.promocion.findMany()
@@ -329,7 +339,8 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       metodos: chartMetodos,
       promociones: chartPromociones,
       snacks: chartSnacks,
-      tripacks: chartTripacks
+      tripacks: chartTripacks,
+      cobranzaZonas: chartCobranzaZonas
     },
     availableZones,
     selectedZones

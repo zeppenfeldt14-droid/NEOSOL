@@ -418,16 +418,16 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       {/* FILA DE GRÁFICOS 1 (Productos, Ventas por Zona, Cobros por Método) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         
-        {/* Gráfico 1: Productos Vendidos */}
+        {/* Gráfico 1: Cobranza Pendiente por Zona */}
         <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
-            <span className="w-2 h-2 bg-blue-500 rounded-full" /> Productos más vendidos (Cajas)
+            <span className="w-2 h-2 bg-red-500 rounded-full" /> Cobranza Pendiente por Zona
           </h4>
           <div className="h-[230px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={charts.productos}
+                  data={charts.cobranzaZonas}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
@@ -435,11 +435,12 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {charts.productos.map((entry: any, index: number) => (
+                  {charts.cobranzaZonas.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} />
                   ))}
                 </Pie>
                 <Tooltip 
+                  formatter={(value) => formatMoney(Number(value))}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
               </PieChart>
@@ -447,15 +448,15 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
           {/* Leyenda con scroll contenido para evitar desbordes */}
           <div className="overflow-y-auto max-h-[110px] flex flex-wrap gap-2 text-[10px] justify-center border-t border-white/5 pt-3 custom-scrollbar">
-            {charts.productos.map((p: any, i: number) => (
-              <span key={p.name} className="flex items-center gap-1.5 text-secondary font-semibold bg-white/[0.02] px-2 py-1 rounded-lg border border-white/5">
+            {charts.cobranzaZonas.map((z: any, i: number) => (
+              <span key={z.name} className="flex items-center gap-1.5 text-secondary font-semibold bg-white/[0.02] px-2 py-1 rounded-lg border border-white/5">
                 <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS_PIE[i % COLORS_PIE.length] }} />
-                <span className="truncate max-w-[90px]" title={p.name}>{p.name}</span>
-                <b className="text-white ml-0.5">{p.value}</b>
+                <span className="truncate max-w-[90px]" title={z.name}>{z.name}</span>
+                <b className="text-white ml-0.5">{formatMoney(z.value)}</b>
               </span>
             ))}
-            {charts.productos.length === 0 && (
-              <span className="text-secondary/50 italic py-2">Sin datos de productos</span>
+            {charts.cobranzaZonas.length === 0 && (
+              <span className="text-secondary/50 italic py-2">Sin cobranzas pendientes</span>
             )}
           </div>
         </div>
@@ -510,10 +511,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
-      </div>
 
-      {/* FILA DE GRÁFICOS 2: (Promociones, Ventas Snacks, Ventas Tripacks) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        {/* Fila de Gráficos 2 (Promociones, Ventas Snacks, Ventas Tripacks) */}
+
         
         {/* Gráfico 4: Promociones en Ventas */}
         <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
@@ -725,6 +725,62 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
+      </div>
+
+      {/* SECCIÓN FINAL: TOP PRODUCTOS MÁS VENDIDOS */}
+      <div className="mt-8 mb-16 shrink-0">
+        <div className="glass-panel card p-6 border-white/5 shadow-[0_15px_35px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-2.5 mb-6">
+            <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
+            <h4 className="text-sm font-black text-white uppercase tracking-wider">Productos más vendidos (Volumen en Cajas)</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {charts.productos.map((p: any, index: number) => {
+              const maxCajas = charts.productos[0]?.value || 1
+              const percent = Math.min((p.value / maxCajas) * 100, 100)
+              
+              // Colors for the top positions
+              const numberBadgeColor = 
+                index === 0 ? 'bg-amber-500/20 text-amber-400 border-amber-500/35 shadow-[0_0_15px_rgba(245,158,11,0.15)]' :
+                index === 1 ? 'bg-slate-400/20 text-slate-300 border-slate-400/35 shadow-[0_0_15px_rgba(148,163,184,0.15)]' :
+                index === 2 ? 'bg-amber-700/20 text-amber-600 border-amber-700/35 shadow-[0_0_15px_rgba(180,83,9,0.15)]' :
+                'bg-white/5 text-secondary border-white/5'
+
+              return (
+                <div key={p.name} className="flex flex-col gap-2 p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-white/10 hover:bg-black/30 transition-all duration-300">
+                  <div className="flex justify-between items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-7 h-7 rounded-lg border text-xs font-black flex items-center justify-center ${numberBadgeColor}`}>
+                        #{index + 1}
+                      </span>
+                      <span className="text-xs font-bold text-white leading-tight truncate max-w-[200px] md:max-w-[280px]" title={p.name}>
+                        {p.name}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-black bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg">
+                      {p.value} Cajas
+                    </span>
+                  </div>
+                  
+                  {/* Barra de progreso visual */}
+                  <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden mt-1 border border-white/5">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            
+            {charts.productos.length === 0 && (
+              <div className="col-span-2 py-8 text-center text-secondary/60 italic font-semibold rounded-2xl bg-black/20 border border-white/5">
+                Sin datos de productos en este período
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
     </div>
