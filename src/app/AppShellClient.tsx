@@ -168,6 +168,12 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
                 <div className="px-3 py-1 text-[10px] font-black uppercase text-primary tracking-widest border-b border-white/5 mb-1.5">
                   Zona {zone}
                 </div>
+                {modules.ventas !== false && (
+                  <Link href={`/zonas/${zone}/ventas`} className={`nav-item ${isLinkActive(`/zonas/${zone}/ventas`) ? 'active' : ''}`}>
+                    <TrendingUp className="nav-icon" />
+                    <span>Gestión de Ventas</span>
+                  </Link>
+                )}
                 {modules.visitas !== false && (
                   <Link href={`/zonas/${zone}`} className={`nav-item ${pathname === `/zonas/${zone}` ? 'active' : ''}`}>
                     <LayoutDashboard className="nav-icon" />
@@ -249,6 +255,12 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
 
                         {isZoneActive && (
                           <div className="pl-3 mt-1 flex flex-col gap-1.5 border-l border-white/5 ml-1.5">
+                            {modules.ventas !== false && (
+                              <Link href={`/zonas/${zone}/ventas`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/ventas`, true) ? 'active' : ''}`}>
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                <span>Gestión de Ventas</span>
+                              </Link>
+                            )}
                             {modules.visitas !== false && (
                               <Link href={`/zonas/${zone}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${pathname === `/zonas/${zone}` ? 'active' : ''}`}>
                                 <LayoutDashboard className="w-3.5 h-3.5" />

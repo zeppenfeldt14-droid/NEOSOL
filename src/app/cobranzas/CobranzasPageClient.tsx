@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Banknote, Globe, AlertTriangle, CheckCircle2, Clock,
   DollarSign, X, RefreshCw, CreditCard, Wallet, Building2,
-  FileText, ChevronDown, ChevronUp, History
+  FileText, ChevronDown, ChevronUp, History, Eye
 } from 'lucide-react'
+import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 
 interface Props {
   userNivel: number
@@ -70,6 +71,27 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
   const [cobranzas, setCobranzas] = useState<Cobranza[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+
+  const [selectedPedidoDetalle, setSelectedPedidoDetalle] = useState<any | null>(null)
+  const [isFetchingPedido, setIsFetchingPedido] = useState<number | null>(null)
+
+  const fetchDetallePedido = async (pedidoId: number) => {
+    setIsFetchingPedido(pedidoId)
+    try {
+      const res = await fetch(`/api/pedidos/${pedidoId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSelectedPedidoDetalle(data)
+      } else {
+        alert('Error al obtener el detalle del pedido.')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Error de red al cargar el pedido.')
+    } finally {
+      setIsFetchingPedido(null)
+    }
+  }
 
   // Modal pago
   const [pagoModal, setPagoModal] = useState<Cobranza | null>(null)
@@ -295,7 +317,7 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/5 text-left">
-                {['', 'Cliente', 'Zona', 'Vendedor', 'Pedido', 'Cond. Pago', 'Monto Orig.', 'Saldo Pend.', 'Cuota', 'Vencimiento', 'Días', 'Estado', 'Acción'].map(col => (
+                {['', 'Cliente', 'Zona', 'Vendedor', 'Pedido', 'Cond. Pago', 'Monto Orig.', 'Saldo Pend.', 'Cuota', 'Vencimiento', 'Días', 'Estado', 'Cobrar', 'Ver'].map(col => (
                   <th key={col} className="px-3 py-3 text-[10px] font-black uppercase text-secondary tracking-wider whitespace-nowrap">
                     {col}
                   </th>
@@ -387,6 +409,20 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                               <Banknote size={11} /> Cobrar
                             </button>
                           )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <button
+                            onClick={() => fetchDetallePedido(c.pedido.id || parseInt(c.pedido.numeroPedido) || c.id)} // Ideally c.pedidoId
+                            disabled={isFetchingPedido === c.pedido.id}
+                            className="btn-action text-secondary hover:text-white"
+                            title="Ver detalles del pedido"
+                          >
+                            {isFetchingPedido === c.pedido.id ? (
+                              <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Eye size={13} />
+                            )}
+                          </button>
                         </td>
                       </tr>
 
@@ -601,6 +637,14 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Pedido Global */}
+      {selectedPedidoDetalle && (
+        <PedidoDetalleModal
+          pedido={selectedPedidoDetalle}
+          onClose={() => setSelectedPedidoDetalle(null)}
+        />
       )}
     </div>
   )

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { TrendingUp, Globe, BarChart3, FileText, DollarSign, RefreshCw } from 'lucide-react'
+import { TrendingUp, Globe, BarChart3, FileText, DollarSign, RefreshCw, Eye } from 'lucide-react'
+import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 
 interface Props {
   userNivel: number
@@ -46,6 +47,27 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
   const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'todo'>('mes')
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [loading, setLoading]   = useState(true)
+
+  const [selectedPedidoDetalle, setSelectedPedidoDetalle] = useState<any | null>(null)
+  const [isFetchingPedido, setIsFetchingPedido] = useState<number | null>(null)
+
+  const fetchDetallePedido = async (pedidoId: number) => {
+    setIsFetchingPedido(pedidoId)
+    try {
+      const res = await fetch(`/api/pedidos/${pedidoId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSelectedPedidoDetalle(data)
+      } else {
+        alert('Error al obtener el detalle del pedido.')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Error de red al cargar el pedido.')
+    } finally {
+      setIsFetchingPedido(null)
+    }
+  }
 
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
@@ -256,7 +278,7 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/5 text-left">
-                {['Nº Factura', 'Tipo', 'Cliente', 'Zona', 'Vendedor', 'Pedido', 'Base s/IVA', 'IVA 21%', 'Recargo Fin.', 'Total', 'Estado', 'Fecha'].map(col => (
+                {['Nº Factura', 'Tipo', 'Cliente', 'Zona', 'Vendedor', 'Pedido', 'Base s/IVA', 'IVA 21%', 'Recargo Fin.', 'Total', 'Estado', 'Fecha', ''].map(col => (
                   <th key={col} className="px-3 py-3 text-[10px] font-black uppercase text-secondary tracking-wider whitespace-nowrap">
                     {col}
                   </th>
@@ -308,6 +330,20 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
                     <td className="px-3 py-3 text-secondary text-xs whitespace-nowrap">
                       {new Date(f.creadoEn).toLocaleDateString('es-AR')}
                     </td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => fetchDetallePedido(f.pedidoId)}
+                        disabled={isFetchingPedido === f.pedidoId}
+                        className="btn-action text-secondary hover:text-white"
+                        title="Ver detalles del pedido"
+                      >
+                        {isFetchingPedido === f.pedidoId ? (
+                          <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Eye size={13} />
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -322,6 +358,14 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
           </div>
         )}
       </div>
+
+      {/* Modal de Pedido Global */}
+      {selectedPedidoDetalle && (
+        <PedidoDetalleModal
+          pedido={selectedPedidoDetalle}
+          onClose={() => setSelectedPedidoDetalle(null)}
+        />
+      )}
     </div>
   )
 }

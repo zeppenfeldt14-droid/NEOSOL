@@ -46,8 +46,9 @@ export async function POST() {
     let totalEmpresas = 0
     let totalPedidos = 0
 
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const currentYear = new Date().getFullYear()
+    const firstDayOfYear = new Date(currentYear, 0, 1) // 1 de Enero
+    const today = new Date()
 
     for (const conf of configs) {
       // 1. Create User
@@ -77,7 +78,7 @@ export async function POST() {
             responsable: `Contacto ${i}`,
             vendedorAsignado: vendedor.alias,
             estado: randomInt(1, 10) > 2 ? 'activo' : 'prospecto',
-            creadoEn: randomDate(thirtyDaysAgo, new Date())
+            creadoEn: randomDate(firstDayOfYear, today)
           }
         })
         totalEmpresas++
@@ -88,7 +89,7 @@ export async function POST() {
           await prisma.visita.create({
             data: {
               empresaId: empresa.id,
-              fecha: randomDate(thirtyDaysAgo, new Date()),
+              fecha: randomDate(firstDayOfYear, today),
               tipo: 'visita',
               resultado: randomItem(['Pedido Cerrado', 'Rechazado', 'Reprogramar', 'Presupuesto Entregado']),
               notas: 'Simulación de visita generada automáticamente.'
@@ -110,6 +111,8 @@ export async function POST() {
             const montoIVA = subtotal * 0.2 * 0.21 // 20% Factura A -> 21% IVA
             const total = subtotal + montoIVA
 
+            const fechaTransaccion = randomDate(firstDayOfYear, today)
+
             const pedido = await prisma.pedido.create({
               data: {
                 numeroPedido: `PED-SIM-${conf.zona.substring(0, 3)}-${randomInt(1000, 9999)}`,
@@ -124,7 +127,7 @@ export async function POST() {
                 montoIVA: montoIVA,
                 totalGeneral: total,
                 condicionPago: '20/80',
-                creadoEn: randomDate(thirtyDaysAgo, new Date()),
+                creadoEn: fechaTransaccion,
                 detalles: {
                   create: [
                     {
@@ -160,7 +163,8 @@ export async function POST() {
                 subtotal: subtotal * 0.2,
                 iva: montoIVA,
                 total: (subtotal * 0.2) + montoIVA,
-                estado: 'pagada'
+                estado: 'pagada',
+                creadoEn: fechaTransaccion
               }
             })
 
@@ -173,7 +177,8 @@ export async function POST() {
                 zona: conf.zona,
                 montoOriginal: total,
                 saldoPendiente: randomItem([0, total * 0.5, total]), // Pagado, Parcial o Pendiente
-                estado: 'pendiente'
+                estado: 'pendiente',
+                creadoEn: fechaTransaccion
               }
             })
           }

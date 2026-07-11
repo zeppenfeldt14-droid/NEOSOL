@@ -457,6 +457,38 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
         </div>
       </div>
 
+      {/* Progress Charts (Daily 30% and Weekly 70%) */}
+      <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 7fr', marginTop: '1.5rem' }}>
+        <div className="glass-panel card delay-300" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h3 className="card-title">Estado de Ruta Diaria</h3>
+          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Progreso de hoy</p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DailyRouteChart 
+              planificadas={visitasDeHoy.length} 
+              atendidas={atendidasCount} 
+              reprogramadas={reprogramadasCount} 
+            />
+          </div>
+        </div>
+
+        <div className="glass-panel card delay-350" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h3 className="card-title">Visitas de la Semana</h3>
+          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Visitas realizadas en los últimos 7 días</p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <WeeklyVisitsChart data={weeklyData} />
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly Chart */}
+      <div className="glass-panel card delay-400" style={{ marginTop: '1.5rem' }}>
+        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <BarChart2 size={18} /> Visitas por Mes
+        </h3>
+        <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Rendimiento anual del {today.getFullYear()}</p>
+        <MonthlyVisitsChart data={monthlyData} />
+      </div>
+
       {/* Actualizaciones Recientes */}
       <div className="glass-panel card delay-100 mt-6">
         <h3 className="card-title">Actualizaciones Recientes</h3>
@@ -499,38 +531,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ zona
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Progress Charts (Daily 30% and Weekly 70%) */}
-      <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 7fr', marginTop: '1.5rem' }}>
-        <div className="glass-panel card delay-300" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="card-title">Estado de Ruta Diaria</h3>
-          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Progreso de hoy</p>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <DailyRouteChart 
-              planificadas={visitasDeHoy.length} 
-              atendidas={atendidasCount} 
-              reprogramadas={reprogramadasCount} 
-            />
-          </div>
-        </div>
-
-        <div className="glass-panel card delay-350" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className="card-title">Visitas de la Semana</h3>
-          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Visitas realizadas en los últimos 7 días</p>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <WeeklyVisitsChart data={weeklyData} />
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly Chart */}
-      <div className="glass-panel card delay-400" style={{ marginTop: '1.5rem' }}>
-        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <BarChart2 size={18} /> Visitas por Mes
-        </h3>
-        <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Rendimiento anual del {today.getFullYear()}</p>
-        <MonthlyVisitsChart data={monthlyData} />
       </div>
     </div>
   )
