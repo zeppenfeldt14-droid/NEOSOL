@@ -195,61 +195,58 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
         </button>
       </div>
 
-      {/* Zone Filter */}
-      {userNivel < 3 && (
-        <div className="glass-panel card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center border border-white/5">
+      {/* Zone & Status Filters (50/50 Layout) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Zone Filter */}
+        {userNivel < 3 ? (
+          <div className="glass-panel card p-4 flex flex-col gap-3 border border-white/5">
+            <div className="flex items-center gap-2 text-secondary text-sm font-semibold">
+              <Globe size={15} />
+              <span>Zona:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedZone('todas')}
+                className={`btn-toggle ${selectedZone === 'todas' ? 'active' : ''}`}
+              >
+                Todas las Zonas
+              </button>
+              {availableZones.map(z => (
+                <button
+                  key={z}
+                  onClick={() => setSelectedZone(z)}
+                  className={`btn-toggle ${selectedZone === z ? 'active' : ''}`}
+                >
+                  {z}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : <div />}
+
+        {/* Status Filter */}
+        <div className="glass-panel card p-4 flex flex-col gap-3 border border-white/5">
           <div className="flex items-center gap-2 text-secondary text-sm font-semibold">
-            <Globe size={15} />
-            <span>Zona:</span>
+            <CheckCircle2 size={15} />
+            <span>Estado:</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedZone('todas')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                selectedZone === 'todas'
-                  ? 'bg-yellow-500 text-black border-yellow-500 shadow-lg shadow-yellow-500/20'
-                  : 'border-white/10 text-secondary hover:text-white hover:border-white/30'
-              }`}
-            >
-              Todas las Zonas
-            </button>
-            {availableZones.map(z => (
+            {ESTADOS_COBRANZA.map(e => (
               <button
-                key={z}
-                onClick={() => setSelectedZone(z)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                  selectedZone === z
-                    ? 'bg-yellow-500 text-black border-yellow-500 shadow-lg shadow-yellow-500/20'
-                    : 'border-white/10 text-secondary hover:text-white hover:border-white/30'
-                }`}
+                key={e.key}
+                onClick={() => setSelectedEstado(e.key)}
+                className={`btn-toggle ${selectedEstado === e.key ? 'active' : ''} flex items-center gap-1`}
               >
-                {z}
+                {e.label}
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
+                  selectedEstado === e.key ? 'bg-primary/30 text-white' : 'bg-white/5 text-secondary'
+                }`}>
+                  {counts[e.key as keyof typeof counts]}
+                </span>
               </button>
             ))}
           </div>
         </div>
-      )}
-
-      {/* Estado Tabs */}
-      <div className="flex gap-1 border-b border-white/5">
-        {ESTADOS_COBRANZA.map(e => (
-          <button
-            key={e.key}
-            onClick={() => setSelectedEstado(e.key)}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-lg transition-all border-b-2 flex items-center gap-1.5 ${
-              selectedEstado === e.key
-                ? 'border-yellow-400 text-white bg-white/5'
-                : `border-transparent ${e.color} hover:text-white`
-            }`}
-          >
-            {e.label}
-            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
-              selectedEstado === e.key ? 'bg-yellow-400/20 text-yellow-300' : 'bg-white/5 text-secondary'
-            }`}>
-              {counts[e.key as keyof typeof counts]}
-            </span>
-          </button>
-        ))}
       </div>
 
       {/* KPI Cards */}

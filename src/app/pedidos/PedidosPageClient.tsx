@@ -510,7 +510,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
             </div>
 
             {/* Content */}
-            <div className="p-6 flex flex-col gap-6 overflow-y-auto">
+            <div className="p-6 flex flex-col gap-6 overflow-y-auto min-h-0 flex-1 custom-scrollbar">
               {/* Info General */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-xl text-xs">
                 <div>

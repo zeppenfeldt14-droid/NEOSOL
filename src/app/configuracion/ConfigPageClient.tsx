@@ -35,6 +35,9 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [newPromoHasta, setNewPromoHasta] = useState('')
   const [isLoadingPromos, setIsLoadingPromos] = useState(false)
 
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<'lista' | 'zonas' | 'promos' | 'config'>('lista')
+
   // Zones management state
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([])
   const [newZonaName, setNewZonaName] = useState('')
@@ -397,6 +400,39 @@ export function ConfigPageClient({ currentLogo }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* TABS NAVIGATION */}
+      <div className="flex gap-2 border-b border-white/10 pb-2 mb-2 overflow-x-auto custom-scrollbar">
+        <button
+          onClick={() => setActiveTab('lista')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'lista' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+        >
+          Lista (Tarifas y Precios)
+        </button>
+        {userNivel === 1 && (
+          <>
+            <button
+              onClick={() => setActiveTab('zonas')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'zonas' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+            >
+              Zonas
+            </button>
+            <button
+              onClick={() => setActiveTab('promos')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'promos' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+            >
+              Promociones
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => setActiveTab('config')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary hover:bg-white/5'}`}
+        >
+          Configuración Pag.
+        </button>
+      </div>
+
+      {activeTab === 'config' && (
       <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
         <div className="glass-panel card md:col-span-2">
           <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
@@ -501,10 +537,11 @@ export function ConfigPageClient({ currentLogo }: Props) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Dynamic Zones Management (Nivel 1 only) */}
-      {userNivel === 1 && (
-        <div className="grid md:grid-cols-3 gap-6 animate-fade-in mt-6">
+      {activeTab === 'zonas' && userNivel === 1 && (
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
           <div className="glass-panel card md:col-span-2">
             <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
               Gestión de Zonas Principales
@@ -592,8 +629,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
       )}
 
       {/* Dynamic Tariffs and Pricing Lists */}
-      {userNivel === 1 && (
-        <div className="grid md:grid-cols-3 gap-6 animate-fade-in mt-6">
+      {activeTab === 'lista' && userNivel === 1 && (
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
           <div className="glass-panel card md:col-span-2">
             <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
               Listas de Tarifas y Precios por Volumen
@@ -730,8 +767,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
       )}
 
       {/* Dynamic Promotions */}
-      {userNivel === 1 && (
-        <div className="grid md:grid-cols-3 gap-6 animate-fade-in mt-6">
+      {activeTab === 'promos' && userNivel === 1 && (
+        <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
           <div className="glass-panel card md:col-span-2">
             <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
               Gestión de Promociones Mensuales
