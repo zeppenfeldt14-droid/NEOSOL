@@ -133,66 +133,34 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
+          >
+            <optgroup label="Meses">
+              {MESES.filter(m => m.value <= new Date().getMonth()).map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Trimestres">
+              {TRIMESTRES.map(t => {
+                const currMonth = new Date().getMonth()
+                if (t.value === 'Q2' && currMonth < 3) return null
+                if (t.value === 'Q3' && currMonth < 6) return null
+                if (t.value === 'Q4' && currMonth < 9) return null
+                return <option key={t.value} value={t.value}>{t.label}</option>
+              })}
+            </optgroup>
+          </select>
+
           <button onClick={fetchFacturas} className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10">
             <RefreshCw size={13} /> Actualizar
           </button>
         </div>
       </div>
 
-      {/* Period Filter */}
-      <div className="glass-panel card p-4 flex flex-col gap-4 border border-white/5">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-secondary text-sm font-semibold">
-            <Calendar size={15} />
-            <span>Por Mes:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {MESES.map(m => {
-              const val = m.value.toString()
-              const isActive = selectedPeriod === val
-              // Solo mostrar hasta el mes actual
-              if (m.value > new Date().getMonth()) return null
-              return (
-                <button
-                  key={val}
-                  onClick={() => setSelectedPeriod(val)}
-                  className={`btn-toggle ${isActive ? 'active' : ''}`}
-                >
-                  {m.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
-          <div className="flex items-center gap-2 text-secondary text-sm font-semibold">
-            <Calendar size={15} />
-            <span>Por Trimestre:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {TRIMESTRES.map(t => {
-              const isActive = selectedPeriod === t.value
-              
-              // No mostrar trimestres que aún no han comenzado este año
-              const currMonth = new Date().getMonth()
-              if (t.value === 'Q2' && currMonth < 3) return null
-              if (t.value === 'Q3' && currMonth < 6) return null
-              if (t.value === 'Q4' && currMonth < 9) return null
-
-              return (
-                <button
-                  key={t.value}
-                  onClick={() => setSelectedPeriod(t.value)}
-                  className={`btn-toggle ${isActive ? 'active' : ''}`}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

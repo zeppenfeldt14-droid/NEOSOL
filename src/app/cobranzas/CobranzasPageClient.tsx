@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Banknote, Globe, AlertTriangle, CheckCircle2, Clock,
   DollarSign, X, RefreshCw, CreditCard, Wallet, Building2,
-  FileText, ChevronDown, ChevronUp, History, Eye
+  FileText, ChevronDown, ChevronUp, History, Eye, Calendar
 } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 
@@ -104,6 +104,11 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
   const [pagoError, setPagoError] = useState('')
   const [pagoSuccess, setPagoSuccess] = useState('')
 
+  // Modal prorroga
+  const [prorrogaModal, setProrrogaModal] = useState<Cobranza | null>(null)
+  const [nuevaFecha, setNuevaFecha] = useState('')
+  const [prorrogaLoading, setProrrogaLoading] = useState(false)
+
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
@@ -114,7 +119,14 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
     if (selectedEstado !== 'todos') params.set('estado', selectedEstado)
     const res = await fetch(`/api/cobranzas?${params.toString()}`)
     const data = await res.json()
-    setCobranzas(Array.isArray(data) ? data : [])
+    const sorted = Array.isArray(data) ? data.sort((a, b) => {
+      if (a.estado === 'pagada' && b.estado !== 'pagada') return 1
+      if (a.estado !== 'pagada' && b.estado === 'pagada') return -1
+      const dateA = a.fechaVencimiento ? new Date(a.fechaVencimiento).getTime() : 0
+      const dateB = b.fechaVencimiento ? new Date(b.fechaVencimiento).getTime() : 0
+      return dateA - dateB
+    }) : []
+    setCobranzas(sorted)
     setLoading(false)
   }, [selectedZone, selectedEstado])
 
@@ -193,6 +205,29 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
     vencida:   cobranzas.filter(c => c.estado === 'vencida' || (c.diasAtraso !== null && c.diasAtraso > 0 && c.estado !== 'pagada')).length,
     parcial:   cobranzas.filter(c => c.estado === 'parcial').length,
     pagada:    cobranzas.filter(c => c.estado === 'pagada').length,
+  }
+
+  const handleProrrogar = async () => {
+    if (!prorrogaModal || !nuevaFecha) return
+    setProrrogaLoading(true)
+    try {
+      const res = await fetch(`/api/cobranzas/${prorrogaModal.id}/prorroga`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fechaVencimiento: new Date(nuevaFecha).toISOString() })
+      })
+      if (res.ok) {
+        setProrrogaModal(null)
+        setNuevaFecha('')
+        fetchCobranzas()
+      } else {
+        alert('Error al aplicar prórroga')
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setProrrogaLoading(false)
+    }
   }
 
   return (
@@ -386,6 +421,7 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                           {c.fechaVencimiento
                             ? new Date(c.fechaVencimiento).toLocaleDateString('es-AR')
                             : '—'}
+                          {isVencida && <span title="Atrasada"><AlertTriangle size={12} className="text-red-400 animate-pulse ml-2 inline-block" /></span>}
                         </td>
                         <td className="px-3 py-3">
                           {c.diasAtraso !== null && c.estado !== 'pagada' ? (
@@ -401,13 +437,22 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                             {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
                           </span>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3 flex gap-2">
                           {c.estado !== 'pagada' && (
                             <button
                               onClick={() => openPagoModal(c)}
                               className="px-3 py-1.5 rounded-lg bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 text-[10px] font-black border border-yellow-400/20 transition-all flex items-center gap-1 whitespace-nowrap"
                             >
                               <Banknote size={11} /> Cobrar
+                            </button>
+                          )}
+                          {userNivel === 1 && c.estado !== 'pagada' && (
+                            <button
+                              onClick={() => setProrrogaModal(c)}
+                              className="px-3 py-1.5 rounded-lg bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 text-[10px] font-black border border-blue-400/20 transition-all flex items-center gap-1 whitespace-nowrap"
+                              title="Prorrogar / Cambiar Fecha de Vencimiento"
+                            >
+                              <Calendar size={11} /> Prorrogar
                             </button>
                           )}
                         </td>
@@ -634,6 +679,51 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
               >
                 <Banknote size={14} />
                 {pagoLoading ? 'Registrando...' : 'Confirmar Pago'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prorroga Modal */}
+      {prorrogaModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5 shadow-2xl relative">
+            <button
+              onClick={() => setProrrogaModal(null)}
+              className="absolute top-4 right-4 text-secondary hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div>
+              <h2 className="text-xl font-bold text-white mb-1">Prorrogar Vencimiento</h2>
+              <p className="text-secondary text-sm">Cobranza de <strong className="text-white">{prorrogaModal.empresaNombre}</strong></p>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-secondary uppercase tracking-wider">Nueva Fecha de Vencimiento</label>
+              <input
+                type="date"
+                value={nuevaFecha}
+                onChange={(e) => setNuevaFecha(e.target.value)}
+                className="input-field text-sm"
+              />
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={handleProrrogar}
+                disabled={prorrogaLoading || !nuevaFecha}
+                className="w-full btn btn-primary flex items-center justify-center gap-2 font-bold"
+              >
+                {prorrogaLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Calendar size={16} /> Confirmar Prórroga
+                  </>
+                )}
               </button>
             </div>
           </div>

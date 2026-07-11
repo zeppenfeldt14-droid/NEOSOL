@@ -131,21 +131,16 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
             <RefreshCw size={13} /> Actualizar
           </button>
           {/* Period Selector */}
-          <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/5">
-            {(['hoy', 'semana', 'mes', 'todo'] as const).map(p => (
-              <button
-                key={p}
-                onClick={() => setSelectedPeriod(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
-                  selectedPeriod === p
-                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
-                    : 'text-secondary hover:text-white'
-                }`}
-              >
-                {p === 'todo' ? 'Todo' : p}
-              </button>
-            ))}
-          </div>
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value as any)}
+            className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
+          >
+            <option value="hoy">Hoy</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes en curso</option>
+            <option value="todo">Historial completo</option>
+          </select>
         </div>
       </div>
 

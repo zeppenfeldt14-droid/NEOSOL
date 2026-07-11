@@ -168,6 +168,23 @@ export async function POST() {
               }
             })
 
+            const saldoPendiente = randomItem([0, total * 0.5, total])
+            let estadoCobranza = 'pendiente'
+            if (saldoPendiente === 0) estadoCobranza = 'pagada'
+            else if (saldoPendiente < total) estadoCobranza = 'parcial'
+
+            // Simular vencimientos
+            const diasVencimiento = randomItem([15, 30, 45, 60])
+            const fechaVencimiento = new Date(fechaTransaccion)
+            fechaVencimiento.setDate(fechaVencimiento.getDate() + diasVencimiento)
+            
+            let diasAtraso = null
+            if (saldoPendiente > 0 && fechaVencimiento < new Date()) {
+              estadoCobranza = 'vencida'
+              const diffTime = Math.abs(new Date().getTime() - fechaVencimiento.getTime())
+              diasAtraso = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+            }
+
             await prisma.cobranza.create({
               data: {
                 pedidoId: pedido.id,
@@ -176,8 +193,9 @@ export async function POST() {
                 vendedorAlias: vendedor.alias,
                 zona: conf.zona,
                 montoOriginal: total,
-                saldoPendiente: randomItem([0, total * 0.5, total]), // Pagado, Parcial o Pendiente
-                estado: 'pendiente',
+                saldoPendiente,
+                estado: estadoCobranza,
+                fechaVencimiento: fechaVencimiento.toISOString(),
                 creadoEn: fechaTransaccion
               }
             })
