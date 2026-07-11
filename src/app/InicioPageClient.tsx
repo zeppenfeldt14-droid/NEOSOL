@@ -180,8 +180,8 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0B132B] overflow-y-auto custom-scrollbar p-8 pb-24">
       
-      {/* CABECERA CON FILTRO SELECT MÚLTIPLE */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 shrink-0">
+      {/* CABECERA CON FILTROS SELECT MÚLTIPLE */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             INICIO <Sparkles size={16} className="text-primary animate-pulse" />
@@ -332,7 +332,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* METRICAS PRINCIPALES - 5 CUBOS EN UNA SOLA LÍNEA */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
         
         {/* Cubo 1: Facturación */}
         <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-primary/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
@@ -416,14 +416,14 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* FILA DE GRÁFICOS 1 (Productos, Ventas por Zona, Cobros por Método) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         
         {/* Gráfico 1: Productos Vendidos */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-blue-500 rounded-full" /> Productos más vendidos (Cajas)
           </h4>
-          <div className="flex-1 h-[220px] min-h-[220px] relative">
+          <div className="h-[230px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -461,11 +461,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 2: Ventas por Zona */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full" /> Ventas Totales por Zona
           </h4>
-          <div className="flex-1 h-[300px]">
+          <div className="h-[250px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.zonas} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -486,11 +486,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 3: Cobros por Método */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-yellow-500 rounded-full" /> Cobrado del Mes por Método
           </h4>
-          <div className="flex-1 h-[300px]">
+          <div className="h-[250px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={charts.metodos} 
@@ -512,15 +512,15 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
       </div>
 
-      {/* FILA DE GRÁFICOS 2: NUEVOS (Promociones, Ventas Snacks, Ventas Tripacks) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      {/* FILA DE GRÁFICOS 2: (Promociones, Ventas Snacks, Ventas Tripacks) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         
-        {/* Gráfico 4: Promociones en Ventas (Barras Horizontales) */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+        {/* Gráfico 4: Promociones en Ventas */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-pink-500 rounded-full" /> Promociones en Ventas (Monto)
           </h4>
-          <div className="flex-1 h-[300px]">
+          <div className="h-[250px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={charts.promociones} 
@@ -545,11 +545,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 5: Ventas Snacks */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-purple-500 rounded-full" /> Ventas de Snacks (Cajas)
           </h4>
-          <div className="flex-1 h-[300px]">
+          <div className="h-[250px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.snacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -574,11 +574,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 6: Ventas Tripacks */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-amber-500 rounded-full" /> Ventas de Tripacks (Cajas)
           </h4>
-          <div className="flex-1 h-[300px]">
+          <div className="h-[250px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.tripacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -605,47 +605,51 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* SECCIÓN INFERIOR PREMIUM: ÚLTIMOS PEDIDOS & VENTAS RECIENTES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-16">
         
-        {/* Columna Izquierda/Centro: Últimos Pedidos */}
+        {/* Columna Izquierda/Centro: Últimos Pedidos (Estilo Cápsulas Premium - 10 elementos) */}
         <div className="lg:col-span-2">
-          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col justify-between shadow-[0_15px_35px_rgba(0,0,0,0.4)]">
+          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col justify-between shadow-[0_15px_35px_rgba(0,0,0,0.5)]">
             <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                <h4 className="text-xs font-black text-white uppercase tracking-wider">Últimos Pedidos</h4>
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">Últimos Pedidos</h4>
               </div>
-              <Link href="/pedidos" className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold text-primary border border-primary/20 bg-primary/5 hover:bg-primary hover:text-white transition-all duration-300 flex items-center gap-1.5">
+              <Link href="/pedidos" className="px-3.5 py-1.5 rounded-xl text-[10px] font-black text-primary border border-primary/20 bg-primary/5 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex items-center gap-1.5">
                 Ver todos <ArrowRight size={11} />
               </Link>
             </div>
             
-            <div className="overflow-x-auto flex-1 custom-scrollbar">
-              <table className="w-full text-left border-collapse min-w-[500px]">
+            <div className="overflow-x-auto flex-1 custom-scrollbar pr-1">
+              <table className="w-full border-separate border-spacing-y-2.5 text-left min-w-[600px]">
                 <thead>
-                  <tr className="border-b border-white/5 text-[9px] font-black text-secondary uppercase tracking-widest">
-                    <th className="pb-3.5 pl-2">Nº Pedido</th>
-                    <th className="pb-3.5">Cliente</th>
-                    <th className="pb-3.5">Zona</th>
-                    <th className="pb-3.5 text-right pr-4">Monto</th>
-                    <th className="pb-3.5 text-center">Estado</th>
+                  <tr className="text-[10px] font-black text-secondary/60 uppercase tracking-widest">
+                    <th className="pb-2 pl-4">Nº Pedido</th>
+                    <th className="pb-2">Cliente</th>
+                    <th className="pb-2">Zona</th>
+                    <th className="pb-2 text-right pr-4">Monto</th>
+                    <th className="pb-2 text-center pr-4">Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.03]">
+                <tbody>
                   {recentActivity.pedidos.map((p: any) => (
-                    <tr key={p.id} className="group text-xs hover:bg-white/[0.02] transition-all duration-200">
-                      <td className="py-4 pl-2 font-bold text-white group-hover:text-primary transition-colors">
+                    <tr key={p.id} className="group text-xs transition-all duration-200">
+                      <td className="py-4 pl-4 rounded-l-2xl bg-[#141F3C]/30 border-y border-l border-white/5 group-hover:border-primary/30 group-hover:bg-[#1A284C]/50 transition-all duration-300 font-bold text-white">
                         <span className="flex items-center gap-2">
                           <ShoppingCart size={13} className="text-secondary/40 group-hover:text-primary/70 transition-colors" />
                           {p.numeroPedido}
                         </span>
                       </td>
-                      <td className="py-4 text-secondary group-hover:text-white font-semibold transition-colors truncate max-w-[200px]" title={p.empresa.nombre}>
+                      <td className="py-4 bg-[#141F3C]/30 border-y border-white/5 group-hover:border-primary/30 group-hover:bg-[#1A284C]/50 transition-all duration-300 text-secondary group-hover:text-white font-semibold transition-colors truncate max-w-[200px]" title={p.empresa.nombre}>
                         {p.empresa.nombre}
                       </td>
-                      <td className="py-4 text-secondary/80 font-medium">{p.zona}</td>
-                      <td className="py-4 text-right font-black text-white pr-4">{formatMoney(p.totalGeneral)}</td>
-                      <td className="py-4 text-center">
+                      <td className="py-4 bg-[#141F3C]/30 border-y border-white/5 group-hover:border-primary/30 group-hover:bg-[#1A284C]/50 transition-all duration-300 text-secondary/80 font-medium">
+                        {p.zona}
+                      </td>
+                      <td className="py-4 bg-[#141F3C]/30 border-y border-white/5 group-hover:border-primary/30 group-hover:bg-[#1A284C]/50 transition-all duration-300 text-right font-black text-white pr-4">
+                        {formatMoney(p.totalGeneral)}
+                      </td>
+                      <td className="py-4 rounded-r-2xl bg-[#141F3C]/30 border-y border-r border-white/5 group-hover:border-primary/30 group-hover:bg-[#1A284C]/50 transition-all duration-300 text-center pr-4">
                         <span className={`px-2.5 py-0.5 rounded-full font-bold text-[9px] tracking-wider border shadow-md ${
                           p.estado === 'aprobado' ? 'bg-green-500/10 text-green-400 border-green-500/20 shadow-[0_0_12px_rgba(16,185,129,0.08)]' :
                           p.estado === 'borrador' ? 'bg-gray-500/10 text-gray-400 border-white/5' :
@@ -658,7 +662,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   ))}
                   {recentActivity.pedidos.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-secondary/60 italic font-semibold">No hay pedidos registrados</td>
+                      <td colSpan={5} className="py-8 text-center text-secondary/60 italic font-semibold rounded-2xl bg-[#141F3C]/30 border border-white/5">
+                        No hay pedidos registrados
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -667,15 +673,15 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
-        {/* Columna Derecha: Ventas Recientes */}
+        {/* Columna Derecha: Ventas Recientes (Ticket / Receipt Premium) */}
         <div className="lg:col-span-1">
-          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col shadow-[0_15px_35px_rgba(0,0,0,0.4)]">
-            <div className="flex items-center gap-2 mb-6 shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h4 className="text-xs font-black text-white uppercase tracking-wider">Ventas Recientes (Facturas)</h4>
+          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col justify-between shadow-[0_15px_35px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center gap-2.5 mb-6 shrink-0">
+              <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse" />
+              <h4 className="text-sm font-black text-white uppercase tracking-wider">Ventas Recientes</h4>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1 max-h-[300px] min-h-[300px]">
+            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1 max-h-[500px]">
               {recentActivity.ventas.map((v: any) => (
                 <div key={v.id} className="group bg-gradient-to-br from-white/[0.02] to-transparent rounded-2xl p-4.5 border border-white/5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4),0_0_15px_rgba(59,130,246,0.05)] transition-all duration-300">
                   <div className="flex justify-between items-start gap-2 mb-2">

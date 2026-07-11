@@ -210,7 +210,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
 
   // Recent Activities (Filtered by zone for better UX)
   const recentPedidos = await prisma.pedido.findMany({
-    take: 5,
+    take: 10,
     orderBy: { creadoEn: 'desc' },
     where: {
       zona: zoneFilter,
@@ -220,7 +220,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   })
 
   const recentVentas = await prisma.factura.findMany({
-    take: 5,
+    take: 10,
     orderBy: { creadoEn: 'desc' },
     where: {
       pedido: {
