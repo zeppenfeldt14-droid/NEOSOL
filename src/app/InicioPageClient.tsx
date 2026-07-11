@@ -418,7 +418,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* CUADRÍCULA DE GRÁFICOS (6 Gráficos en 2 filas) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-y-10 gap-x-6 mb-14 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 mb-14 w-full" style={{ rowGap: '2.5rem', columnGap: '1.5rem' }}>
         
         {/* Gráfico 1: Cobranza Pendiente por Zona */}
         <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
@@ -605,7 +605,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* SECCIÓN INFERIOR PREMIUM: ÚLTIMOS PEDIDOS & VENTAS RECIENTES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch gap-y-10 gap-x-6 mb-14 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch mb-14 w-full" style={{ rowGap: '2.5rem', columnGap: '1.5rem' }}>
         
         {/* Columna Izquierda/Centro: Últimos Pedidos (Estilo Cápsulas Premium - 10 elementos) */}
         <div className="lg:col-span-2 min-w-0">
