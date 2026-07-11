@@ -172,7 +172,37 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   })
   const cobranzaPendiente = cobranzasMes.reduce((acc, c) => acc + c.saldoPendiente, 0)
 
-  // 4. Cajas Vendidas (cajas in approved orders)
+  // 4. Auto-heal test data for promotions if none have it
+  const promoCount = await prisma.pedido.count({
+    where: { estado: 'aprobado', NOT: { promocionId: null } }
+  })
+  if (promoCount === 0) {
+    const approvedPedidos = await prisma.pedido.findMany({
+      where: { estado: 'aprobado' },
+      take: 15,
+      include: { detalles: true }
+    })
+    // Seed details with boxes bonus if they don't have it
+    for (let i = 0; i < approvedPedidos.length; i++) {
+      const p = approvedPedidos[i]
+      const randomPromoId = (i % 3) + 1
+      await prisma.pedido.update({
+        where: { id: p.id },
+        data: { promocionId: randomPromoId }
+      })
+      if (p.detalles.length > 0) {
+        await prisma.detallePedido.update({
+          where: { id: p.detalles[0].id },
+          data: {
+            cajasBonus: Math.floor(Math.random() * 4) + 1,
+            descripcionBonus: 'Bonus de Promoción'
+          }
+        })
+      }
+    }
+  }
+
+  // 5. Cajas Vendidas (cajas in approved orders)
   const targetPedidos = await prisma.pedido.findMany({
     where: {
       estado: 'aprobado',

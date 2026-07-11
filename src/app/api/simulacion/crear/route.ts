@@ -132,9 +132,13 @@ export async function POST() {
             fechaEntregaDate.setDate(fechaEntregaDate.getDate() + randomItem([2, 5, 7]))
             const fechaEntregaStr = fechaEntregaDate.toISOString()
 
-            // 3% recargo solo a B si es transferencia
+             // 3% recargo solo a B si es transferencia
             const recargoB = (metodoPagoB === 'transferencia') ? montoB * 0.03 : 0
             const total = subtotal + montoIVA + recargoB
+
+            // 30% chance of applying a promotion
+            const applyPromo = randomInt(1, 10) <= 3
+            const chosenPromoId = applyPromo ? randomInt(1, 3) : null
 
             const pedido = await prisma.pedido.create({
               data: {
@@ -155,6 +159,7 @@ export async function POST() {
                 montoFinanciera: recargoB,
                 totalGeneral: total,
                 condicionPago: cond,
+                promocionId: chosenPromoId,
                 creadoEn: fechaTransaccion,
                 detalles: {
                   create: [
@@ -165,7 +170,9 @@ export async function POST() {
                       precioPaqSnapshot: prod1.precioPaquete,
                       paqPorCajaSnapshot: prod1.paqPorCaja,
                       cantidadCajas: Math.floor(cant1),
-                      subtotal: Math.floor(cant1) * prod1.precioCaja
+                      subtotal: Math.floor(cant1) * prod1.precioCaja,
+                      cajasBonus: chosenPromoId ? randomInt(1, 5) : 0,
+                      descripcionBonus: chosenPromoId ? 'Bonus de Promoción' : null
                     },
                     {
                       productoId: prod2.id,
