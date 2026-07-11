@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { InicioPageClient } from './InicioPageClient'
 
-export default async function IndexPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+export default async function IndexPage({ searchParams }: { searchParams: Promise<{ period?: string, zona?: string }> }) {
   const user = await getSessionUser()
   
   if (!user) {
@@ -46,6 +46,44 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const userAlias = user.alias
   const userZona = user.zona
 
+  // Get available zones for the user
+  const allZones = await prisma.zona.findMany({ orderBy: { nombre: 'asc' } })
+  const allZoneNames = allZones.map(z => z.nombre)
+  
+  let availableZones: string[] = []
+  if (user.nivel === 1) {
+    availableZones = allZoneNames
+  } else if (user.nivel === 2) {
+    let habilitadas: string[] = []
+    try {
+      if (user.zonasHabilitadas) {
+        habilitadas = typeof user.zonasHabilitadas === 'string'
+          ? JSON.parse(user.zonasHabilitadas)
+          : JSON.parse(JSON.stringify(user.zonasHabilitadas))
+      }
+    } catch (e) {}
+    availableZones = allZoneNames.filter(z => habilitadas.includes(z))
+  } else {
+    availableZones = [user.zona || 'Sin Zona']
+  }
+
+  // Parse selected zones from query param
+  const resolvedParams = await searchParams
+  const zoneParam = resolvedParams.zona || 'todas'
+  let selectedZones: string[] = []
+
+  if (zoneParam === 'todas') {
+    selectedZones = availableZones
+  } else {
+    selectedZones = zoneParam.split(',').filter(z => availableZones.includes(z))
+    // Fallback if somehow selection is empty
+    if (selectedZones.length === 0) {
+      selectedZones = availableZones
+    }
+  }
+
+  const zoneFilter = { in: selectedZones }
+
   // Date Filtering Logic
   const now = new Date()
   const currentMonthIndex = now.getMonth()
@@ -53,7 +91,6 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   let dateFilters: any[] = []
   let isPeriodFiltered = true
 
-  const resolvedParams = await searchParams
   const periodValue = resolvedParams.period || 'mes'
 
   if (periodValue === 'hoy') {
@@ -86,7 +123,10 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const facturasMes = await prisma.factura.findMany({
     where: {
       NOT: { estado: 'anulada' },
-      ...(isVendedor ? { pedido: { vendedorAlias: userAlias } } : {}),
+      pedido: {
+        zona: zoneFilter,
+        ...(isVendedor ? { vendedorAlias: userAlias } : {})
+      },
       ...(isPeriodFiltered ? {
         OR: dateFilters.map(filter => ({ creadoEn: filter }))
       } : {})
@@ -103,6 +143,10 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   // 2. Cobrado (Sum of payments)
   const pagosMes = await prisma.pago.findMany({
     where: {
+      OR: [
+        { cobranza: { zona: zoneFilter } },
+        { factura: { pedido: { zona: zoneFilter } } }
+      ],
       ...(isVendedor ? {
         OR: [
           { cobranza: { vendedorAlias: userAlias } },
@@ -119,6 +163,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   // 3. Cobranza Pendiente
   const cobranzasMes = await prisma.cobranza.findMany({
     where: {
+      zona: zoneFilter,
       ...(isVendedor ? { vendedorAlias: userAlias } : {}),
       ...(isPeriodFiltered ? {
         OR: dateFilters.map(filter => ({ creadoEn: filter }))
@@ -131,13 +176,18 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const targetPedidos = await prisma.pedido.findMany({
     where: {
       estado: 'aprobado',
+      zona: zoneFilter,
       ...(isVendedor ? { vendedorAlias: userAlias } : {}),
       ...(isPeriodFiltered ? {
         OR: dateFilters.map(filter => ({ creadoEn: filter }))
       } : {})
     },
     include: {
-      detalles: true
+      detalles: {
+        include: {
+          producto: true
+        }
+      }
     }
   })
   const cajasVendidas = targetPedidos.reduce((acc, p) => acc + p.detalles.reduce((sum, d) => sum + d.cantidadCajas, 0), 0)
@@ -146,28 +196,38 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const clientesActivos = await prisma.empresa.count({
     where: {
       estado: 'activo',
-      ...(isVendedor ? { zona: userZona || 'CABA', vendedorAsignado: userAlias } : {})
+      zona: zoneFilter,
+      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
     }
   })
   const clientesProspecto = await prisma.empresa.count({
     where: {
       estado: 'prospecto',
-      ...(isVendedor ? { zona: userZona || 'CABA', vendedorAsignado: userAlias } : {})
+      zona: zoneFilter,
+      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
     }
   })
 
-  // Recent Activities (Always absolute latest, not filtered by period for better UX)
+  // Recent Activities (Filtered by zone for better UX)
   const recentPedidos = await prisma.pedido.findMany({
     take: 5,
     orderBy: { creadoEn: 'desc' },
-    where: isVendedor ? { vendedorAlias: userAlias } : {},
+    where: {
+      zona: zoneFilter,
+      ...(isVendedor ? { vendedorAlias: userAlias } : {})
+    },
     include: { empresa: true }
   })
 
   const recentVentas = await prisma.factura.findMany({
     take: 5,
     orderBy: { creadoEn: 'desc' },
-    where: isVendedor ? { pedido: { vendedorAlias: userAlias } } : {},
+    where: {
+      pedido: {
+        zona: zoneFilter,
+        ...(isVendedor ? { vendedorAlias: userAlias } : {})
+      }
+    },
     include: {
       pedido: {
         include: {
@@ -206,6 +266,46 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   }
   const chartMetodos = Object.entries(methodMap).map(([method, amount]) => ({ method, amount }))
 
+  // D. Promotions in Sales (Horizontal Bar Chart)
+  const promos = await prisma.promocion.findMany()
+  const promoMap = new Map(promos.map(p => [p.id, p.nombre]))
+  const promoSalesMap: Record<string, number> = {}
+  for (const p of targetPedidos) {
+    if (p.promocionId) {
+      const promoName = promoMap.get(p.promocionId) || `Promo #${p.promocionId}`
+      promoSalesMap[promoName] = (promoSalesMap[promoName] || 0) + p.totalGeneral
+    }
+  }
+  const chartPromociones = Object.entries(promoSalesMap)
+    .map(([name, sales]) => ({ name, sales }))
+    .sort((a, b) => b.sales - a.sales)
+
+  // E. Snacks Sales (Vertical Bar Chart)
+  const snacksMap: Record<string, number> = {}
+  for (const p of targetPedidos) {
+    for (const d of p.detalles) {
+      if (d.producto && d.producto.linea === 'snacks') {
+        snacksMap[d.productoNombre] = (snacksMap[d.productoNombre] || 0) + d.cantidadCajas
+      }
+    }
+  }
+  const chartSnacks = Object.entries(snacksMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+
+  // F. Tripacks Sales (Vertical Bar Chart)
+  const tripacksMap: Record<string, number> = {}
+  for (const p of targetPedidos) {
+    for (const d of p.detalles) {
+      if (d.producto && d.producto.linea === 'tripack') {
+        tripacksMap[d.productoNombre] = (tripacksMap[d.productoNombre] || 0) + d.cantidadCajas
+      }
+    }
+  }
+  const chartTripacks = Object.entries(tripacksMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+
   const dashboardData = {
     kpis: {
       totalFacturado,
@@ -226,8 +326,13 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     charts: {
       productos: chartProductos,
       zonas: chartZonas,
-      metodos: chartMetodos
-    }
+      metodos: chartMetodos,
+      promociones: chartPromociones,
+      snacks: chartSnacks,
+      tripacks: chartTripacks
+    },
+    availableZones,
+    selectedZones
   }
 
   return (

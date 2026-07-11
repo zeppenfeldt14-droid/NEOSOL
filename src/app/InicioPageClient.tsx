@@ -6,14 +6,17 @@ import {
   ShoppingCart, 
   Banknote, 
   Users, 
-  Plus,
   ArrowRight,
   Package,
   Calendar,
   ChevronDown,
   Info,
   DollarSign,
-  Clock
+  Clock,
+  Receipt,
+  Tag,
+  Sparkles,
+  MapPin
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -38,20 +41,24 @@ const MONTH_NAMES = [
 
 // Colors for Recharts
 const COLORS_PIE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+const COLORS_PROMOS = ['#ec4899', '#f59e0b', '#8b5cf6', '#10b981', '#3b82f6']
 const COLOR_PRIMARY = '#3b82f6'
 const COLOR_SUCCESS = '#10b981'
 
 export function InicioPageClient({ data, currentUser }: { data: any, currentUser: any }) {
-  const { kpis, recentActivity, charts } = data
+  const { kpis, recentActivity, charts, availableZones, selectedZones } = data
   const router = useRouter()
   const searchParams = useSearchParams()
 
   // Dropdown UI state
   const [isOpenFilter, setIsOpenFilter] = useState(false)
+  const [isOpenZoneFilter, setIsOpenZoneFilter] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const zoneDropdownRef = useRef<HTMLDivElement>(null)
 
-  // Current period values
+  // Current period and zone values
   const currentPeriodParam = searchParams.get('period') || 'mes'
+  const currentZonaParam = searchParams.get('zona') || 'todas'
 
   // Parse selected months from query param
   const getSelectedMonths = () => {
@@ -66,11 +73,14 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
   const selectedMonths = getSelectedMonths()
 
-  // Handle clicking outside filter dropdown to close it
+  // Handle clicking outside filter dropdowns to close them
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpenFilter(false)
+      }
+      if (zoneDropdownRef.current && !zoneDropdownRef.current.contains(event.target as Node)) {
+        setIsOpenZoneFilter(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -87,7 +97,10 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
   // Handle period navigation
   const handleSelectSimplePeriod = (period: 'hoy' | 'semana' | 'todo') => {
-    router.push(`/?period=${period}`)
+    const params = new URLSearchParams()
+    params.set('period', period)
+    if (currentZonaParam) params.set('zona', currentZonaParam)
+    router.push(`/?${params.toString()}`)
     setIsOpenFilter(false)
   }
 
@@ -101,10 +114,43 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
     } else {
       newMonths.push(monthIndex)
     }
-    router.push(`/?period=${newMonths.sort((a, b) => a - b).join(',')}`)
+    const params = new URLSearchParams()
+    params.set('period', newMonths.sort((a, b) => a - b).join(','))
+    if (currentZonaParam) params.set('zona', currentZonaParam)
+    router.push(`/?${params.toString()}`)
   }
 
-  // Label for the filter button
+  // Handle zone navigation
+  const handleToggleZone = (zone: string) => {
+    let newZones = [...selectedZones]
+    if (newZones.includes(zone)) {
+      if (newZones.length > 1) {
+        newZones = newZones.filter(z => z !== zone)
+      }
+    } else {
+      newZones.push(zone)
+    }
+
+    const params = new URLSearchParams()
+    if (currentPeriodParam) params.set('period', currentPeriodParam)
+    
+    if (newZones.length === availableZones.length) {
+      params.set('zona', 'todas')
+    } else {
+      params.set('zona', newZones.join(','))
+    }
+    router.push(`/?${params.toString()}`)
+  }
+
+  const handleSelectAllZones = () => {
+    const params = new URLSearchParams()
+    if (currentPeriodParam) params.set('period', currentPeriodParam)
+    params.set('zona', 'todas')
+    router.push(`/?${params.toString()}`)
+    setIsOpenZoneFilter(false)
+  }
+
+  // Label for the period button
   const getFilterLabel = () => {
     if (currentPeriodParam === 'hoy') return 'Hoy'
     if (currentPeriodParam === 'semana') return 'Últimos 7 días'
@@ -115,9 +161,20 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       return `Mes: ${MONTH_NAMES[selectedMonths[0]]}`
     }
     if (selectedMonths.length === 3) {
-      return `${selectedMonths.map(m => MONTH_NAMES[m].substring(0, 3)).join(' + ')} (Trimestre)`
+      return `${selectedMonths.map(m => MONTH_NAMES[m].substring(0, 3)).join(' + ')}`
     }
-    return `${selectedMonths.length} Meses seleccionados`
+    return `${selectedMonths.length} Meses`
+  }
+
+  // Label for the zones button
+  const getZoneFilterLabel = () => {
+    if (currentZonaParam === 'todas' || selectedZones.length === availableZones.length) {
+      return 'Todas las Zonas'
+    }
+    if (selectedZones.length === 1) {
+      return `Zona: ${selectedZones[0]}`
+    }
+    return `${selectedZones.length} Zonas`
   }
 
   return (
@@ -126,80 +183,143 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       {/* CABECERA CON FILTRO SELECT MÚLTIPLE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">INICIO</h1>
-          <p className="text-sm text-secondary">Bienvenido al tablero de control y gestión global de KPIs.</p>
+          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            INICIO <Sparkles size={16} className="text-primary animate-pulse" />
+          </h1>
+          <p className="text-sm text-secondary">Tablero de control general y analíticas de KPIs.</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-3">
           
-          {/* Dropdown de Filtro Multiselección */}
+          {/* Dropdown de Zonas (Selección Múltiple) */}
+          {availableZones.length > 1 && (
+            <div className="relative" ref={zoneDropdownRef}>
+              <button 
+                onClick={() => setIsOpenZoneFilter(!isOpenZoneFilter)}
+                className="px-4 py-2.5 text-xs font-bold bg-[#141E3C] border border-white/5 hover:border-primary/40 text-white rounded-xl shadow-xl flex items-center gap-2.5 transition-all duration-300"
+              >
+                <MapPin size={14} className="text-emerald-400" />
+                <span>{getZoneFilterLabel()}</span>
+                <ChevronDown size={12} className="text-secondary/70 transition-transform duration-300" style={{ transform: isOpenZoneFilter ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              </button>
+
+              {isOpenZoneFilter && (
+                <div className="absolute right-0 mt-3 w-72 backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-wider">Filtrar por Zonas</span>
+                    {selectedZones.length < availableZones.length && (
+                      <button 
+                        onClick={handleSelectAllZones}
+                        className="text-[9px] font-bold text-primary hover:underline"
+                      >
+                        Seleccionar Todas
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Grid de Zonas con Checkboxes Customizados */}
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                    {availableZones.map((zone: string) => {
+                      const isChecked = selectedZones.includes(zone)
+                      return (
+                        <label 
+                          key={zone} 
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
+                            isChecked 
+                              ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
+                              : 'border-white/5 bg-black/25 text-secondary hover:border-white/20 hover:text-white'
+                          }`}
+                        >
+                          <span>{zone}</span>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
+                            isChecked ? 'bg-primary text-white' : 'border border-white/20 bg-black/40'
+                          }`}>
+                            {isChecked && (
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            )}
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Dropdown de Filtro Multiselección Tiempo */}
           <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setIsOpenFilter(!isOpenFilter)}
-              className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10 px-4 py-2.5 bg-black/40 hover:bg-white/10 text-white rounded-lg transition-all"
+              className="px-4 py-2.5 text-xs font-bold bg-[#141E3C] border border-white/5 hover:border-primary/40 text-white rounded-xl shadow-xl flex items-center gap-2.5 transition-all duration-300"
             >
               <Calendar size={14} className="text-primary" />
               <span>{getFilterLabel()}</span>
-              <ChevronDown size={12} className="text-secondary" />
+              <ChevronDown size={12} className="text-secondary/70 transition-transform duration-300" style={{ transform: isOpenFilter ? 'rotate(180deg)' : 'rotate(0deg)' }} />
             </button>
 
             {isOpenFilter && (
-              <div className="absolute right-0 mt-2 w-72 bg-[#121b36] border border-white/10 rounded-2xl shadow-2xl z-50 p-4 animate-fade-in">
-                <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-2">Períodos Simples</div>
-                <div className="flex flex-col gap-1 mb-4">
+              <div className="absolute right-0 mt-3 w-80 backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in">
+                <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-2.5">Períodos Predefinidos</div>
+                <div className="grid grid-cols-3 gap-2 mb-4">
                   <button 
                     onClick={() => handleSelectSimplePeriod('hoy')}
-                    className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${currentPeriodParam === 'hoy' ? 'bg-primary text-white' : 'text-secondary hover:bg-white/5 hover:text-white'}`}
+                    className={`text-center text-xs py-2 rounded-xl font-bold transition-all ${currentPeriodParam === 'hoy' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary bg-black/20 hover:bg-white/5 hover:text-white'}`}
                   >
                     Hoy
                   </button>
                   <button 
                     onClick={() => handleSelectSimplePeriod('semana')}
-                    className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${currentPeriodParam === 'semana' ? 'bg-primary text-white' : 'text-secondary hover:bg-white/5 hover:text-white'}`}
+                    className={`text-center text-xs py-2 rounded-xl font-bold transition-all ${currentPeriodParam === 'semana' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary bg-black/20 hover:bg-white/5 hover:text-white'}`}
                   >
-                    Últimos 7 días
+                    7 Días
                   </button>
                   <button 
                     onClick={() => handleSelectSimplePeriod('todo')}
-                    className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${currentPeriodParam === 'todo' ? 'bg-primary text-white' : 'text-secondary hover:bg-white/5 hover:text-white'}`}
+                    className={`text-center text-xs py-2 rounded-xl font-bold transition-all ${currentPeriodParam === 'todo' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary bg-black/20 hover:bg-white/5 hover:text-white'}`}
                   >
-                    Historial Completo (Todo)
+                    Todo
                   </button>
                 </div>
 
-                <div className="border-t border-white/5 my-2 pt-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-black text-primary uppercase tracking-wider">Meses del Año (Selección Múltiple)</span>
+                <div className="border-t border-white/5 my-3 pt-3">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-wider">Meses (Selección Múltiple)</span>
                     {selectedMonths.length > 1 && (
                       <button 
                         onClick={() => router.push('/?period=mes')}
-                        className="text-[9px] font-bold text-red-400 hover:underline"
+                        className="text-[9px] font-bold text-red-400 hover:text-red-300 hover:underline"
                       >
-                        Limpiar
+                        Reestablecer
                       </button>
                     )}
                   </div>
                   
-                  {/* Grid de Meses con Checkboxes */}
+                  {/* Grid de Meses con Checkboxes Customizados */}
                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                     {MONTH_NAMES.map((name, index) => {
                       const isChecked = selectedMonths.includes(index)
                       return (
                         <label 
                           key={index} 
-                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+                          className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
                             isChecked 
-                              ? 'bg-primary/10 border-primary text-primary' 
-                              : 'border-white/5 bg-black/25 text-secondary hover:border-white/20 hover:text-white'
+                              ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
+                              : 'border-white/5 bg-black/20 text-secondary hover:border-white/20 hover:text-white'
                           }`}
                         >
-                          <input 
-                            type="checkbox"
-                            className="rounded bg-black/40 border-white/10 text-primary focus:ring-0 focus:ring-offset-0"
-                            checked={isChecked}
-                            onChange={() => handleToggleMonth(index)}
-                          />
                           <span>{name}</span>
+                          <div className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
+                            isChecked ? 'bg-primary text-white' : 'border border-white/20 bg-black/40'
+                          }`}>
+                            {isChecked && (
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            )}
+                          </div>
                         </label>
                       )
                     })}
@@ -208,11 +328,6 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
               </div>
             )}
           </div>
-
-          <Link href="/pedidos/nuevo" className="btn btn-primary flex items-center gap-2 font-bold shadow-lg shadow-primary/20 text-xs py-2.5">
-            <Plus size={14} />
-            <span>Nuevo Pedido</span>
-          </Link>
         </div>
       </div>
 
@@ -220,7 +335,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         
         {/* Cubo 1: Facturación */}
-        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-white/10 transition-all duration-300">
+        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-primary/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
           <div className="flex justify-between items-start">
             <div>
@@ -235,7 +350,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Cubo 2: Cobranzas Cobrado */}
-        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-white/10 transition-all duration-300">
+        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-success/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
           <div className="flex justify-between items-start">
             <div>
@@ -249,8 +364,8 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           <div className="text-[10px] text-emerald-400 mt-3 font-bold">Cobros registrados</div>
         </div>
 
-        {/* Cubo 3: Cobranza Pendiente (NUEVO) */}
-        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-white/10 transition-all duration-300">
+        {/* Cubo 3: Cobranza Pendiente */}
+        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-danger/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-red-500" />
           <div className="flex justify-between items-start">
             <div>
@@ -264,8 +379,8 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           <div className="text-[10px] text-rose-400 mt-3 font-bold">Saldos pendientes</div>
         </div>
 
-        {/* Cubo 4: Cajas Vendidas (REEMPLAZA A VISITAS) */}
-        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-white/10 transition-all duration-300">
+        {/* Cubo 4: Cajas Vendidas */}
+        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-warning/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
           <div className="flex justify-between items-start">
             <div>
@@ -280,7 +395,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Cubo 5: Clientes */}
-        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-white/10 transition-all duration-300">
+        <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-purple-500/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
           <div className="flex justify-between items-start">
             <div>
@@ -300,24 +415,24 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
       </div>
 
-      {/* SECCIÓN DE GRÁFICOS (3 EN UNA LÍNEA) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      {/* FILA DE GRÁFICOS 1 (Productos, Ventas por Zona, Cobros por Método) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         
-        {/* Gráfico 1: Productos Vendidos (Pie Chart) */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[350px]">
-          <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> Productos más vendidos (Cajas)
+        {/* Gráfico 1: Productos Vendidos */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
+            <span className="w-2 h-2 bg-blue-500 rounded-full" /> Productos más vendidos (Cajas)
           </h4>
-          <div className="flex-1 min-h-[220px] relative">
+          <div className="flex-1 h-[220px] min-h-[220px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={charts.productos}
                   cx="50%"
-                  cy="45%"
-                  innerRadius={45}
-                  outerRadius={65}
-                  paddingAngle={3}
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={75}
+                  paddingAngle={4}
                   dataKey="value"
                 >
                   {charts.productos.map((entry: any, index: number) => (
@@ -325,44 +440,44 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          {/* Leyenda */}
-          <div className="flex flex-wrap gap-2 text-[10px] justify-center mt-2 border-t border-white/5 pt-3">
+          {/* Leyenda con scroll contenido para evitar desbordes */}
+          <div className="overflow-y-auto max-h-[110px] flex flex-wrap gap-2 text-[10px] justify-center border-t border-white/5 pt-3 custom-scrollbar">
             {charts.productos.map((p: any, i: number) => (
-              <span key={p.name} className="flex items-center gap-1 text-secondary font-medium">
-                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: COLORS_PIE[i % COLORS_PIE.length] }} />
-                <span className="truncate max-w-[80px]">{p.name}</span> ({p.value})
+              <span key={p.name} className="flex items-center gap-1.5 text-secondary font-semibold bg-white/[0.02] px-2 py-1 rounded-lg border border-white/5">
+                <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS_PIE[i % COLORS_PIE.length] }} />
+                <span className="truncate max-w-[90px]" title={p.name}>{p.name}</span>
+                <b className="text-white ml-0.5">{p.value}</b>
               </span>
             ))}
             {charts.productos.length === 0 && (
-              <span className="text-secondary/50 italic">Sin datos de productos</span>
+              <span className="text-secondary/50 italic py-2">Sin datos de productos</span>
             )}
           </div>
         </div>
 
-        {/* Gráfico 2: Ventas por Zona (Vertical Bar Chart) */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[350px]">
+        {/* Gráfico 2: Ventas por Zona */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-green-500 rounded-full" /> Ventas Totales por Zona
+            <span className="w-2 h-2 bg-green-500 rounded-full" /> Ventas Totales por Zona
           </h4>
-          <div className="flex-1 min-h-[240px]">
+          <div className="flex-1 h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.zonas} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <BarChart data={charts.zonas} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="zone" stroke="#94a3b8" fontSize={9} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} tickFormatter={(val) => `$${Number(val)/1000}k`} />
                 <Tooltip 
                   formatter={(value) => formatMoney(Number(value))}
-                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
+                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
                 <Bar dataKey="sales" fill={COLOR_PRIMARY} radius={[4, 4, 0, 0]}>
                   {charts.zonas.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.sales > 2000000 ? '#10b981' : '#3b82f6'} />
+                    <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -370,26 +485,26 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
-        {/* Gráfico 3: Cobros del Mes por Método (Horizontal Bar Chart) */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[350px]">
+        {/* Gráfico 3: Cobros por Método */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" /> Cobrado del Mes por Método
+            <span className="w-2 h-2 bg-yellow-500 rounded-full" /> Cobrado del Mes por Método
           </h4>
-          <div className="flex-1 min-h-[240px]">
+          <div className="flex-1 h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={charts.metodos} 
                 layout="vertical"
-                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                margin={{ top: 10, right: 15, left: 15, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis type="number" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis type="number" stroke="#94a3b8" fontSize={9} tickLine={false} tickFormatter={(val) => `$${Number(val)/1000}k`} />
                 <YAxis dataKey="method" type="category" stroke="#94a3b8" fontSize={9} tickLine={false} />
                 <Tooltip 
                   formatter={(value) => formatMoney(Number(value))}
-                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '11px' }}
+                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="amount" fill={COLOR_SUCCESS} radius={[0, 4, 4, 0]} barSize={18} />
+                <Bar dataKey="amount" fill={COLOR_SUCCESS} radius={[0, 4, 4, 0]} barSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -397,42 +512,144 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
       </div>
 
-      {/* SECCIÓN INFERIOR: ÚLTIMOS PEDIDOS & VENTAS RECIENTES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* FILA DE GRÁFICOS 2: NUEVOS (Promociones, Ventas Snacks, Ventas Tripacks) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        
+        {/* Gráfico 4: Promociones en Ventas (Barras Horizontales) */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-pink-500 rounded-full" /> Promociones en Ventas (Monto)
+          </h4>
+          <div className="flex-1 h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={charts.promociones} 
+                layout="vertical"
+                margin={{ top: 10, right: 15, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis type="number" stroke="#94a3b8" fontSize={9} tickLine={false} tickFormatter={(val) => `$${Number(val)/1000}k`} />
+                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={8} tickLine={false} width={80} />
+                <Tooltip 
+                  formatter={(value) => formatMoney(Number(value))}
+                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
+                />
+                <Bar dataKey="sales" radius={[0, 4, 4, 0]} barSize={16}>
+                  {charts.promociones.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS_PROMOS[index % COLORS_PROMOS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Gráfico 5: Ventas Snacks */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-purple-500 rounded-full" /> Ventas de Snacks (Cajas)
+          </h4>
+          <div className="flex-1 h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={charts.snacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={7} tickLine={false} height={35} interval={0} tick={({x, y, payload}) => {
+                  const label = payload.value.split(" ")[0]
+                  return (
+                    <g transform={`translate(${x},${y})`}>
+                      <text x={0} y={0} dy={10} textAnchor="middle" fill="#94a3b8" fontSize={8} fontWeight="bold">
+                        {label}
+                      </text>
+                    </g>
+                  )
+                }} />
+                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
+                />
+                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Gráfico 6: Ventas Tripacks */}
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between h-[420px] hover:border-white/10 transition-colors duration-300">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-amber-500 rounded-full" /> Ventas de Tripacks (Cajas)
+          </h4>
+          <div className="flex-1 h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={charts.tripacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={8} tickLine={false} height={35} interval={0} tick={({x, y, payload}) => {
+                  const label = payload.value.split(" ")[0]
+                  return (
+                    <g transform={`translate(${x},${y})`}>
+                      <text x={0} y={0} dy={10} textAnchor="middle" fill="#94a3b8" fontSize={8} fontWeight="bold">
+                        {label}
+                      </text>
+                    </g>
+                  )
+                }} />
+                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
+                />
+                <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+      </div>
+
+      {/* SECCIÓN INFERIOR PREMIUM: ÚLTIMOS PEDIDOS & VENTAS RECIENTES */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         
         {/* Columna Izquierda/Centro: Últimos Pedidos */}
         <div className="lg:col-span-2">
-          <div className="glass-panel card p-6 border-white/5 h-full">
+          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col justify-between shadow-[0_15px_35px_rgba(0,0,0,0.4)]">
             <div className="flex justify-between items-center mb-6">
-              <h4 className="text-xs font-black text-white uppercase tracking-wider">Últimos Pedidos</h4>
-              <Link href="/pedidos" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
-                Ver todos <ArrowRight size={12} />
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">Últimos Pedidos</h4>
+              </div>
+              <Link href="/pedidos" className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold text-primary border border-primary/20 bg-primary/5 hover:bg-primary hover:text-white transition-all duration-300 flex items-center gap-1.5">
+                Ver todos <ArrowRight size={11} />
               </Link>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto flex-1 custom-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead>
                   <tr className="border-b border-white/5 text-[9px] font-black text-secondary uppercase tracking-widest">
-                    <th className="pb-3">Nº Pedido</th>
-                    <th className="pb-3">Cliente</th>
-                    <th className="pb-3">Zona</th>
-                    <th className="pb-3 text-right">Monto</th>
-                    <th className="pb-3 text-center">Estado</th>
+                    <th className="pb-3.5 pl-2">Nº Pedido</th>
+                    <th className="pb-3.5">Cliente</th>
+                    <th className="pb-3.5">Zona</th>
+                    <th className="pb-3.5 text-right pr-4">Monto</th>
+                    <th className="pb-3.5 text-center">Estado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
                   {recentActivity.pedidos.map((p: any) => (
-                    <tr key={p.id} className="text-xs hover:bg-white/[0.01]">
-                      <td className="py-3.5 font-bold text-white">{p.numeroPedido}</td>
-                      <td className="py-3.5 text-secondary truncate max-w-[180px]">{p.empresa.nombre}</td>
-                      <td className="py-3.5 text-secondary">{p.zona}</td>
-                      <td className="py-3.5 text-right font-black text-white">{formatMoney(p.totalGeneral)}</td>
-                      <td className="py-3.5 text-center">
-                        <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] ${
-                          p.estado === 'aprobado' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                          p.estado === 'borrador' ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20' :
-                          'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    <tr key={p.id} className="group text-xs hover:bg-white/[0.02] transition-all duration-200">
+                      <td className="py-4 pl-2 font-bold text-white group-hover:text-primary transition-colors">
+                        <span className="flex items-center gap-2">
+                          <ShoppingCart size={13} className="text-secondary/40 group-hover:text-primary/70 transition-colors" />
+                          {p.numeroPedido}
+                        </span>
+                      </td>
+                      <td className="py-4 text-secondary group-hover:text-white font-semibold transition-colors truncate max-w-[200px]" title={p.empresa.nombre}>
+                        {p.empresa.nombre}
+                      </td>
+                      <td className="py-4 text-secondary/80 font-medium">{p.zona}</td>
+                      <td className="py-4 text-right font-black text-white pr-4">{formatMoney(p.totalGeneral)}</td>
+                      <td className="py-4 text-center">
+                        <span className={`px-2.5 py-0.5 rounded-full font-bold text-[9px] tracking-wider border shadow-md ${
+                          p.estado === 'aprobado' ? 'bg-green-500/10 text-green-400 border-green-500/20 shadow-[0_0_12px_rgba(16,185,129,0.08)]' :
+                          p.estado === 'borrador' ? 'bg-gray-500/10 text-gray-400 border-white/5' :
+                          'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.08)]'
                         }`}>
                           {p.estado.toUpperCase()}
                         </span>
@@ -441,7 +658,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   ))}
                   {recentActivity.pedidos.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-secondary/60 italic">No hay pedidos registrados</td>
+                      <td colSpan={5} className="py-8 text-center text-secondary/60 italic font-semibold">No hay pedidos registrados</td>
                     </tr>
                   )}
                 </tbody>
@@ -452,36 +669,49 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
         {/* Columna Derecha: Ventas Recientes */}
         <div className="lg:col-span-1">
-          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col">
-            <h4 className="text-xs font-black text-white mb-6 uppercase tracking-wider shrink-0">Ventas Recientes (Facturas)</h4>
+          <div className="glass-panel card p-6 border-white/5 h-full flex flex-col shadow-[0_15px_35px_rgba(0,0,0,0.4)]">
+            <div className="flex items-center gap-2 mb-6 shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h4 className="text-xs font-black text-white uppercase tracking-wider">Ventas Recientes (Facturas)</h4>
+            </div>
             
-            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1 min-h-[300px]">
+            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1 max-h-[300px] min-h-[300px]">
               {recentActivity.ventas.map((v: any) => (
-                <div key={v.id} className="bg-black/25 rounded-2xl p-4 border border-white/5 flex flex-col gap-2 hover:border-white/10 transition-all duration-300">
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-bold text-white truncate">{v.pedido.empresa.nombre}</span>
-                    <span className={`shrink-0 text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                      v.tipo === 'A' ? 'bg-blue-400/10 text-blue-400 border-blue-400/20' :
-                      'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
+                <div key={v.id} className="group bg-gradient-to-br from-white/[0.02] to-transparent rounded-2xl p-4.5 border border-white/5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4),0_0_15px_rgba(59,130,246,0.05)] transition-all duration-300">
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-secondary group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        <Receipt size={14} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white group-hover:text-primary transition-colors truncate max-w-[140px]">{v.pedido.empresa.nombre}</span>
+                        <span className="text-[10px] text-secondary/60 font-semibold">{v.numeroFactura}</span>
+                      </div>
+                    </div>
+                    <span className={`shrink-0 text-[8px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider ${
+                      v.tipo === 'A' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
                       FAC-{v.tipo}
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center text-xs mt-1">
-                    <span className="text-secondary/60 font-medium">{v.numeroFactura}</span>
-                    <span className="font-black text-white">{formatMoney(v.total)}</span>
+                  <div className="flex justify-between items-center text-xs mt-3">
+                    <span className="text-[10px] text-secondary/70 font-semibold flex items-center gap-1">
+                      <Clock size={11} className="text-secondary/50" /> {new Date(v.creadoEn).toLocaleDateString()}
+                    </span>
+                    <span className="font-black text-white text-sm bg-white/5 px-2 py-0.5 rounded-md">{formatMoney(v.total)}</span>
                   </div>
 
-                  <div className="flex justify-between items-center text-[9px] text-secondary/60 border-t border-white/5 pt-2 mt-1">
-                    <span className="flex items-center gap-1"><Clock size={9} /> {new Date(v.creadoEn).toLocaleDateString()}</span>
-                    <span>Vendedor: <b>@{v.pedido.vendedorAlias}</b></span>
+                  <div className="text-[9px] text-secondary/50 border-t border-white/5 pt-2 mt-2 flex justify-between items-center">
+                    <span>Zona: <b className="text-secondary/80">{v.pedido.zona}</b></span>
+                    <span>Vendedor: <b className="text-secondary/80">@{v.pedido.vendedorAlias}</b></span>
                   </div>
                 </div>
               ))}
               
               {recentActivity.ventas.length === 0 && (
-                <div className="h-full flex items-center justify-center text-center text-secondary/60 italic">
+                <div className="h-full flex items-center justify-center text-center text-secondary/60 italic font-semibold">
                   No hay ventas registradas
                 </div>
               )}
