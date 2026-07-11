@@ -49,7 +49,12 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     visitas: true,
     planificador: true,
     reportes: true,
-    configuracion: false
+    configuracion: false,
+    pedidos: false,
+    ventas: false,
+    cobranzas: false,
+    usuarios: false,
+    zonas: false
   }
   const defaultLimits = {
     AUSENCIA_COMIDA: 60,
@@ -644,11 +649,21 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                         <label className="form-label">Nivel de Acceso *</label>
                         <select 
                           value={formNivel} 
-                          onChange={(e) => setFormNivel(Number(e.target.value))} 
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setFormNivel(val);
+                            // Auto-asignar rol según la selección si es Nivel 2 Analista
+                            if (e.target.options[e.target.selectedIndex].text.includes('Analista')) {
+                              setFormRol('Analista');
+                            } else if (val === 2) {
+                              setFormRol('Supervisor');
+                            }
+                          }} 
                           className="form-input bg-[#0B132B]/50 border-white/10 cursor-pointer"
                         >
                           <option value={1} className="bg-[#0B132B]">Nivel 1 — Total (Gerencia)</option>
                           <option value={2} className="bg-[#0B132B]">Nivel 2 — Supervisión</option>
+                          <option value={2} className="bg-[#0B132B]">Nivel 2 — Analista</option>
                           <option value={3} className="bg-[#0B132B]">Nivel 3 — Vendedor</option>
                         </select>
                       </div>

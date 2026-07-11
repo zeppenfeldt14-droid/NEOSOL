@@ -223,7 +223,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
                 )}
               </div>
             ))
-          ) : (
+          ) : (user.nivel === 1 || modules.zonas !== false) ? (
             /* LEVEL 1/2 (Admin / Supervisor): Show collapsible ZONAS menu */
             <div className="flex flex-col">
               <button 
@@ -303,7 +303,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Módulos Comerciales - Level 1/2 */}
           {user.nivel < 3 && (
