@@ -20,11 +20,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Redirect logic:
-  // If authenticated and trying to go to login, send to home page
-  if (sessionCookie && pathname === '/login') {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
+  // Removed redirect logic to prevent ERR_TOO_MANY_REDIRECTS loops with stale cookies.
+  // Users with a cookie who go to /login will simply see the login page again.
 
   // If not authenticated and trying to access a secure path, redirect to login
   if (!sessionCookie && !isPublicPath) {
