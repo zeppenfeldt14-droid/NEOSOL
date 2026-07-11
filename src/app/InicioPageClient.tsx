@@ -178,7 +178,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0B132B] overflow-y-auto custom-scrollbar p-8 pb-24">
+    <div className="flex-1 flex flex-col w-full pb-16">
       
       {/* CABECERA CON FILTROS SELECT MÚLTIPLE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 shrink-0">
@@ -415,11 +415,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
       </div>
 
-      {/* FILA DE GRÁFICOS 1 (Productos, Ventas por Zona, Cobros por Método) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+      {/* CUADRÍCULA DE GRÁFICOS (6 Gráficos en 2 filas) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 w-full">
         
         {/* Gráfico 1: Cobranza Pendiente por Zona */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-red-500 rounded-full" /> Cobranza Pendiente por Zona
           </h4>
@@ -462,7 +462,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 2: Ventas por Zona */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full" /> Ventas Totales por Zona
           </h4>
@@ -487,7 +487,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 3: Cobros por Método */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-yellow-500 rounded-full" /> Cobrado del Mes por Método
           </h4>
@@ -511,14 +511,12 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
-
         {/* Fila de Gráficos 2 (Promociones, Ventas Snacks, Ventas Tripacks) */}
 
-        
         {/* Gráfico 4: Promociones en Ventas */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-pink-500 rounded-full" /> Promociones en Ventas (Monto)
+            <span className="w-2 h-2 bg-pink-500 rounded-full" /> Promociones en Ventas (Cajas)
           </h4>
           <div className="h-[250px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -528,13 +526,13 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                 margin={{ top: 10, right: 15, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                <XAxis type="number" stroke="#94a3b8" fontSize={9} tickLine={false} tickFormatter={(val) => `$${Number(val)/1000}k`} />
+                <XAxis type="number" stroke="#94a3b8" fontSize={9} tickLine={false} />
                 <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={8} tickLine={false} width={80} />
                 <Tooltip 
-                  formatter={(value) => formatMoney(Number(value))}
+                  formatter={(value) => [`${value} Cajas`, 'Entregado']}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="sales" radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
                   {charts.promociones.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS_PROMOS[index % COLORS_PROMOS.length]} />
                   ))}
@@ -545,7 +543,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 5: Ventas Snacks */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-purple-500 rounded-full" /> Ventas de Snacks (Cajas)
           </h4>
@@ -574,7 +572,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 6: Ventas Tripacks */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] hover:border-white/10 transition-colors duration-300">
+        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-amber-500 rounded-full" /> Ventas de Tripacks (Cajas)
           </h4>
@@ -605,10 +603,10 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* SECCIÓN INFERIOR PREMIUM: ÚLTIMOS PEDIDOS & VENTAS RECIENTES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-16">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-16 w-full">
         
         {/* Columna Izquierda/Centro: Últimos Pedidos (Estilo Cápsulas Premium - 10 elementos) */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 min-w-0">
           <div className="glass-panel card p-6 border-white/5 h-full flex flex-col justify-between shadow-[0_15px_35px_rgba(0,0,0,0.5)]">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2.5">
@@ -673,8 +671,8 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
-        {/* Columna Derecha: Ventas Recientes (Ticket / Receipt Premium) */}
-        <div className="lg:col-span-1">
+        {/* Columna Derecha: Ventas Recientes (Ticket / Receipt Premium - 5 elementos) */}
+        <div className="lg:col-span-1 min-w-0">
           <div className="glass-panel card p-6 border-white/5 h-full flex flex-col justify-between shadow-[0_15px_35px_rgba(0,0,0,0.5)]">
             <div className="flex items-center gap-2.5 mb-6 shrink-0">
               <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse" />
@@ -728,14 +726,14 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* SECCIÓN FINAL: TOP PRODUCTOS MÁS VENDIDOS */}
-      <div className="mt-8 mb-16 shrink-0">
+      <div className="mt-8 mb-16 shrink-0 w-full">
         <div className="glass-panel card p-6 border-white/5 shadow-[0_15px_35px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-2.5 mb-6">
             <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
             <h4 className="text-sm font-black text-white uppercase tracking-wider">Productos más vendidos (Volumen en Cajas)</h4>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
             {charts.productos.map((p: any, index: number) => {
               const maxCajas = charts.productos[0]?.value || 1
               const percent = Math.min((p.value / maxCajas) * 100, 100)

@@ -220,7 +220,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   })
 
   const recentVentas = await prisma.factura.findMany({
-    take: 10,
+    take: 5,
     orderBy: { creadoEn: 'desc' },
     where: {
       pedido: {
@@ -276,19 +276,20 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  // D. Promotions in Sales (Horizontal Bar Chart)
+  // D. Promotions in Sales (Horizontal Bar Chart - Boxes)
   const promos = await prisma.promocion.findMany()
   const promoMap = new Map(promos.map(p => [p.id, p.nombre]))
   const promoSalesMap: Record<string, number> = {}
   for (const p of targetPedidos) {
     if (p.promocionId) {
       const promoName = promoMap.get(p.promocionId) || `Promo #${p.promocionId}`
-      promoSalesMap[promoName] = (promoSalesMap[promoName] || 0) + p.totalGeneral
+      const totalCajas = p.detalles.reduce((acc, d) => acc + d.cantidadCajas, 0)
+      promoSalesMap[promoName] = (promoSalesMap[promoName] || 0) + totalCajas
     }
   }
   const chartPromociones = Object.entries(promoSalesMap)
-    .map(([name, sales]) => ({ name, sales }))
-    .sort((a, b) => b.sales - a.sales)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
 
   // E. Snacks Sales (Vertical Bar Chart)
   const snacksMap: Record<string, number> = {}
