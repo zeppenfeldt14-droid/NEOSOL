@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package } from 'lucide-react'
+import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package, Home } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -160,6 +160,13 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
         </div>
         
         <nav className="sidebar-nav">
+          {/* Módulo Inicio */}
+          {(user.nivel === 1 || modules.inicio !== false) && (
+            <Link href="/" className={`nav-item ${isLinkActive('/', true) ? 'active' : ''}`}>
+              <Home className="nav-icon text-primary" />
+              <span className="font-bold text-white uppercase tracking-wider text-xs">Inicio</span>
+            </Link>
+          )}
           
           {/* LEVEL 3 (Vendedor): Show single zone directly */}
           {user.nivel === 3 ? (

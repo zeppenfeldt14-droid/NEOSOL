@@ -45,6 +45,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
 
   // New/Edit User Form States
   const defaultModules = {
+    inicio: true,
     empresas: true,
     visitas: true,
     planificador: true,
@@ -54,7 +55,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     ventas: false,
     cobranzas: false,
     usuarios: false,
-    zonas: false
+    zonas: true
   }
   const defaultLimits = {
     AUSENCIA_COMIDA: 60,
