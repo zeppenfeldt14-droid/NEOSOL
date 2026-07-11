@@ -38,6 +38,8 @@ const MESES = [
   { value: 9, label: 'Octubre' },
   { value: 10, label: 'Noviembre' },
   { value: 11, label: 'Diciembre' },
+]
+
 const TRIMESTRES = [
   { value: 'Q1', label: '1er Trimestre (Ene-Mar)' },
   { value: 'Q2', label: '2do Trimestre (Abr-Jun)' },
