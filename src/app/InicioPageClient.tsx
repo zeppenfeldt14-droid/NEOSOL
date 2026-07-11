@@ -12,7 +12,6 @@ import {
   Plus
 } from 'lucide-react'
 import Link from 'next/link'
-import { formatCurrency } from '@/lib/utils' // Wait, let's make sure formatCurrency exists, or write inline formatter
 
 export function InicioPageClient({ data, currentUser }: { data: any, currentUser: any }) {
   const { kpis, recentActivity, salesDistribution } = data
@@ -242,7 +241,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
 
                   <div className="flex justify-between items-center text-[9px] text-secondary/60 border-t border-white/5 pt-2 mt-1">
                     <span className="flex items-center gap-1"><Clock size={9} /> {new Date(v.fecha).toLocaleDateString()}</span>
-                    <span>Registrado por: <b>@{v.registradoPorAlias}</b></span>
+                    <span>Vendedor: <b>@{v.empresa.vendedorAsignado}</b></span>
                   </div>
                 </div>
               ))}

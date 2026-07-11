@@ -84,7 +84,7 @@ export default async function IndexPage() {
   const visitasMes = await prisma.visita.count({
     where: {
       fecha: { gte: startOfMonth, lte: endOfMonth },
-      ...(isVendedor ? { registradoPorAlias: userAlias } : {})
+      ...(isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {})
     }
   })
 
@@ -113,7 +113,7 @@ export default async function IndexPage() {
   const recentVisitas = await prisma.visita.findMany({
     take: 5,
     orderBy: { fecha: 'desc' },
-    where: isVendedor ? { registradoPorAlias: userAlias } : {},
+    where: isVendedor ? { empresa: { vendedorAsignado: userAlias } } : {},
     include: { empresa: true }
   })
 
