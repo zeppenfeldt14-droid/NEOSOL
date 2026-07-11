@@ -13,7 +13,7 @@ interface Usuario {
   foto: string | null
   activo: boolean
   modulos: Record<string, boolean>
-  limitesEstado: Record<string, number>
+  limitesEstado: Record<string, any>
   loginCount: number
   connectionLogs: Array<{ date: string; ip: string; userAgent: string }>
   zona: string | null
@@ -72,7 +72,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   const [formActivo, setFormActivo] = useState(true)
   const [formFoto, setFormFoto] = useState<string | null>(null)
   const [formModulos, setFormModulos] = useState<Record<string, boolean>>(defaultModules)
-  const [formLimits, setFormLimits] = useState<Record<string, number>>(defaultLimits)
+  const [formLimits, setFormLimits] = useState<Record<string, any>>(defaultLimits)
 
   const fetchUsers = async () => {
     try {
@@ -166,7 +166,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormActivo(user.activo)
     setFormFoto(user.foto)
     setFormModulos({ ...defaultModules, ...(user.modulos as Record<string, boolean>) })
-    setFormLimits({ ...defaultLimits, ...(user.limitesEstado as Record<string, number>) })
+    setFormLimits({ ...defaultLimits, ...(user.limitesEstado as Record<string, any>) })
     setFormZona(user.zona || 'CABA')
     let enabled: string[] = []
     try {
@@ -453,15 +453,17 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                     )}
                   </div>
 
-                  {/* Stats Row (3 Columns like Margarita Viajes) */}
-                  <div className="grid grid-cols-3 gap-2 bg-black/35 rounded-xl p-2.5 border border-white/5 mb-4 text-center">
-                    <div>
-                      <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Visitas</div>
-                      <div className="text-primary font-black text-sm mt-0.5">{u.loginCount || 0}</div>
-                    </div>
-                    <div className="border-x border-white/5">
+                  {/* Stats Row */}
+                  <div className={`grid gap-2 bg-black/35 rounded-xl p-2.5 border border-white/5 mb-4 text-center ${u.nivel === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    {u.nivel === 3 && (
+                      <div>
+                        <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Visitas</div>
+                        <div className="text-primary font-black text-sm mt-0.5">{u.loginCount || 0}</div>
+                      </div>
+                    )}
+                    <div className={u.nivel === 3 ? "border-x border-white/5" : "border-r border-white/5"}>
                       <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Hrs Obj</div>
-                      <div className="text-blue-400 font-black text-sm mt-0.5">{Math.floor((u.loginCount || 0) * 1.5)}h</div>
+                      <div className="text-blue-400 font-black text-sm mt-0.5">{((u.limitesEstado as any)?.horasObjetivo) || 8}h</div>
                     </div>
                     <div>
                       <div className="text-[10px] font-bold text-secondary uppercase tracking-wider">Estado</div>
@@ -655,9 +657,12 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                 </div>
 
                 <div className="mb-10">
-                  <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Configuración Operativa</h4>
-                  <div className="bg-black/20 rounded-2xl p-5 border border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                    <div className="form-group">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Configuración Operativa</h4>
+                  </div>
+                  
+                  <div className="bg-black/20 rounded-2xl p-5 border border-white/5 flex flex-col gap-6">
+                    <div className="form-group mb-0 max-w-xs">
                       <label className="form-label">Horas Objetivo (al día)</label>
                       <input 
                         type="number" 
@@ -667,15 +672,58 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                         min="1" max="24"
                       />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Meta de Ventas Mensual ($)</label>
-                      <input 
-                        type="number" 
-                        value={formLimits.metaVentas || 0} 
-                        onChange={(e) => setFormLimits(prev => ({...prev, metaVentas: Number(e.target.value)}))} 
-                        className="form-input bg-[#0B132B]/50 border-white/10" 
-                        min="0"
-                      />
+
+                    <div className="border-t border-white/10 pt-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h5 className="text-sm font-bold text-white">Metas Comerciales</h5>
+                          <p className="text-[10px] text-secondary">Habilita y configura los objetivos de ventas para este perfil.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={!!formLimits.metasActivas}
+                            onChange={(e) => setFormLimits(prev => ({...prev, metasActivas: e.target.checked}))}
+                          />
+                          <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+
+                      {formLimits.metasActivas && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in">
+                          <div className="form-group mb-0">
+                            <label className="form-label text-[10px]">Nuevos Clientes</label>
+                            <input 
+                              type="number" 
+                              value={formLimits.metaNuevosClientes || 0} 
+                              onChange={(e) => setFormLimits(prev => ({...prev, metaNuevosClientes: Number(e.target.value)}))} 
+                              className="form-input bg-[#0B132B]/50 border-white/10 text-sm" 
+                              min="0"
+                            />
+                          </div>
+                          <div className="form-group mb-0">
+                            <label className="form-label text-[10px]">Ventas (Cantidad)</label>
+                            <input 
+                              type="number" 
+                              value={formLimits.metaVentas || 0} 
+                              onChange={(e) => setFormLimits(prev => ({...prev, metaVentas: Number(e.target.value)}))} 
+                              className="form-input bg-[#0B132B]/50 border-white/10 text-sm" 
+                              min="0"
+                            />
+                          </div>
+                          <div className="form-group mb-0">
+                            <label className="form-label text-[10px]">Monto Total ($)</label>
+                            <input 
+                              type="number" 
+                              value={formLimits.metaMonto || 0} 
+                              onChange={(e) => setFormLimits(prev => ({...prev, metaMonto: Number(e.target.value)}))} 
+                              className="form-input bg-[#0B132B]/50 border-white/10 text-sm" 
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
