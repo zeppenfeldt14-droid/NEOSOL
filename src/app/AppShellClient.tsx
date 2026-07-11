@@ -311,23 +311,29 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
               <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-3 mb-1.5">
                 Comercial
               </div>
-              <Link href="/pedidos" className={`nav-item ${isLinkActive('/pedidos') ? 'active' : ''}`}>
-                <ShoppingCart className="nav-icon" />
-                <span>Pedidos</span>
-              </Link>
-              <Link href="/ventas" className={`nav-item ${isLinkActive('/ventas') ? 'active' : ''}`}>
-                <TrendingUp className="nav-icon" />
-                <span>Ventas</span>
-              </Link>
-              <Link href="/cobranzas" className={`nav-item ${isLinkActive('/cobranzas') ? 'active' : ''}`}>
-                <Banknote className="nav-icon" />
-                <span>Cobranzas</span>
-              </Link>
+              {modules.pedidos !== false && (
+                <Link href="/pedidos" className={`nav-item ${isLinkActive('/pedidos') ? 'active' : ''}`}>
+                  <ShoppingCart className="nav-icon" />
+                  <span>Pedidos</span>
+                </Link>
+              )}
+              {modules.ventas !== false && (
+                <Link href="/ventas" className={`nav-item ${isLinkActive('/ventas') ? 'active' : ''}`}>
+                  <TrendingUp className="nav-icon" />
+                  <span>Ventas</span>
+                </Link>
+              )}
+              {modules.cobranzas !== false && (
+                <Link href="/cobranzas" className={`nav-item ${isLinkActive('/cobranzas') ? 'active' : ''}`}>
+                  <Banknote className="nav-icon" />
+                  <span>Cobranzas</span>
+                </Link>
+              )}
             </>
           )}
 
           {/* Standalone users module link for N1/N2 */}
-          {user.nivel < 3 && (
+          {user.nivel < 3 && modules.usuarios !== false && (
             <Link href="/usuarios" className={`nav-item ${isLinkActive('/usuarios') ? 'active' : ''}`}>
               <ShieldCheck className="nav-icon" />
               <span>Usuarios</span>

@@ -13,6 +13,8 @@ import {
 interface Props {
   pedido: any
   onClose: () => void
+  onStateChange?: (id: number, newState: string) => void
+  userNivel?: number
 }
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -29,7 +31,7 @@ const ESTADO_BADGES: Record<string, string> = {
   cancelado: 'bg-red-500/10 text-red-500 border-red-500/20',
 }
 
-export function PedidoDetalleModal({ pedido, onClose }: Props) {
+export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel = 3 }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
@@ -237,7 +239,33 @@ export function PedidoDetalleModal({ pedido, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/5 flex items-center justify-end gap-3 shrink-0">
+        <div className="p-6 border-t border-white/5 flex items-center justify-between shrink-0 bg-black/40 rounded-b-2xl">
+          <div className="flex gap-2">
+            {pedido.estado === 'pendiente_supervisor' && userNivel < 3 && onStateChange && (
+              <>
+                <button
+                  onClick={() => onStateChange(pedido.id, 'aprobar')}
+                  className="btn btn-primary text-xs bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30 font-bold"
+                >
+                  Aprobar Pedido
+                </button>
+                <button
+                  onClick={() => onStateChange(pedido.id, 'cancelar')}
+                  className="btn btn-outline border-red-500/30 text-red-500 hover:bg-red-500/20 text-xs font-bold"
+                >
+                  Cancelar Pedido
+                </button>
+              </>
+            )}
+            {pedido.estado === 'borrador' && onStateChange && (
+              <button
+                onClick={() => onStateChange(pedido.id, 'enviar')}
+                className="btn btn-primary text-xs font-bold"
+              >
+                Enviar a Supervisor
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="btn btn-secondary text-xs"

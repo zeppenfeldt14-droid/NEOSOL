@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, BarChart3, FileText, DollarSign, RefreshCw, Eye, Calendar } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+import { ClientesActivosList } from './ClientesActivosList'
 
 interface Props {
   zonaName: string
@@ -48,6 +49,7 @@ const TRIMESTRES = [
 ]
 
 export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
+  const [activeTab, setActiveTab] = useState<'facturacion' | 'clientes'>('facturacion')
   const currentMonthStr = new Date().getMonth().toString()
   const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonthStr)
   const [facturas, setFacturas] = useState<Factura[]>([])
@@ -160,9 +162,24 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
         </div>
       </div>
 
+      <div className="flex gap-2 border-b border-white/10 pb-4">
+        <button
+          onClick={() => setActiveTab('facturacion')}
+          className={`btn-toggle ${activeTab === 'facturacion' ? 'active' : ''}`}
+        >
+          Resumen de Facturación
+        </button>
+        <button
+          onClick={() => setActiveTab('clientes')}
+          className={`btn-toggle ${activeTab === 'clientes' ? 'active' : ''}`}
+        >
+          Clientes Activos
+        </button>
+      </div>
 
-
-      {/* KPI Cards */}
+      {activeTab === 'facturacion' && (
+        <>
+          {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Facturado',    value: fmt(totalFacturado), icon: DollarSign, color: 'text-green-400',  bg: 'bg-green-400/10' },
@@ -268,6 +285,12 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
           </table>
         </div>
       </div>
+        </>
+      )}
+
+      {activeTab === 'clientes' && (
+        <ClientesActivosList zonaName={zonaName} />
+      )}
 
       {/* Modal de Pedido Global */}
       {selectedPedidoDetalle && (

@@ -266,6 +266,10 @@ model Factura {
   numeroFactura String   @unique // Ej: FAC-A-2026-001
   tipo          String   // 'A' | 'B' | 'remito'
   
+  // Archivo PDF / Imagen adjunto
+  archivoBase64 String?  // Base64 text of the uploaded PDF or image
+  archivoMimeType String? // e.g., 'application/pdf', 'image/jpeg'
+
   // Montos
   subtotal      Float
   iva           Float    @default(0)  // Solo si tipo='A'

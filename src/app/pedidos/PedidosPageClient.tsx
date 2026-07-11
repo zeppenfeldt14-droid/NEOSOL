@@ -487,7 +487,12 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
 
       {/* ── Modal: Detalle de Pedido ───────────────────────────────── */}
       {selectedPedido && (
-        <PedidoDetalleModal pedido={selectedPedido} onClose={() => setSelectedPedido(null)} />
+        <PedidoDetalleModal 
+          pedido={selectedPedido} 
+          onClose={() => setSelectedPedido(null)} 
+          onStateChange={handleAction}
+          userNivel={userNivel}
+        />
       )}
 
       {/* ── Modal: Selector de Fecha de Entrega ────────────────────────── */}

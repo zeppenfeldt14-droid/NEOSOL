@@ -6,6 +6,7 @@ import { CompleteActionButton } from './ActionButtons'
 import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
 import { getSessionUser } from '@/lib/auth'
+import { HistorialComprasClient } from './HistorialComprasClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -243,6 +244,11 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
               <p style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>No hay acciones pendientes.</p>
             )}
           </div>
+        </div>
+
+        <div className="glass-panel card delay-300" style={{ gridColumn: 'span 2' }}>
+          <h3 className="card-title m-0">Historial de Compras</h3>
+          <HistorialComprasClient empresaId={empresaId} userNivel={user.nivel} />
         </div>
 
         <div className="glass-panel card delay-300">
