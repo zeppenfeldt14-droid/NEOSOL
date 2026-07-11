@@ -82,6 +82,7 @@ export async function PATCH(request: Request, { params }: Params) {
         aprobadoPorAlias: session.alias,
         aprobadoEn: new Date(),
         fechaEntrega: body.fechaEntrega || null,
+        metodoPagoB: body.metodoPagoB || null,
       }
     } else if (accion === 'cancelar') {
       if (pedido.estado === 'aprobado' && session.nivel > 1)
@@ -91,9 +92,22 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: 'Acción inválida.' }, { status: 400 })
     }
 
+    // Calcula el recargo financiero B si corresponde, y actualiza el total.
+    let updateData = { estado: nuevoEstado, ...aprobadoPor }
+    
+    if (nuevoEstado === 'aprobado' && body.metodoPagoB === 'transferencia' && (pedido.porcentajePagoB || 0) > 0) {
+      const montoB = pedido.subtotalSinIVA * ((pedido.porcentajePagoB || 0) / 100)
+      const recargoB = montoB * 0.03
+      updateData = {
+        ...updateData,
+        montoFinanciera: recargoB,
+        totalGeneral: pedido.subtotalSinIVA + (pedido.montoIVA || 0) + recargoB
+      } as any
+    }
+
     const updated = await prisma.pedido.update({
       where: { id: Number(id) },
-      data: { estado: nuevoEstado, ...aprobadoPor },
+      data: updateData,
     })
 
     // If approved → auto-generate Facturas and Cobranzas
@@ -119,29 +133,15 @@ async function generarFacturasYCobranzas(pedido: any, alias: string) {
   const año = new Date().getFullYear()
   const baseNum = pedido.id
 
-  // Factura B (sin IVA) → parte porcentajePagoB
-  const montoB = pedido.subtotalSinIVA * (pedido.porcentajePagoB / 100)
-  if (montoB > 0) {
-    const recargo = pedido.aplicaFinanciera ? montoB * 0.03 : 0
-    await prisma.factura.create({
-      data: {
-        pedidoId: pedido.id,
-        numeroFactura: `FAC-B-${año}-${String(baseNum).padStart(4, '0')}`,
-        tipo: 'B',
-        subtotal: montoB,
-        iva: 0,
-        recargo,
-        total: montoB + recargo,
-        estado: 'pendiente',
-      },
-    })
-  }
+  const empresa = await prisma.empresa.findUnique({ where: { id: pedido.empresaId } })
+  const empresaNombre = empresa?.nombre || ''
 
   // Factura A (con IVA 21%) → parte porcentajePagoA
-  const montoA = pedido.subtotalSinIVA * (pedido.porcentajePagoA / 100)
+  const pctA = (pedido.porcentajePagoA || 0) / 100
+  const montoA = pedido.subtotalSinIVA * pctA
   if (montoA > 0) {
     const iva = montoA * 0.21
-    const recargo = pedido.aplicaFinanciera ? (montoA + iva) * 0.03 : 0
+    const totalA = montoA + iva
     await prisma.factura.create({
       data: {
         pedidoId: pedido.id,
@@ -149,26 +149,17 @@ async function generarFacturasYCobranzas(pedido: any, alias: string) {
         tipo: 'A',
         subtotal: montoA,
         iva,
-        recargo,
-        total: montoA + iva + recargo,
+        recargo: 0,
+        total: totalA,
         estado: 'pendiente',
       },
     })
-  }
- 
-  // Generar Cobranza (cuenta por cobrar) solo por el total de la parte A (con IVA y recargo)
-  const pctA = (pedido.porcentajePagoA || 0) / 100
-  const subtotalA = pedido.subtotalSinIVA * pctA
-  const ivaA = subtotalA * 0.21
-  const recargoA = pedido.aplicaFinanciera ? (subtotalA + ivaA) * 0.03 : 0
-  const totalA = subtotalA + ivaA + recargoA
 
-  if (totalA > 0) {
     await prisma.cobranza.create({
       data: {
         pedidoId: pedido.id,
         empresaId: pedido.empresaId,
-        empresaNombre: '', // populated from relation if needed
+        empresaNombre,
         vendedorAlias: pedido.vendedorAlias,
         zona: pedido.zona,
         montoOriginal: totalA,
@@ -176,10 +167,52 @@ async function generarFacturasYCobranzas(pedido: any, alias: string) {
         cuota: 1,
         totalCuotas: 1,
         estado: 'pendiente',
+        fechaVencimiento: pedido.fechaPagoA ? new Date(pedido.fechaPagoA) : null,
+        tipoFactura: 'A',
+        metodoPago: pedido.metodoPagoA,
+      },
+    })
+  }
+
+  // Factura B (sin IVA) → parte porcentajePagoB
+  const pctB = (pedido.porcentajePagoB || 0) / 100
+  const montoB = pedido.subtotalSinIVA * pctB
+  if (montoB > 0) {
+    const recargoB = pedido.metodoPagoB === 'transferencia' ? montoB * 0.03 : 0
+    const totalB = montoB + recargoB
+    await prisma.factura.create({
+      data: {
+        pedidoId: pedido.id,
+        numeroFactura: `FAC-B-${año}-${String(baseNum).padStart(4, '0')}`,
+        tipo: 'B',
+        subtotal: montoB,
+        iva: 0,
+        recargo: recargoB,
+        total: totalB,
+        estado: 'pendiente',
+      },
+    })
+
+    await prisma.cobranza.create({
+      data: {
+        pedidoId: pedido.id,
+        empresaId: pedido.empresaId,
+        empresaNombre,
+        vendedorAlias: pedido.vendedorAlias,
+        zona: pedido.zona,
+        montoOriginal: totalB,
+        saldoPendiente: totalB,
+        cuota: 1,
+        totalCuotas: 1,
+        estado: 'pendiente',
+        fechaVencimiento: pedido.fechaEntrega ? new Date(pedido.fechaEntrega) : null,
+        tipoFactura: 'B',
+        metodoPago: pedido.metodoPagoB,
       },
     })
   }
 }
+
 
 // ─── PUT: Actualizar un pedido completo (borrador) ──────────────────────────
 export async function PUT(request: Request, { params }: Params) {
@@ -214,6 +247,8 @@ export async function PUT(request: Request, { params }: Params) {
       acuerdosComerciales,
       requierePresupuesto,
       turnoEntrega,
+      metodoPagoA,
+      fechaPagoA
     } = body
 
     if (!empresaId || !detalles?.length) {
@@ -306,6 +341,8 @@ export async function PUT(request: Request, { params }: Params) {
         acuerdosComerciales: acuerdosComerciales || null,
         requierePresupuesto: requierePresupuesto || false,
         turnoEntrega: turnoEntrega || null,
+        metodoPagoA: metodoPagoA || null,
+        fechaPagoA: fechaPagoA ? new Date(fechaPagoA).toISOString() : null,
         subtotalSinIVA,
         montoIVA,
         montoFinanciera,

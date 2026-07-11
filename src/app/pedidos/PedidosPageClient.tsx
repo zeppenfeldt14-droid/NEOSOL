@@ -55,6 +55,9 @@ interface Pedido {
   subtotalSinIVA: number
   montoIVA: number
   montoFinanciera: number
+  metodoPagoA: string | null
+  fechaPagoA: string | null
+  metodoPagoB: string | null
   aprobadoPorAlias: string | null
   aprobadoEn: string | null
   detalles: PedidoDetalle[]
@@ -93,6 +96,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null)
   const [pedidoAprobar, setPedidoAprobar] = useState<Pedido | null>(null)
   const [fechaEntrega, setFechaEntrega] = useState('')
+  const [metodoPagoB, setMetodoPagoB] = useState<'efectivo' | 'transferencia' | ''>('')
 
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
@@ -422,6 +426,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                               }
                               setPedidoAprobar(p)
                               setFechaEntrega('')
+                              setMetodoPagoB((p.metodoPagoB as any) || '')
                             }}
                             disabled={actionId === p.id}
                             className={`btn-action text-[10px] uppercase font-black tracking-wider ${
@@ -499,25 +504,46 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
               </p>
             </div>
 
-            <div className="p-6 flex flex-col gap-5 overflow-y-auto">
-              <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha de Entrega</label>
-                <input
-                  type="date"
-                  value={fechaEntrega}
-                  onChange={e => setFechaEntrega(e.target.value)}
-                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm mt-1 w-full text-white"
-                  required
-                />
-              </div>
-            </div>
+              <div className="p-6 flex flex-col gap-5 overflow-y-auto">
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha de Entrega</label>
+                  <input
+                    type="date"
+                    value={fechaEntrega}
+                    onChange={e => setFechaEntrega(e.target.value)}
+                    className="form-input bg-black/40 border border-white/10 rounded-xl text-sm mt-1 w-full text-white"
+                    required
+                  />
+                </div>
 
-            <div className="flex items-center justify-end gap-3 mt-2 shrink-0">
-              <button
-                onClick={() => {
-                  setPedidoAprobar(null)
-                  setFechaEntrega('')
-                }}
+                {pedidoAprobar.porcentajePagoB > 0 && (
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px] uppercase font-black text-secondary">
+                      Método de Pago (Parte B) *
+                    </label>
+                    <p className="text-secondary text-[9px] mb-1">
+                      Si seleccionas Transferencia se aplicará automáticamente un 3% de recargo sobre la Parte B.
+                    </p>
+                    <select
+                      value={metodoPagoB}
+                      onChange={e => setMetodoPagoB(e.target.value as any)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm w-full"
+                    >
+                      <option value="" className="bg-black text-white">Seleccionar...</option>
+                      <option value="efectivo" className="bg-black text-white">Efectivo</option>
+                      <option value="transferencia" className="bg-black text-white">Transferencia (+3%)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 pt-0 flex items-center justify-end gap-3 mt-2 shrink-0">
+                <button
+                  onClick={() => {
+                    setPedidoAprobar(null)
+                    setFechaEntrega('')
+                    setMetodoPagoB('')
+                  }}
                 className="btn btn-secondary text-xs"
               >
                 Cancelar
@@ -528,9 +554,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     alert('Por favor selecciona una fecha de entrega.')
                     return
                   }
-                  handleAction(pedidoAprobar.id, 'aprobar', { fechaEntrega })
+                  if (pedidoAprobar.porcentajePagoB > 0 && !metodoPagoB) {
+                    alert('Por favor selecciona el método de pago para la Parte B.')
+                    return
+                  }
+                  handleAction(pedidoAprobar.id, 'aprobar', { fechaEntrega, metodoPagoB })
                   setPedidoAprobar(null)
                   setFechaEntrega('')
+                  setMetodoPagoB('')
                 }}
                 className="btn btn-primary text-xs flex items-center gap-1.5"
               >

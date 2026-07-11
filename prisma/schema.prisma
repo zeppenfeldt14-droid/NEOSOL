@@ -205,6 +205,10 @@ model Pedido {
   // Plazos de pago (texto libre, ej: "30 días / 60 días")
   plazosPago      String?
   condicionPago   String?  // Ej: "20/80", "50/50", "100% A", personalizada
+
+  metodoPagoA     String?  // 'cheque' | 'transferencia'
+  fechaPagoA      DateTime?
+  metodoPagoB     String?  // 'efectivo' | 'transferencia'
   
   // Totales calculados
   subtotalSinIVA  Float    @default(0)
@@ -292,9 +296,10 @@ model Cobranza {
   // Plazos
   cuota           Int      @default(1)  // Número de cuota
   totalCuotas     Int      @default(1)
-  fechaVencimiento DateTime?
-  
   estado          String   @default("pendiente") // 'pendiente' | 'pagada' | 'vencida' | 'parcial'
+  fechaVencimiento DateTime?
+  tipoFactura    String?  // 'A' o 'B'
+  metodoPago     String?  // 'cheque', 'transferencia', 'efectivo'
   
   creadoEn        DateTime @default(now())
   actualizadoEn   DateTime @updatedAt

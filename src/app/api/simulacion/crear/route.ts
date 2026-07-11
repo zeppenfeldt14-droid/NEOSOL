@@ -107,11 +107,34 @@ export async function POST() {
             const cant1 = randomInt(5, 50) * conf.multiplier
             const cant2 = randomInt(5, 50) * conf.multiplier
 
+            const randomMix = randomItem([
+              { pA: 20, pB: 80, cond: '20/80' },
+              { pA: 30, pB: 70, cond: '30/70' },
+              { pA: 50, pB: 50, cond: '50/50' },
+              { pA: 100, pB: 0, cond: '100% A' },
+              { pA: 0, pB: 100, cond: '100% B' }
+            ])
+            const { pA, pB, cond } = randomMix
+
             const subtotal = (cant1 * prod1.precioCaja) + (cant2 * prod2.precioCaja)
-            const montoIVA = subtotal * 0.2 * 0.21 // 20% Factura A -> 21% IVA
-            const total = subtotal + montoIVA
+            const montoA = subtotal * (pA / 100)
+            const montoB = subtotal * (pB / 100)
+            const montoIVA = montoA * 0.21
 
             const fechaTransaccion = randomDate(firstDayOfYear, today)
+
+            const metodoPagoA = pA > 0 ? randomItem(['cheque', 'transferencia']) : null
+            const fechaPagoA = new Date(fechaTransaccion)
+            fechaPagoA.setDate(fechaPagoA.getDate() + randomItem([15, 30, 45, 60]))
+            
+            const metodoPagoB = pB > 0 ? randomItem(['efectivo', 'transferencia']) : null
+            const fechaEntregaDate = new Date(fechaTransaccion)
+            fechaEntregaDate.setDate(fechaEntregaDate.getDate() + randomItem([2, 5, 7]))
+            const fechaEntregaStr = fechaEntregaDate.toISOString()
+
+            // 3% recargo solo a B si es transferencia
+            const recargoB = (metodoPagoB === 'transferencia') ? montoB * 0.03 : 0
+            const total = subtotal + montoIVA + recargoB
 
             const pedido = await prisma.pedido.create({
               data: {
@@ -121,12 +144,17 @@ export async function POST() {
                 vendedorAlias: vendedor.alias,
                 zona: conf.zona,
                 estado: 'aprobado',
-                porcentajePagoA: 20,
-                porcentajePagoB: 80,
+                porcentajePagoA: pA,
+                porcentajePagoB: pB,
+                metodoPagoA,
+                fechaPagoA: pA > 0 ? fechaPagoA : null,
+                metodoPagoB,
+                fechaEntrega: fechaEntregaStr,
                 subtotalSinIVA: subtotal,
                 montoIVA: montoIVA,
+                montoFinanciera: recargoB,
                 totalGeneral: total,
-                condicionPago: '20/80',
+                condicionPago: cond,
                 creadoEn: fechaTransaccion,
                 detalles: {
                   create: [
@@ -154,51 +182,81 @@ export async function POST() {
             })
             totalPedidos++
 
-            // 5. Facturas y Cobranzas
-            await prisma.factura.create({
-              data: {
-                pedidoId: pedido.id,
-                numeroFactura: `FAC-SIM-${randomInt(1000, 9999)}`,
-                tipo: 'A',
-                subtotal: subtotal * 0.2,
-                iva: montoIVA,
-                total: (subtotal * 0.2) + montoIVA,
-                estado: 'pagada',
-                creadoEn: fechaTransaccion
-              }
-            })
+            // Simular Factura A
+            if (pA > 0) {
+              await prisma.factura.create({
+                data: {
+                  pedidoId: pedido.id,
+                  numeroFactura: `FAC-A-${randomInt(1000, 9999)}`,
+                  tipo: 'A',
+                  subtotal: montoA,
+                  iva: montoIVA,
+                  recargo: 0,
+                  total: montoA + montoIVA,
+                  estado: 'pendiente',
+                  creadoEn: fechaTransaccion
+                }
+              })
+              
+              const saldoPendienteA = randomItem([0, montoA + montoIVA])
+              let estadoCobA = saldoPendienteA === 0 ? 'pagada' : 'pendiente'
+              if (saldoPendienteA > 0 && fechaPagoA < new Date()) estadoCobA = 'vencida'
 
-            const saldoPendiente = randomItem([0, total * 0.5, total])
-            let estadoCobranza = 'pendiente'
-            if (saldoPendiente === 0) estadoCobranza = 'pagada'
-            else if (saldoPendiente < total) estadoCobranza = 'parcial'
-
-            // Simular vencimientos
-            const diasVencimiento = randomItem([15, 30, 45, 60])
-            const fechaVencimiento = new Date(fechaTransaccion)
-            fechaVencimiento.setDate(fechaVencimiento.getDate() + diasVencimiento)
-            
-            let diasAtraso = null
-            if (saldoPendiente > 0 && fechaVencimiento < new Date()) {
-              estadoCobranza = 'vencida'
-              const diffTime = Math.abs(new Date().getTime() - fechaVencimiento.getTime())
-              diasAtraso = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+              await prisma.cobranza.create({
+                data: {
+                  pedidoId: pedido.id,
+                  empresaId: empresa.id,
+                  empresaNombre: empresa.nombre,
+                  vendedorAlias: vendedor.alias,
+                  zona: conf.zona,
+                  montoOriginal: montoA + montoIVA,
+                  saldoPendiente: saldoPendienteA,
+                  estado: estadoCobA,
+                  fechaVencimiento: fechaPagoA,
+                  tipoFactura: 'A',
+                  metodoPago: metodoPagoA,
+                  creadoEn: fechaTransaccion
+                }
+              })
             }
 
-            await prisma.cobranza.create({
-              data: {
-                pedidoId: pedido.id,
-                empresaId: empresa.id,
-                empresaNombre: empresa.nombre,
-                vendedorAlias: vendedor.alias,
-                zona: conf.zona,
-                montoOriginal: total,
-                saldoPendiente,
-                estado: estadoCobranza,
-                fechaVencimiento: fechaVencimiento.toISOString(),
-                creadoEn: fechaTransaccion
-              }
-            })
+            // Simular Factura B
+            if (pB > 0) {
+              await prisma.factura.create({
+                data: {
+                  pedidoId: pedido.id,
+                  numeroFactura: `FAC-B-${randomInt(1000, 9999)}`,
+                  tipo: 'B',
+                  subtotal: montoB,
+                  iva: 0,
+                  recargo: recargoB,
+                  total: montoB + recargoB,
+                  estado: 'pendiente',
+                  creadoEn: fechaTransaccion
+                }
+              })
+
+              const saldoPendienteB = randomItem([0, montoB + recargoB])
+              let estadoCobB = saldoPendienteB === 0 ? 'pagada' : 'pendiente'
+              if (saldoPendienteB > 0 && fechaEntregaDate < new Date()) estadoCobB = 'vencida'
+
+              await prisma.cobranza.create({
+                data: {
+                  pedidoId: pedido.id,
+                  empresaId: empresa.id,
+                  empresaNombre: empresa.nombre,
+                  vendedorAlias: vendedor.alias,
+                  zona: conf.zona,
+                  montoOriginal: montoB + recargoB,
+                  saldoPendiente: saldoPendienteB,
+                  estado: estadoCobB,
+                  fechaVencimiento: fechaEntregaDate,
+                  tipoFactura: 'B',
+                  metodoPago: metodoPagoB,
+                  creadoEn: fechaTransaccion
+                }
+              })
+            }
           }
         }
       }

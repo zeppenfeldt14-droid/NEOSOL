@@ -94,6 +94,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const [pctBCustom, setPctBCustom]           = useState(80)
   const [aplicaFinanciera, setAplicaFinanciera] = useState(false)
   const [plazosPago, setPlazosPago]           = useState('')
+  const [metodoPagoA, setMetodoPagoA]         = useState<'cheque' | 'transferencia' | ''>('')
+  const [fechaPagoA, setFechaPagoA]           = useState('')
   const [observaciones, setObservaciones]     = useState('')
   const [acuerdosComerciales, setAcuerdosComerciales] = useState('')
   const [requierePresupuesto, setRequierePresupuesto] = useState(false)
@@ -156,6 +158,10 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
               setAcuerdosComerciales(orderToEdit.acuerdosComerciales || '')
               setRequierePresupuesto(orderToEdit.requierePresupuesto)
               setTurnoEntrega(orderToEdit.turnoEntrega || '')
+              setMetodoPagoA(orderToEdit.metodoPagoA || '')
+              if (orderToEdit.fechaPagoA) {
+                setFechaPagoA(new Date(orderToEdit.fechaPagoA).toISOString().split('T')[0])
+              }
 
               // Match payment condition
               const matchIdx = CONDICIONES_PAGO.findIndex(
@@ -429,6 +435,12 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       setError('Ingresá al menos un producto con cantidad mayor a 0')
       return
     }
+    
+    const pctA = condicionIdx === 6 ? pctACustom : CONDICIONES_PAGO[condicionIdx].pA
+    if (pctA > 0) {
+      if (!metodoPagoA) { setError('Selecciona un método de pago para la Parte A'); return }
+      if (!fechaPagoA) { setError('Ingresa la fecha de vencimiento para la Parte A'); return }
+    }
 
     setSubmitting(true)
     setError('')
@@ -460,7 +472,9 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
           observaciones,
           acuerdosComerciales,
           requierePresupuesto,
-          turnoEntrega: turnoEntrega || null,
+          turnoEntrega,
+          metodoPagoA,
+          fechaPagoA
         }),
       })
 
@@ -983,16 +997,44 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
               </div>
             </div>
 
-            {/* Plazos */}
-            <div className="form-group mb-0">
-              <label className="form-label text-[10px] uppercase font-black text-secondary">Plazos de Pago</label>
-              <input
-                type="text"
-                value={plazosPago}
-                onChange={e => setPlazosPago(e.target.value)}
-                placeholder="Ej: 30 días / 60 días..."
-                className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-              />
+            {/* Plazos y Parte A */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="form-group mb-0">
+                <label className="form-label text-[10px] uppercase font-black text-secondary">Plazos de Pago</label>
+                <input
+                  type="text"
+                  value={plazosPago}
+                  onChange={e => setPlazosPago(e.target.value)}
+                  placeholder="Ej: 30 días / 60 días..."
+                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                />
+              </div>
+
+              {pctA > 0 && (
+                <>
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px] uppercase font-black text-secondary">Método de Pago (Parte A) *</label>
+                    <select
+                      value={metodoPagoA}
+                      onChange={e => setMetodoPagoA(e.target.value as any)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                    >
+                      <option value="" className="bg-black text-white">Seleccionar...</option>
+                      <option value="cheque" className="bg-black text-white">Cheque</option>
+                      <option value="transferencia" className="bg-black text-white">Transferencia</option>
+                    </select>
+                  </div>
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha Vencimiento (Parte A) *</label>
+                    <input
+                      type="date"
+                      value={fechaPagoA}
+                      onChange={e => setFechaPagoA(e.target.value)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Dynamic Volume Tier and Negotiation */}

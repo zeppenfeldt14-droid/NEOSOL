@@ -66,6 +66,8 @@ export async function POST(request: Request) {
       acuerdosComerciales,
       requierePresupuesto,
       turnoEntrega,
+      metodoPagoA,
+      fechaPagoA
     } = body
 
     if (!empresaId || !detalles?.length) {
@@ -165,6 +167,8 @@ export async function POST(request: Request) {
         acuerdosComerciales: acuerdosComerciales || null,
         requierePresupuesto: requierePresupuesto || false,
         turnoEntrega: turnoEntrega || null,
+        metodoPagoA: metodoPagoA || null,
+        fechaPagoA: fechaPagoA ? new Date(fechaPagoA).toISOString() : null,
         subtotalSinIVA,
         montoIVA,
         montoFinanciera,
