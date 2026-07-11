@@ -222,8 +222,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                     {availableZones.map((zone: string) => {
                       const isChecked = selectedZones.includes(zone)
                       return (
-                        <label 
+                        <div 
                           key={zone} 
+                          onClick={() => handleToggleZone(zone)}
                           className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
                             isChecked 
                               ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
@@ -240,7 +241,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                               </svg>
                             )}
                           </div>
-                        </label>
+                        </div>
                       )
                     })}
                   </div>
@@ -302,8 +303,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                     {MONTH_NAMES.map((name, index) => {
                       const isChecked = selectedMonths.includes(index)
                       return (
-                        <label 
+                        <div 
                           key={index} 
+                          onClick={() => handleToggleMonth(index)}
                           className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
                             isChecked 
                               ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
@@ -320,7 +322,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                               </svg>
                             )}
                           </div>
-                        </label>
+                        </div>
                       )
                     })}
                   </div>
@@ -332,7 +334,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* METRICAS PRINCIPALES - 5 CUBOS EN UNA SOLA LÍNEA */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-14 w-full">
         
         {/* Cubo 1: Facturación */}
         <div className="glass-panel card p-5 relative overflow-hidden flex flex-col justify-between min-h-[110px] border-white/5 hover:border-primary/20 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] transition-all duration-300">
@@ -416,7 +418,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* CUADRÍCULA DE GRÁFICOS (6 Gráficos en 2 filas) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 w-full" style={{ gap: '2.5rem', marginBottom: '3.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-y-10 gap-x-6 mb-14 w-full">
         
         {/* Gráfico 1: Cobranza Pendiente por Zona */}
         <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
@@ -603,7 +605,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* SECCIÓN INFERIOR PREMIUM: ÚLTIMOS PEDIDOS & VENTAS RECIENTES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch w-full" style={{ gap: '2.5rem', marginBottom: '3.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch gap-y-10 gap-x-6 mb-14 w-full">
         
         {/* Columna Izquierda/Centro: Últimos Pedidos (Estilo Cápsulas Premium - 10 elementos) */}
         <div className="lg:col-span-2 min-w-0">
