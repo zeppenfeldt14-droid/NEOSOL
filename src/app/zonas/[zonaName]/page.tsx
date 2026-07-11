@@ -22,6 +22,16 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const { period } = await searchParams
   const currentPeriod = period || String(new Date().getMonth())
 
+  const modules = typeof user.modulos === 'string' ? JSON.parse(user.modulos) : (user.modulos || {})
+  if (modules.zonas === false) {
+    if (modules.pedidos) redirect('/pedidos')
+    if (modules.ventas) redirect('/ventas')
+    if (modules.cobranzas) redirect('/cobranzas')
+    if (modules.usuarios) redirect('/usuarios')
+    if (modules.configuracion) redirect('/configuracion')
+    redirect('/configuracion/productos')
+  }
+
   // Verify access permissions to this zone
   if (user.nivel === 3 && user.zona !== decodedZona) {
     if (user.zona && user.zona !== decodedZona) {
@@ -33,9 +43,21 @@ export default async function DashboardPage({ params, searchParams }: { params: 
     let enabledZones: string[] = []
     try {
       if (user.zonasHabilitadas) {
-        enabledZones = JSON.parse(JSON.stringify(user.zonasHabilitadas))
+        enabledZones = typeof user.zonasHabilitadas === 'string'
+          ? JSON.parse(user.zonasHabilitadas)
+          : JSON.parse(JSON.stringify(user.zonasHabilitadas))
       }
     } catch (e) {}
+    // If they have no zones enabled or the Zonas module is disabled
+    if (enabledZones.length === 0 || modules.zonas === false) {
+      if (modules.pedidos) redirect('/pedidos')
+      if (modules.ventas) redirect('/ventas')
+      if (modules.cobranzas) redirect('/cobranzas')
+      if (modules.usuarios) redirect('/usuarios')
+      if (modules.configuracion) redirect('/configuracion')
+      redirect('/configuracion/productos')
+    }
+
     if (!enabledZones.includes(decodedZona)) {
       redirect(`/zonas/${enabledZones[0] || 'CABA'}`)
     }
