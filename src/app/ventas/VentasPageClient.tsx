@@ -135,9 +135,9 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedZone(null)}
+              onClick={() => setSelectedZone('todas')}
               className={`btn-toggle ${
-                selectedZone === null ? 'active' : ''
+                selectedZone === 'todas' ? 'active' : ''
               }`}
             >
               Todas las Zonas
