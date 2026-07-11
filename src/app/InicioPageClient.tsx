@@ -470,7 +470,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </h4>
           <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.zonas} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+              <BarChart data={charts.zonas} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="zone" stroke="#94a3b8" fontSize={9} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} tickFormatter={(val) => `$${Number(val)/1000}k`} />
@@ -478,7 +478,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   formatter={(value) => formatMoney(Number(value))}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="sales" fill={COLOR_PRIMARY}>
+                <Bar dataKey="sales" fill={COLOR_PRIMARY} maxBarSize={35}>
                   {charts.zonas.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} />
                   ))}
@@ -534,7 +534,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   formatter={(value) => [`${value} Cajas`, 'Entregado']}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="value" barSize={16}>
+                <Bar dataKey="value" maxBarSize={25}>
                   {charts.promociones.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS_PROMOS[index % COLORS_PROMOS.length]} />
                   ))}
@@ -551,7 +551,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </h4>
           <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.snacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <BarChart data={charts.snacks} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={7} tickLine={false} height={35} interval={0} tick={({x, y, payload}) => {
                   const label = payload.value.split(" ")[0]
@@ -567,7 +567,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="value" fill="#8b5cf6" />
+                <Bar dataKey="value" fill="#8b5cf6" maxBarSize={35} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -580,7 +580,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </h4>
           <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.tripacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <BarChart data={charts.tripacks} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={8} tickLine={false} height={35} interval={0} tick={({x, y, payload}) => {
                   const label = payload.value.split(" ")[0]
@@ -596,7 +596,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="value" fill="#f59e0b" />
+                <Bar dataKey="value" fill="#f59e0b" maxBarSize={35} />
               </BarChart>
             </ResponsiveContainer>
           </div>
