@@ -36,7 +36,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [isLoadingPromos, setIsLoadingPromos] = useState(false)
 
   // Tabs State
-  const [activeTab, setActiveTab] = useState<'lista' | 'zonas' | 'promos' | 'config'>('lista')
+  const [activeTab, setActiveTab] = useState<'lista' | 'zonas' | 'promos' | 'config' | 'simulacion'>('lista')
 
   // Zones management state
   const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([])
