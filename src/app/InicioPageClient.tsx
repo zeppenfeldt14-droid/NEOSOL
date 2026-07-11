@@ -418,10 +418,10 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       </div>
 
       {/* CUADRÍCULA DE GRÁFICOS (6 Gráficos en 2 filas) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 mb-14 w-full" style={{ rowGap: '2.5rem', columnGap: '1.5rem' }}>
+      <div className="flex flex-wrap mb-14 w-full" style={{ rowGap: '2.5rem', columnGap: '1.5rem' }}>
         
         {/* Gráfico 1: Cobranza Pendiente por Zona */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-red-500 rounded-full" /> Cobranza Pendiente por Zona
           </h4>
@@ -464,7 +464,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 2: Ventas por Zona */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full" /> Ventas Totales por Zona
           </h4>
@@ -478,7 +478,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   formatter={(value) => formatMoney(Number(value))}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="sales" fill={COLOR_PRIMARY} radius={[4, 4, 0, 0]}>
+                <Bar dataKey="sales" fill={COLOR_PRIMARY}>
                   {charts.zonas.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} />
                   ))}
@@ -489,7 +489,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 3: Cobros por Método */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-yellow-500 rounded-full" /> Cobrado del Mes por Método
           </h4>
@@ -507,7 +507,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   formatter={(value) => formatMoney(Number(value))}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="amount" fill={COLOR_SUCCESS} radius={[0, 4, 4, 0]} barSize={16} />
+                <Bar dataKey="amount" fill={COLOR_SUCCESS} barSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -516,7 +516,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         {/* Fila de Gráficos 2 (Promociones, Ventas Snacks, Ventas Tripacks) */}
 
         {/* Gráfico 4: Promociones en Ventas */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-pink-500 rounded-full" /> Promociones en Ventas (Cajas)
           </h4>
@@ -534,7 +534,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                   formatter={(value) => [`${value} Cajas`, 'Entregado']}
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar dataKey="value" barSize={16}>
                   {charts.promociones.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS_PROMOS[index % COLORS_PROMOS.length]} />
                   ))}
@@ -545,7 +545,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 5: Ventas Snacks */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-purple-500 rounded-full" /> Ventas de Snacks (Cajas)
           </h4>
@@ -567,14 +567,14 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="#8b5cf6" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Gráfico 6: Ventas Tripacks */}
-        <div className="glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-amber-500 rounded-full" /> Ventas de Tripacks (Cajas)
           </h4>
@@ -596,7 +596,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#121b36', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
                 />
-                <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="#f59e0b" />
               </BarChart>
             </ResponsiveContainer>
           </div>
