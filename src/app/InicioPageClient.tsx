@@ -421,11 +421,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       <div className="flex flex-wrap mb-14 w-full" style={{ rowGap: '2.5rem', columnGap: '1.5rem' }}>
         
         {/* Gráfico 1: Cobranza Pendiente por Zona */}
-        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300" style={{ minHeight: '380px' }}>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-red-500 rounded-full" /> Cobranza Pendiente por Zona
           </h4>
-          <div className="h-[230px] w-full relative">
+          <div className="w-full relative" style={{ height: '230px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -449,7 +449,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
             </ResponsiveContainer>
           </div>
           {/* Leyenda con scroll contenido para evitar desbordes */}
-          <div className="overflow-y-auto max-h-[110px] flex flex-wrap gap-2 text-[10px] justify-center border-t border-white/5 pt-3 custom-scrollbar">
+          <div className="overflow-y-auto flex flex-wrap gap-2 text-[10px] justify-center border-t border-white/5 pt-3 custom-scrollbar" style={{ maxHeight: '110px' }}>
             {charts.cobranzaZonas.map((z: any, i: number) => (
               <span key={z.name} className="flex items-center gap-1.5 text-secondary font-semibold bg-white/[0.02] px-2 py-1 rounded-lg border border-white/5">
                 <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS_PIE[i % COLORS_PIE.length] }} />
@@ -464,11 +464,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 2: Ventas por Zona */}
-        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300" style={{ minHeight: '380px' }}>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full" /> Ventas Totales por Zona
           </h4>
-          <div className="h-[250px] w-full relative">
+          <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.zonas} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -489,11 +489,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 3: Cobros por Método */}
-        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300" style={{ minHeight: '380px' }}>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-yellow-500 rounded-full" /> Cobrado del Mes por Método
           </h4>
-          <div className="h-[250px] w-full relative">
+          <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={charts.metodos} 
@@ -516,11 +516,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         {/* Fila de Gráficos 2 (Promociones, Ventas Snacks, Ventas Tripacks) */}
 
         {/* Gráfico 4: Promociones en Ventas */}
-        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300" style={{ minHeight: '380px' }}>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-pink-500 rounded-full" /> Promociones en Ventas (Cajas)
           </h4>
-          <div className="h-[250px] w-full relative">
+          <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={charts.promociones} 
@@ -545,11 +545,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 5: Ventas Snacks */}
-        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300" style={{ minHeight: '380px' }}>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-purple-500 rounded-full" /> Ventas de Snacks (Cajas)
           </h4>
-          <div className="h-[250px] w-full relative">
+          <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.snacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -574,11 +574,11 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
         </div>
 
         {/* Gráfico 6: Ventas Tripacks */}
-        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-h-[380px] min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300">
+        <div className="w-full lg:w-[calc(33.333%-1rem)] glass-panel card p-6 border-white/5 flex flex-col justify-between min-w-0 overflow-hidden hover:border-white/10 transition-colors duration-300" style={{ minHeight: '380px' }}>
           <h4 className="text-xs font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-amber-500 rounded-full" /> Ventas de Tripacks (Cajas)
           </h4>
-          <div className="h-[250px] w-full relative">
+          <div className="w-full relative" style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.tripacks} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -681,7 +681,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
               <h4 className="text-sm font-black text-white uppercase tracking-wider">Ventas Recientes</h4>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1 max-h-[500px]">
+            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1" style={{ maxHeight: '500px' }}>
               {recentActivity.ventas.map((v: any) => (
                 <div key={v.id} className="group bg-gradient-to-br from-white/[0.02] to-transparent rounded-2xl p-4.5 border border-white/5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4),0_0_15px_rgba(59,130,246,0.05)] transition-all duration-300">
                   <div className="flex justify-between items-start gap-2 mb-2">
