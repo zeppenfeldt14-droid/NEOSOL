@@ -6,7 +6,8 @@ import {
   FileText,
   Globe,
   Calendar,
-  Calculator
+  Calculator,
+  User
 } from 'lucide-react'
 
 interface Props {

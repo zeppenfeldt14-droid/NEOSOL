@@ -39,6 +39,7 @@ interface Cobranza {
   fechaVencimiento: string | null
   estado: string
   diasAtraso: number | null
+  pedidoId: number
   pedido: { numeroPedido: string; condicionPago: string | null; plazosPago: string | null }
   pagos: Pago[]
 }
@@ -412,12 +413,12 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                         </td>
                         <td className="px-3 py-3">
                           <button
-                            onClick={() => fetchDetallePedido(c.pedido.id || parseInt(c.pedido.numeroPedido) || c.id)} // Ideally c.pedidoId
-                            disabled={isFetchingPedido === c.pedido.id}
+                            onClick={() => fetchDetallePedido(c.pedidoId)}
+                            disabled={isFetchingPedido === c.pedidoId}
                             className="btn-action text-secondary hover:text-white"
                             title="Ver detalles del pedido"
                           >
-                            {isFetchingPedido === c.pedido.id ? (
+                            {isFetchingPedido === c.pedidoId ? (
                               <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <Eye size={13} />

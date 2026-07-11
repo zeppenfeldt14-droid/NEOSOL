@@ -21,6 +21,7 @@ interface Factura {
   total: number
   estado: string
   creadoEn: string
+  pedidoId: number
   pedido: {
     numeroPedido: string
     zona: string
