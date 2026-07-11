@@ -311,19 +311,19 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
               <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-3 mb-1.5">
                 Comercial
               </div>
-              {modules.pedidos !== false && (
+              {modules.pedidos === true && (
                 <Link href="/pedidos" className={`nav-item ${isLinkActive('/pedidos') ? 'active' : ''}`}>
                   <ShoppingCart className="nav-icon" />
                   <span>Pedidos</span>
                 </Link>
               )}
-              {modules.ventas !== false && (
+              {modules.ventas === true && (
                 <Link href="/ventas" className={`nav-item ${isLinkActive('/ventas') ? 'active' : ''}`}>
                   <TrendingUp className="nav-icon" />
                   <span>Ventas</span>
                 </Link>
               )}
-              {modules.cobranzas !== false && (
+              {modules.cobranzas === true && (
                 <Link href="/cobranzas" className={`nav-item ${isLinkActive('/cobranzas') ? 'active' : ''}`}>
                   <Banknote className="nav-icon" />
                   <span>Cobranzas</span>
@@ -332,12 +332,17 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
             </>
           )}
 
-          {/* Standalone users module link for N1/N2 */}
-          {user.nivel < 3 && modules.usuarios !== false && (
-            <Link href="/usuarios" className={`nav-item ${isLinkActive('/usuarios') ? 'active' : ''}`}>
-              <ShieldCheck className="nav-icon" />
-              <span>Usuarios</span>
-            </Link>
+          {/* Módulo de Usuarios (Solo si está explícitamente habilitado para Nivel 1/2) */}
+          {user.nivel < 3 && modules.usuarios === true && (
+            <>
+              <div className="px-3 py-1 text-[10px] font-black uppercase text-yellow-500/70 tracking-widest border-b border-white/5 mt-3 mb-1.5">
+                Administración
+              </div>
+              <Link href="/usuarios" className={`nav-item ${isLinkActive('/usuarios') ? 'active' : ''}`}>
+                <ShieldCheck className="nav-icon" />
+                <span>Usuarios</span>
+              </Link>
+            </>
           )}
         </nav>
 
