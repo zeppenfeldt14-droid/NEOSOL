@@ -135,11 +135,9 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedZone('todas')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                selectedZone === 'todas'
-                  ? 'bg-green-500 text-white border-green-500 shadow-lg shadow-green-500/20'
-                  : 'border-white/10 text-secondary hover:text-white hover:border-white/30'
+              onClick={() => setSelectedZone(null)}
+              className={`btn-toggle ${
+                selectedZone === null ? 'active' : ''
               }`}
             >
               Todas las Zonas
@@ -148,11 +146,9 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
               <button
                 key={z}
                 onClick={() => setSelectedZone(z)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                  selectedZone === z
-                    ? 'bg-green-500 text-white border-green-500 shadow-lg shadow-green-500/20'
-                    : 'border-white/10 text-secondary hover:text-white hover:border-white/30'
-                }`}
+                className={`btn-toggle ${
+                selectedZone === z ? 'active' : ''
+              }`}
               >
                 {z}
               </button>

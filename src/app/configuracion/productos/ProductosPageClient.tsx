@@ -710,17 +710,17 @@ export function ProductosPageClient({ userNivel }: Props) {
                               <button
                                 onClick={() => openEditar(p)}
                                 title="Editar"
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-secondary hover:text-primary transition-all"
+                                className="btn-action hover:text-primary"
                               >
                                 <Pencil size={12} />
                               </button>
                               <button
                                 onClick={() => toggleActivo(p)}
                                 title={p.activo ? 'Desactivar' : 'Reactivar'}
-                                className={`p-1.5 rounded-lg transition-all ${
+                                className={`btn-action ${
                                   p.activo
-                                    ? 'bg-white/5 hover:bg-red-400/20 text-secondary hover:text-red-400'
-                                    : 'bg-green-400/10 hover:bg-green-400/20 text-green-400'
+                                    ? 'hover:text-red-400 hover:border-red-400/20'
+                                    : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
                                 }`}
                               >
                                 {p.activo ? <Trash2 size={12} /> : <CheckCircle2 size={12} />}
@@ -754,7 +754,7 @@ export function ProductosPageClient({ userNivel }: Props) {
                 <Package size={18} className="text-primary" />
                 {modal === 'crear' ? 'Nuevo Producto' : 'Editar Producto'}
               </h3>
-              <button onClick={() => setModal(null)} className="text-secondary hover:text-white transition-colors">
+              <button onClick={() => setModal(null)} className="btn-action w-8 h-8">
                 <X size={18} />
               </button>
             </div>
@@ -896,7 +896,7 @@ export function ProductosPageClient({ userNivel }: Props) {
                   setEditListTarget(null)
                   setIsNewList(false)
                 }} 
-                className="text-secondary hover:text-white transition-colors"
+                className="btn-action w-8 h-8"
               >
                 <X size={18} />
               </button>

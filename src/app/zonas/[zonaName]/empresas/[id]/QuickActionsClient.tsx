@@ -58,8 +58,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
           <button 
             onClick={handleConvertToClient}
             disabled={isUpdating}
-            className="btn btn-primary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+            className="btn btn-primary text-xs px-3"
           >
             <CheckCircle2 size={16} /> 
             {isUpdating ? 'Actualizando...' : 'Convertir a Cliente'}
@@ -67,8 +66,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
           <button 
             onClick={handleDescartar}
             disabled={isUpdating}
-            className="btn btn-outline border-error text-error hover:bg-error hover:text-white"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+            className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
           >
             <Ban size={16} /> 
             {isUpdating ? 'Actualizando...' : 'Descartar'}
@@ -80,8 +78,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
         <button 
           onClick={handleConvertToProspect}
           disabled={isUpdating}
-          className="btn btn-secondary"
-          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+          className="btn btn-secondary text-xs px-3"
         >
           <UserCheck size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Volver a Prospecto'}
@@ -92,8 +89,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
         <button 
           onClick={handleConvertToProspect}
           disabled={isUpdating}
-          className="btn btn-secondary"
-          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+          className="btn btn-secondary text-xs px-3"
         >
           <UserCheck size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Recuperar Prospecto'}
@@ -104,8 +100,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
         <button 
           onClick={handleDarDeBaja}
           disabled={isUpdating}
-          className="btn btn-outline border-error text-error hover:bg-error hover:text-white"
-          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+          className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
         >
           <Ban size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Dar de Baja'}
@@ -116,8 +111,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
         <button 
           onClick={handleReactivar}
           disabled={isUpdating}
-          className="btn btn-primary"
-          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+          className="btn btn-primary text-xs px-3"
         >
           <ArrowUpCircle size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Reactivar Cliente'}
@@ -127,8 +121,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
       <Link 
         href={`/empresas/${id}/ficha-pdf`} 
         target="_blank"
-        className="btn bg-white/10 hover:bg-white/20 text-white border border-white/20"
-        style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+        className="btn btn-secondary text-xs px-3"
       >
         <Printer size={16} /> Ficha Alta PDF
       </Link>
@@ -142,13 +135,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
           }
         }}
         disabled={isUpdating}
-        className="btn btn-outline"
-        style={{ 
-          padding: '0.4rem 0.8rem', 
-          borderColor: 'rgba(239, 68, 68, 0.3)', 
-          color: 'var(--error)',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)'
-        }}
+        className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
         title="Eliminar empresa permanentemente"
       >
         <Trash2 size={16} /> Eliminar

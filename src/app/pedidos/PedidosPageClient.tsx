@@ -8,6 +8,8 @@ import {
   Info, FileText, Check, DollarSign, Gift, User, Package, Calculator,
   Trash2, Download
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 interface Props {
   userNivel: number
@@ -131,31 +133,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     finally { setActionId(null) }
   }
 
-  const handlePrintPedido = (p: Pedido) => {
+  const handlePrintPedido = async (p: Pedido) => {
     const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
-    const html = `
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <meta charset="UTF-8"/>
-        <title>Pedido ${p.numeroPedido}</title>
-        <style>
-          body { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; padding: 20px; color: #222; }
-          .header { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; }
-          .brand { font-size: 20px; font-weight: 900; color: #444; }
-          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-          th, td { border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; }
-          th { background: #f9f9f9; font-weight: bold; text-transform: uppercase; font-size: 10px; }
-          .right { text-align: right; }
-          .center { text-align: center; }
-          .totals { margin-top: 20px; display: flex; justify-content: flex-end; }
-          .totals table { width: 300px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
+    const div = document.createElement('div')
+    div.innerHTML = `
+      <div style="font-family: 'Helvetica Neue', sans-serif; font-size: 11px; padding: 20px; color: #222; background: white; width: 800px;">
+        <div style="border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between;">
           <div>
-            <div class="brand">NEOSOL</div>
+            <div style="font-size: 20px; font-weight: 900; color: #444;">NEOSOL</div>
             <p><strong>Pedido:</strong> ${p.numeroPedido}</p>
             <p><strong>Cliente:</strong> ${p.empresa.nombre} ${p.empresa.cuit ? `(CUIT: ${p.empresa.cuit})` : ''}</p>
             <p><strong>Vendedor:</strong> ${p.vendedorAlias} | <strong>Zona:</strong> ${p.zona}</p>
@@ -165,47 +150,64 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
             <p><strong>Estado:</strong> ${ESTADO_LABELS[p.estado] || p.estado}</p>
           </div>
         </div>
-        <table>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
           <thead>
             <tr>
-              <th>Cód</th><th>Producto</th><th class="center">Paq/Caja</th><th class="center">Cajas</th><th class="center">Bonus</th><th class="right">Precio Caja</th><th class="right">Subtotal</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Cód</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Producto</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Paq/Caja</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Cajas</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Bonus</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Precio Caja</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Subtotal</th>
             </tr>
           </thead>
           <tbody>
             ${p.detalles.map(d => `
               <tr>
-                <td>${d.producto.codigoInterno}</td>
-                <td>${d.productoNombre}</td>
-                <td class="center">${d.producto.paqPorCaja}</td>
-                <td class="center">${d.cantidadCajas}</td>
-                <td class="center">${d.cajasBonus ? `+${d.cajasBonus}` : '-'}</td>
-                <td class="right">${fmt(d.precioCajaSnapshot)}</td>
-                <td class="right">${fmt(d.subtotal)}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left;">${d.producto.codigoInterno}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left;">${d.productoNombre}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center;">${d.producto.paqPorCaja}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center;">${d.cantidadCajas}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center;">${d.cajasBonus ? `+${d.cajasBonus}` : '-'}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right;">${fmt(d.precioCajaSnapshot)}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right;">${fmt(d.subtotal)}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
-        <div class="totals">
-          <table>
-            <tr><td>Subtotal Neto:</td><td class="right">${fmt(p.subtotalSinIVA)}</td></tr>
-            <tr><td>IVA (21%):</td><td class="right">${fmt(p.montoIVA)}</td></tr>
-            <tr><td>Recargo Financiación:</td><td class="right">${fmt(p.montoFinanciera)}</td></tr>
-            <tr><td><h3>Total General:</h3></td><td class="right"><h3>${fmt(p.totalGeneral)}</h3></td></tr>
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+          <table style="width: 300px; border-collapse: collapse;">
+            <tr><td style="padding: 4px; text-align: left;">Subtotal Neto:</td><td style="padding: 4px; text-align: right;">${fmt(p.subtotalSinIVA)}</td></tr>
+            <tr><td style="padding: 4px; text-align: left;">IVA (21%):</td><td style="padding: 4px; text-align: right;">${fmt(p.montoIVA)}</td></tr>
+            <tr><td style="padding: 4px; text-align: left;">Recargo Financiación:</td><td style="padding: 4px; text-align: right;">${fmt(p.montoFinanciera)}</td></tr>
+            <tr><td style="padding: 4px; text-align: left;"><h3>Total General:</h3></td><td style="padding: 4px; text-align: right;"><h3>${fmt(p.totalGeneral)}</h3></td></tr>
           </table>
         </div>
         <div style="margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
           ${p.observaciones ? `<p><strong>Observaciones:</strong> ${p.observaciones}</p>` : ''}
           <p>Condición de Pago: ${p.condicionPago || 'N/A'}</p>
-          <p>Impreso el ${today}</p>
+          <p>Generado el ${today}</p>
         </div>
-      </body>
-      </html>
+      </div>
     `
-    const win = window.open('', '_blank', 'width=800,height=600')
-    if (win) {
-      win.document.write(html)
-      win.document.close()
-      win.onload = () => { win.focus(); win.print() }
+    div.style.position = 'absolute'
+    div.style.top = '-9999px'
+    div.style.left = '-9999px'
+    document.body.appendChild(div)
+
+    try {
+      const canvas = await html2canvas(div.firstElementChild as HTMLElement, { scale: 2 })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      })
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2)
+      pdf.save(`Pedido_${p.numeroPedido}.pdf`)
+    } finally {
+      document.body.removeChild(div)
     }
   }
 
@@ -396,7 +398,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         {/* Ver detalles */}
                         <button
                           onClick={() => setSelectedPedido(p)}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-secondary hover:text-white transition-all flex items-center justify-center border border-white/10"
+                          className="btn-action"
                           title="Ver detalles"
                         >
                           <Eye size={12} />
@@ -406,7 +408,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         {p.estado === 'borrador' && (
                           <button
                             onClick={() => router.push(`/pedidos/nuevo?edit=${p.id}`)}
-                            className="p-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 transition-all flex items-center justify-center"
+                            className="btn-action text-yellow-400 border-yellow-400/20 hover:bg-yellow-400/10"
                             title="Editar pedido"
                           >
                             <Edit3 size={12} />
@@ -426,10 +428,10 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                               setFechaEntrega('')
                             }}
                             disabled={actionId === p.id}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-black border transition-all flex items-center gap-1 ${
+                            className={`btn-action text-[10px] uppercase font-black tracking-wider ${
                               (p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2
                                 ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
-                                : 'bg-green-400/10 text-green-400 border-green-400/20 hover:bg-green-400/20'
+                                : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
                             }`}
                             title={(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
                           >
@@ -442,7 +444,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           <button
                             onClick={() => handleAction(p.id, 'enviar')}
                             disabled={actionId === p.id}
-                            className="px-2 py-1 rounded-lg bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 text-[10px] font-black border border-blue-400/20 transition-all flex items-center gap-1"
+                            className="btn-action text-[10px] uppercase font-black tracking-wider text-blue-400 border-blue-400/20 hover:bg-blue-400/10"
                             title="Enviar al Supervisor"
                           >
                             <Send size={11} /> Enviar
@@ -454,7 +456,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           <button
                             onClick={() => { if (confirm('¿Cancelar este pedido?')) handleAction(p.id, 'cancelar') }}
                             disabled={actionId === p.id}
-                            className="p-1.5 rounded-lg text-secondary hover:text-orange-400 hover:bg-orange-400/10 transition-all flex items-center justify-center border border-transparent"
+                            className="btn-action text-orange-400 border-orange-400/20 hover:bg-orange-400/10"
                             title="Cancelar pedido"
                           >
                             <XCircle size={12} />
@@ -466,7 +468,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           <button
                             onClick={() => { if (confirm('¿ELIMINAR DEFINITIVAMENTE este pedido del sistema? Esta acción no se puede deshacer.')) handleDelete(p.id) }}
                             disabled={actionId === p.id}
-                            className="p-1.5 rounded-lg text-secondary hover:text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center border border-transparent"
+                            className="btn-action text-red-500 border-red-500/20 hover:bg-red-500/10"
                             title="Eliminar pedido definitivamente"
                           >
                             <Trash2 size={12} />
@@ -485,7 +487,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
       {/* ── Modal: Detalle de Pedido ───────────────────────────────── */}
       {selectedPedido && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+          <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
             {/* Header */}
             <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
@@ -505,7 +507,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                 </button>
                 <button
                   onClick={() => setSelectedPedido(null)}
-                  className="text-secondary hover:text-white transition-colors ml-2"
+                  className="btn-action ml-2 w-8 h-8"
                 >
                   <XCircle size={20} />
                 </button>

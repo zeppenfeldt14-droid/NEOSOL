@@ -469,26 +469,26 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                     </div>
                   </div>
 
-                  {/* Action buttons (3 Pills like Margarita Viajes) */}
+                  {/* Action buttons */}
                   <div className="flex gap-2 mt-auto">
                     <button 
                       onClick={() => { setShowLogsModal(u); fetchLogs(); }} 
-                      className="flex-1 py-1.5 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 bg-transparent text-blue-400 border border-blue-500/20 hover:bg-blue-500/10 transition-all uppercase tracking-wider"
+                      className="btn btn-secondary flex-1 text-xs px-2"
                     >
-                      <Clock size={11} /> Bitácora
+                      <Clock size={14} /> Bitácora
                     </button>
                     <button 
                       onClick={() => handleOpenEdit(u)} 
-                      className="flex-1 py-1.5 rounded-full text-[10px] font-bold flex items-center justify-center gap-1 bg-transparent text-secondary border border-white/10 hover:bg-white/5 transition-all uppercase tracking-wider"
+                      className="btn btn-secondary flex-1 text-xs px-2"
                     >
-                      <Edit size={11} /> Editar
+                      <Edit size={14} /> Editar
                     </button>
                     <button 
                       onClick={() => handleImpersonate(u)} 
-                      className="px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center justify-center bg-transparent text-primary border border-primary/20 hover:bg-primary/10 transition-all"
+                      className="btn btn-secondary text-xs px-3"
                       title="Entrar como usuario"
                     >
-                      <LogIn size={11} />
+                      <LogIn size={14} />
                     </button>
                   </div>
                 </div>
@@ -501,7 +501,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
       {/* USER EDIT/CREATE MODAL - VISTA DIVIDIDA */}
       {showUserModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleSaveUser} className="w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in shadow-2xl rounded-3xl border border-white/10 bg-[#0B132B]">
+          <form onSubmit={handleSaveUser} className="w-full max-w-6xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-fade-in shadow-2xl rounded-3xl border border-white/10 bg-[#0B132B]">
             
             {/* Columna Izquierda: Perfil (Oscura) */}
             <div className="md:w-1/3 bg-[#0B132B] flex flex-col justify-between border-r border-white/10 relative p-8 overflow-y-auto min-h-0">
@@ -662,11 +662,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                         key={mod}
                         type="button"
                         onClick={() => setFormModulos(prev => ({ ...prev, [mod]: !active }))}
-                        className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 ${
-                          active 
-                            ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
-                            : 'bg-white/5 border-white/10 text-secondary hover:bg-white/10 hover:text-white'
-                        }`}
+                        className={`btn-toggle ${active ? 'active' : ''}`}
                       >
                         {active && <Check size={12} strokeWidth={4} />}
                         {mod}
@@ -706,11 +702,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                                   active ? prev.filter(x => x !== z) : [...prev, z]
                                 )
                               }}
-                              className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 ${
-                                active 
-                                  ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
-                                  : 'bg-white/5 border-white/10 text-secondary hover:bg-white/10 hover:text-white'
-                              }`}
+                              className={`btn-toggle ${active ? 'active' : ''}`}
                             >
                               {active && <Check size={12} strokeWidth={4} />}
                               {z}
@@ -737,10 +729,10 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
               </div>
 
               {/* Botón Guardar Inferior */}
-              <div className="p-4 bg-black/20 border-t border-white/10 shrink-0">
+              <div className="p-4 bg-black/20 border-t border-white/10 shrink-0 flex justify-end">
                 <button 
                   type="submit"
-                  className="w-full py-3.5 rounded-full bg-white text-black font-black uppercase tracking-wider text-xs hover:bg-primary hover:text-white transition-all shadow-lg cursor-pointer"
+                  className="btn btn-primary px-8"
                 >
                   Guardar Cambios
                 </button>
@@ -769,27 +761,27 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                   </h3>
                 </div>
               </div>
-              <div className="flex gap-2 print:hidden">
-                <button onClick={() => window.print()} className="btn btn-secondary flex items-center gap-2 text-xs px-4 border-white/10">
-                  Imprimir
+              <div className="flex gap-2">
+                <button onClick={() => window.print()} className="btn btn-secondary text-xs px-4">
+                  <Printer size={14} /> Imprimir
                 </button>
-                <button onClick={handleExportCSV} className="btn btn-secondary flex items-center gap-2 text-xs px-4 border-white/10">
-                  <Download size={14} /> CSV
+                <button onClick={handleExportCSV} className="btn btn-secondary text-xs px-4">
+                  <Download size={14} /> Exportar CSV
                 </button>
-                <button onClick={() => setShowLogsModal(null)} className="ml-2 w-10 h-10 bg-white/5 text-secondary rounded-full flex items-center justify-center hover:bg-white/10 hover:text-white transition-all border border-white/5">
-                  <X size={18} />
+                <button onClick={() => setShowLogsModal(null)} className="btn-action ml-2 w-10 h-10">
+                  <X size={16} />
                 </button>
               </div>
             </div>
 
             {/* Filter tab bar */}
             <div className="bg-black/40 border-b border-white/5 px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
-              <div className="flex gap-2 bg-black/50 p-1 rounded-xl border border-white/5">
-                <button onClick={() => setLogTab('conexiones')} className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${logTab === 'conexiones' ? 'bg-white/10 text-white shadow-sm' : 'text-secondary hover:text-white'}`}>
-                  Conexiones
+              <div className="flex gap-2 bg-black/30 p-1.5 rounded-xl border border-white/5 inline-flex print:hidden">
+                <button onClick={() => setLogTab('conexiones')} className={`btn-toggle ${logTab === 'conexiones' ? 'active' : ''}`}>
+                  Historial de Conexiones
                 </button>
-                <button onClick={() => setLogTab('gestion')} className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${logTab === 'gestion' ? 'bg-white/10 text-white shadow-sm' : 'text-secondary hover:text-white'}`}>
-                  Gestión y Acciones
+                <button onClick={() => setLogTab('gestion')} className={`btn-toggle ${logTab === 'gestion' ? 'active' : ''}`}>
+                  Bitácora de Gestión
                 </button>
               </div>
               <input

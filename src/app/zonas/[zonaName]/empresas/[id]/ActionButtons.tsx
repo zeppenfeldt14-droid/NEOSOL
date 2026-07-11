@@ -11,11 +11,10 @@ export function CompleteActionButton({ accionId, empresaId }: { accionId: number
     <button
       onClick={() => startTransition(() => completeAccion(accionId, empresaId))}
       disabled={isPending}
-      className="btn btn-secondary"
-      style={{ padding: '0.25rem', borderRadius: '50%' }}
+      className="btn-action rounded-full text-green-400 border-green-400/20 hover:bg-green-400/10"
       title="Marcar como completada"
     >
-      <Check size={14} style={{ color: 'var(--success)' }} />
+      <Check size={14} />
     </button>
   )
 }

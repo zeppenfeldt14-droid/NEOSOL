@@ -146,8 +146,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               onClick={() => setZonaFilter('todas')}
-              className={`badge ${zonaFilter === 'todas' ? 'badge-info' : 'badge-neutral'}`}
-              style={{ cursor: 'pointer', padding: '0.4rem 0.8rem' }}
+              className={`btn-toggle ${zonaFilter === 'todas' ? 'active' : ''}`}
             >
               Todas
             </button>
@@ -155,19 +154,17 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
               <button
                 key={z}
                 onClick={() => setZonaFilter(z)}
-                className={`badge ${zonaFilter === z ? 'badge-info' : 'badge-neutral'}`}
-                style={{ cursor: 'pointer', padding: '0.4rem 0.8rem' }}
+                className={`btn-toggle ${zonaFilter === z ? 'active' : ''}`}
               >
                 {z}
               </button>
             ))}
             <button
               onClick={handleAddSubZona}
-              className="badge badge-neutral hover:bg-primary/20 hover:text-primary transition-all flex items-center justify-center"
-              style={{ cursor: 'pointer', padding: '0.4rem 0.8rem', border: '1px dashed rgba(255,255,255,0.2)' }}
+              className="btn-toggle border-dashed hover:border-primary/50 hover:text-primary"
               title="Crear Nueva Categoría / Mini-Zona"
             >
-              <Plus size={12} />
+              <Plus size={14} />
             </button>
           </div>
         </div>
@@ -234,8 +231,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                 <td>
                   <Link 
                     href={`/zonas/${zonaName}/empresas/${empresa.id}`} 
-                    className="btn btn-secondary" 
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                    className="btn btn-secondary text-xs px-3" 
                   >
                     Ver Ficha
                   </Link>

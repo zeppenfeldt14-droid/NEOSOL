@@ -812,7 +812,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                               {linea_ && (
                                 <button
                                   onClick={() => eliminarLinea(prod.id)}
-                                  className="w-6 h-6 rounded-lg text-secondary hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-all"
+                                  className="btn-action w-6 h-6 text-secondary hover:text-red-400 hover:bg-red-400/10 border-transparent"
                                 >
                                   <Trash2 size={11} />
                                 </button>
@@ -853,10 +853,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                     <button
                       key={opt}
                       onClick={() => setTurnoEntrega(turnoEntrega === opt ? '' : opt as 'SI' | 'NO')}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                        turnoEntrega === opt
-                          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                          : 'border-white/10 text-secondary hover:text-white hover:border-white/30'
+                      className={`btn-toggle flex-1 justify-center ${
+                        turnoEntrega === opt ? 'active' : ''
                       }`}
                     >
                       {opt}
@@ -875,10 +873,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                     <button
                       key={opt}
                       onClick={() => setRequierePresupuesto(opt === 'SI')}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                        (requierePresupuesto && opt === 'SI') || (!requierePresupuesto && opt === 'NO')
-                          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                          : 'border-white/10 text-secondary hover:text-white hover:border-white/30'
+                      className={`btn-toggle flex-1 justify-center ${
+                        (requierePresupuesto && opt === 'SI') || (!requierePresupuesto && opt === 'NO') ? 'active' : ''
                       }`}
                     >
                       {opt}
