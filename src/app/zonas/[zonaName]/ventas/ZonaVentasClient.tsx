@@ -300,7 +300,7 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
       )}
 
       {activeTab === 'comisiones' && (
-        <ComisionesList zonaName={zonaName} />
+        <ComisionesList zonaName={zonaName} selectedPeriod={selectedPeriod} />
       )}
 
       {/* Modal de Pedido Global */}

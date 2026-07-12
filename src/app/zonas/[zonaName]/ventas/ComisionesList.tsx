@@ -19,7 +19,7 @@ const MESES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 
-export function ComisionesList({ zonaName }: { zonaName: string }) {
+export function ComisionesList({ zonaName, selectedPeriod }: { zonaName: string, selectedPeriod: string }) {
   const [data, setData] = useState<ComisionesMes[]>([])
   const [loading, setLoading] = useState(true)
   const [vendedores, setVendedores] = useState<string[]>([])
@@ -54,8 +54,19 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
 
   const fmt = (n: number) => n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
-  // Filtrado de datos por vendedor
-  const mesesFiltrados = data.map(m => {
+  // Filtrado de datos por vendedor y periodo
+  const mesesFiltrados = data.filter(m => {
+    // Filtrar por periodo (Mes o Trimestre)
+    if (selectedPeriod.startsWith('Q')) {
+      if (selectedPeriod === 'Q1') return m.mes >= 0 && m.mes <= 2
+      if (selectedPeriod === 'Q2') return m.mes >= 3 && m.mes <= 5
+      if (selectedPeriod === 'Q3') return m.mes >= 6 && m.mes <= 8
+      if (selectedPeriod === 'Q4') return m.mes >= 9 && m.mes <= 11
+    } else {
+      return m.mes === parseInt(selectedPeriod, 10)
+    }
+    return false
+  }).map(m => {
     if (selectedVendedor === 'todos') {
       return m
     }
