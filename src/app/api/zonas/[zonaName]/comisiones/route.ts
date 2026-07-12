@@ -4,15 +4,14 @@ import { getSessionUser } from '@/lib/auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: { zonaName: string } }
+  { params }: { params: Promise<{ zonaName: string }> }
 ) {
   try {
     const session = await getSessionUser()
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    // In Next.js 14+, params should be awaited if they are asynchronous in some contexts,
-    // but destructuring directly is still common in app router if it's a dynamic segment.
-    const zonaName = params.zonaName
+    // In Next.js 15+, params should be awaited
+    const { zonaName } = await params
 
     const currentYear = new Date().getFullYear()
     const startOfYear = new Date(currentYear, 0, 1)
