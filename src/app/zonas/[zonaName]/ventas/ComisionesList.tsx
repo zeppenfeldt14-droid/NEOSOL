@@ -68,7 +68,7 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
       pagos: vData.pagos,
       vendedores: m.vendedores
     }
-  }).filter(m => m.ventas > 0 || m.cobranzas > 0) // Mostrar solo meses con actividad
+  }).filter(m => m.ventas > 0 || m.cobranzas > 0).reverse() // Mostrar solo meses con actividad y ordenarlos del último al primero
 
   // KPIs Acumulados
   const totalVentas = mesesFiltrados.reduce((acc, m) => acc + m.ventas, 0)
@@ -77,33 +77,21 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
   const comisionCobranzas = totalCobranzas * 0.003
   const totalComisiones = comisionVentas + comisionCobranzas
 
-  const exportPDF = () => {
+  const exportPDF = (m: ComisionesMes, cVentas: number, cCobranzas: number, total: number) => {
     const doc = new jsPDF()
-    const title = `Comisiones - Zona: ${zonaName} - Vendedor: ${selectedVendedor.toUpperCase()}`
+    const title = `Comisiones - Zona: ${zonaName} - Vendedor: ${selectedVendedor.toUpperCase()} - Mes: ${MESES[m.mes]}`
     doc.text(title, 14, 15)
 
-    const tableData = mesesFiltrados.map(m => {
-      const cVentas = m.ventas * 0.007
-      const cCobranzas = m.cobranzas * 0.003
-      return [
+    const tableData = [
+      [
         MESES[m.mes],
         fmt(m.ventas),
         fmt(cVentas),
         fmt(m.cobranzas),
         fmt(cCobranzas),
-        fmt(cVentas + cCobranzas)
+        fmt(total)
       ]
-    })
-
-    // Fila de totales
-    tableData.push([
-      'TOTAL ACUMULADO',
-      fmt(totalVentas),
-      fmt(comisionVentas),
-      fmt(totalCobranzas),
-      fmt(comisionCobranzas),
-      fmt(totalComisiones)
-    ])
+    ]
 
     autoTable(doc, {
       startY: 25,
@@ -111,11 +99,47 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [59, 130, 246] },
-      footStyles: { fillColor: [30, 41, 59], textColor: [255,255,255], fontStyle: 'bold' },
-      showFoot: 'lastPage'
     })
+    
+    // Add details tables if there is data
+    let currentY = (doc as any).lastAutoTable.finalY + 10
 
-    doc.save(`Comisiones_${zonaName}_${selectedVendedor}.pdf`)
+    if (m.facturas.length > 0) {
+      doc.setFontSize(10)
+      doc.text('Detalle de Ventas Brutas', 14, currentY)
+      autoTable(doc, {
+        startY: currentY + 4,
+        head: [['Factura', 'Fecha', 'Vendedor', 'Subtotal']],
+        body: m.facturas.map(f => [
+          f.numeroFactura + ' - ' + (f.pedido?.empresa?.nombre || ''),
+          new Date(f.creadoEn).toLocaleDateString(),
+          '@' + (f.pedido?.vendedorAlias || ''),
+          fmt(f.subtotal)
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [100, 100, 100] },
+      })
+      currentY = (doc as any).lastAutoTable.finalY + 10
+    }
+
+    if (m.pagos.length > 0) {
+      doc.setFontSize(10)
+      doc.text('Detalle de Cobranzas', 14, currentY)
+      autoTable(doc, {
+        startY: currentY + 4,
+        head: [['Método', 'Fecha', 'Vendedor', 'Monto']],
+        body: m.pagos.map(p => [
+          p.metodoPago.toUpperCase() + ' - ' + (p.empresaAsociada || ''),
+          new Date(p.creadoEn).toLocaleDateString(),
+          '@' + (p.vendedorAsociado || ''),
+          fmt(p.montoFinal)
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [100, 100, 100] },
+      })
+    }
+
+    doc.save(`Comisiones_${zonaName}_${MESES[m.mes]}_${selectedVendedor}.pdf`)
   }
 
   if (loading) {
@@ -144,9 +168,6 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
             ))}
           </select>
         </div>
-        <button onClick={exportPDF} className="btn btn-primary text-xs flex items-center gap-2 border border-primary/50">
-          <Download size={14} /> Exportar PDF
-        </button>
       </div>
 
       {/* KPIs */}
@@ -201,14 +222,14 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
 
                   <div className="flex flex-wrap gap-x-8 gap-y-2 flex-1 justify-end md:justify-center">
                     <div className="flex flex-col items-end">
-                      <span className="text-[10px] uppercase font-black text-secondary tracking-wider">Ventas Brutas</span>
-                      <span className="text-white text-xs font-bold">{fmt(m.ventas)}</span>
-                      <span className="text-blue-400 text-[10px] font-black mt-0.5">+ {fmt(cVentas)} <span className="opacity-60 font-medium">(0.7%)</span></span>
+                      <span className="text-[10px] uppercase font-black text-secondary tracking-wider">Comisión Vtas</span>
+                      <span className="text-blue-400 text-xs font-bold">+ {fmt(cVentas)} <span className="opacity-60 font-medium">(0.7%)</span></span>
+                      <span className="text-white text-[10px] font-black mt-0.5">Base: {fmt(m.ventas)}</span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="text-[10px] uppercase font-black text-secondary tracking-wider">Cobranzas</span>
-                      <span className="text-white text-xs font-bold">{fmt(m.cobranzas)}</span>
-                      <span className="text-yellow-400 text-[10px] font-black mt-0.5">+ {fmt(cCobranzas)} <span className="opacity-60 font-medium">(0.3%)</span></span>
+                      <span className="text-[10px] uppercase font-black text-secondary tracking-wider">Comisión Cob.</span>
+                      <span className="text-yellow-400 text-xs font-bold">+ {fmt(cCobranzas)} <span className="opacity-60 font-medium">(0.3%)</span></span>
+                      <span className="text-white text-[10px] font-black mt-0.5">Base: {fmt(m.cobranzas)}</span>
                     </div>
                   </div>
 
@@ -217,9 +238,18 @@ export function ComisionesList({ zonaName }: { zonaName: string }) {
                       <span className="text-[9px] uppercase font-black text-green-500/70 tracking-widest">Comisión a Pagar</span>
                       <span className="text-green-400 font-black text-lg leading-none mt-1">{fmt(total)}</span>
                     </div>
-                    <button className="text-secondary hover:text-white transition-colors">
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); exportPDF(m, cVentas, cCobranzas, total); }}
+                        className="text-secondary hover:text-primary transition-colors p-2 hover:bg-primary/10 rounded-full"
+                        title="Exportar PDF del mes"
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button className="text-secondary hover:text-white transition-colors p-2">
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 

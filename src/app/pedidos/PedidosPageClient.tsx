@@ -9,6 +9,28 @@ import {
   Trash2, Download
 } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+
+const MESES = [
+  { value: 0, label: 'Enero' },
+  { value: 1, label: 'Febrero' },
+  { value: 2, label: 'Marzo' },
+  { value: 3, label: 'Abril' },
+  { value: 4, label: 'Mayo' },
+  { value: 5, label: 'Junio' },
+  { value: 6, label: 'Julio' },
+  { value: 7, label: 'Agosto' },
+  { value: 8, label: 'Septiembre' },
+  { value: 9, label: 'Octubre' },
+  { value: 10, label: 'Noviembre' },
+  { value: 11, label: 'Diciembre' },
+]
+
+const TRIMESTRES = [
+  { value: 'Q1', label: '1er Trimestre (Ene-Mar)' },
+  { value: 'Q2', label: '2do Trimestre (Abr-Jun)' },
+  { value: 'Q3', label: '3er Trimestre (Jul-Sep)' },
+  { value: 'Q4', label: '4to Trimestre (Oct-Dic)' },
+]
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -90,7 +112,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     userNivel === 3 ? (userZona || '') : 'todas'
   )
   const [selectedEstado, setSelectedEstado] = useState('todos')
-  const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'todo'>('mes')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(new Date().getMonth().toString())
   const [pedidos, setPedidos]   = useState<Pedido[]>([])
   const [loading, setLoading]   = useState(true)
   const [actionId, setActionId] = useState<number | null>(null)
@@ -112,17 +134,22 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     const all: Pedido[] = Array.isArray(data) ? data : []
 
     const now = new Date()
+    const currentYear = now.getFullYear()
+
     const filtered = all.filter(p => {
       const d = new Date(p.creadoEn)
-      if (selectedPeriod === 'hoy') {
-        return d.toDateString() === now.toDateString()
-      } else if (selectedPeriod === 'semana') {
-        const semana = new Date(now); semana.setDate(now.getDate() - 7)
-        return d >= semana
-      } else if (selectedPeriod === 'mes') {
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      if (d.getFullYear() !== currentYear) return false
+
+      if (selectedPeriod.startsWith('Q')) {
+        const month = d.getMonth()
+        if (selectedPeriod === 'Q1') return month >= 0 && month <= 2
+        if (selectedPeriod === 'Q2') return month >= 3 && month <= 5
+        if (selectedPeriod === 'Q3') return month >= 6 && month <= 8
+        if (selectedPeriod === 'Q4') return month >= 9 && month <= 11
+      } else {
+        return d.getMonth() === parseInt(selectedPeriod, 10)
       }
-      return true
+      return false
     })
     
     setPedidos(filtered)
@@ -258,13 +285,19 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
           {/* Period Selector */}
           <select
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as any)}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
             className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
           >
-            <option value="hoy">Hoy</option>
-            <option value="semana">Semana</option>
-            <option value="mes">Mes en curso</option>
-            <option value="todo">Historial completo</option>
+            <optgroup label="Meses">
+              {MESES.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Trimestres">
+              {TRIMESTRES.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </optgroup>
           </select>
 
           <button
