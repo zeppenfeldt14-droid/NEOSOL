@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, BarChart3, FileText, DollarSign, RefreshCw, Eye, Calendar } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 import { ClientesActivosList } from './ClientesActivosList'
+import { ComisionesList } from './ComisionesList'
 
 interface Props {
   zonaName: string
@@ -49,7 +50,7 @@ const TRIMESTRES = [
 ]
 
 export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
-  const [activeTab, setActiveTab] = useState<'facturacion' | 'clientes'>('facturacion')
+  const [activeTab, setActiveTab] = useState<'facturacion' | 'clientes' | 'comisiones'>('facturacion')
   const currentMonthStr = new Date().getMonth().toString()
   const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonthStr)
   const [facturas, setFacturas] = useState<Factura[]>([])
@@ -175,6 +176,12 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
         >
           Clientes Activos
         </button>
+        <button
+          onClick={() => setActiveTab('comisiones')}
+          className={`btn-toggle ${activeTab === 'comisiones' ? 'active' : ''}`}
+        >
+          Vista de Comisiones
+        </button>
       </div>
 
       {activeTab === 'facturacion' && (
@@ -290,6 +297,10 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
 
       {activeTab === 'clientes' && (
         <ClientesActivosList zonaName={zonaName} />
+      )}
+
+      {activeTab === 'comisiones' && (
+        <ComisionesList zonaName={zonaName} />
       )}
 
       {/* Modal de Pedido Global */}

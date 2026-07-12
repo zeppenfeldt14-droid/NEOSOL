@@ -90,6 +90,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     userNivel === 3 ? (userZona || '') : 'todas'
   )
   const [selectedEstado, setSelectedEstado] = useState('todos')
+  const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'todo'>('mes')
   const [pedidos, setPedidos]   = useState<Pedido[]>([])
   const [loading, setLoading]   = useState(true)
   const [actionId, setActionId] = useState<number | null>(null)
@@ -108,11 +109,27 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     if (selectedEstado !== 'todos') params.set('estado', selectedEstado)
     const res = await fetch(`/api/pedidos?${params.toString()}`)
     const data = await res.json()
-    setPedidos(Array.isArray(data) ? data : [])
+    const all: Pedido[] = Array.isArray(data) ? data : []
+
+    const now = new Date()
+    const filtered = all.filter(p => {
+      const d = new Date(p.creadoEn)
+      if (selectedPeriod === 'hoy') {
+        return d.toDateString() === now.toDateString()
+      } else if (selectedPeriod === 'semana') {
+        const semana = new Date(now); semana.setDate(now.getDate() - 7)
+        return d >= semana
+      } else if (selectedPeriod === 'mes') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }
+      return true
+    })
+    
+    setPedidos(filtered)
     setLoading(false)
   }
 
-  useEffect(() => { fetchPedidos() }, [selectedZone, selectedEstado])
+  useEffect(() => { fetchPedidos() }, [selectedZone, selectedEstado, selectedPeriod])
 
   const handleAction = async (id: number, accion: string, customData?: any) => {
     setActionId(id)
@@ -237,13 +254,27 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
               : 'Gestión centralizada de pedidos por zona'}
           </p>
         </div>
-        <button
-          onClick={() => router.push('/pedidos/nuevo')}
-          className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 font-bold"
-        >
-          <Plus size={16} />
-          Nuevo Pedido
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Period Selector */}
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value as any)}
+            className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
+          >
+            <option value="hoy">Hoy</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes en curso</option>
+            <option value="todo">Historial completo</option>
+          </select>
+
+          <button
+            onClick={() => router.push('/pedidos/nuevo')}
+            className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary/20 font-bold"
+          >
+            <Plus size={16} />
+            Nuevo Pedido
+          </button>
+        </div>
       </div>
 
       {/* Zone & Status Filters (50/50 Layout) */}
