@@ -188,6 +188,7 @@ export default function IntelligentPlanner({
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
       
+      const dateObj = new Date(date + 'T12:00:00Z')
       const formattedDate = formatDate(dateObj)
       pdf.save(`Ruta_${formattedDate}.pdf`)
     } catch (error) {
