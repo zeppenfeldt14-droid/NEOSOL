@@ -143,19 +143,23 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   // 2. Cobrado (Sum of payments)
   const pagosMes = await prisma.pago.findMany({
     where: {
-      OR: [
-        { cobranza: { zona: zoneFilter } },
-        { factura: { pedido: { zona: zoneFilter } } }
-      ],
-      ...(isVendedor ? {
-        OR: [
-          { cobranza: { vendedorAlias: userAlias } },
-          { factura: { pedido: { vendedorAlias: userAlias } } }
-        ]
-      } : {}),
-      ...(isPeriodFiltered ? {
-        OR: dateFilters.map(filter => ({ creadoEn: filter }))
-      } : {})
+      AND: [
+        {
+          OR: [
+            { cobranza: { zona: zoneFilter } },
+            { factura: { pedido: { zona: zoneFilter } } }
+          ]
+        },
+        ...(isVendedor ? [{
+          OR: [
+            { cobranza: { vendedorAlias: userAlias } },
+            { factura: { pedido: { vendedorAlias: userAlias } } }
+          ]
+        }] : []),
+        ...(isPeriodFiltered ? [{
+          OR: dateFilters.map(filter => ({ creadoEn: filter }))
+        }] : [])
+      ]
     }
   })
   const totalCobrado = pagosMes.reduce((acc, p) => acc + p.monto, 0)

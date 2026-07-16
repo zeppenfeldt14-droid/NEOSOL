@@ -24,6 +24,9 @@ export function middleware(request: NextRequest) {
   // Removed redirect logic to prevent ERR_TOO_MANY_REDIRECTS loops with stale cookies.
   // Users with a cookie who go to /login will simply see the login page again.
 
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', pathname)
+
   // If not authenticated and trying to access a secure path, redirect to login
   if (!sessionCookie && !isPublicPath) {
     const loginUrl = new URL('/login', request.url)
@@ -32,7 +35,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  return NextResponse.next()
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 // Limit the middleware to page routes and API routes

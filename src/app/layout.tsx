@@ -3,6 +3,7 @@ import './globals.css'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 import { AppShellClient } from './AppShellClient'
+import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
   title: 'CRM Neosol Visitas',
@@ -15,14 +16,16 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const user = await getSessionUser()
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') || ''
   
   const logoConfig = await prisma.configuracionSistema.findUnique({
     where: { clave: 'logo' }
   })
   const logo = logoConfig ? logoConfig.valor : null
 
-  // If there is no authenticated user session (e.g. /login), render page full screen
-  if (!user) {
+  // If there is no authenticated user session (e.g. /login) OR they are visiting the mobile landing page, render page full screen
+  if (!user || pathname === '/visitas-hoy-caba') {
     return (
       <html lang="es">
         <body>
