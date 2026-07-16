@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
   // Public paths that do not require authentication
   const isPublicPath = 
     pathname === '/login' || 
+    pathname === '/visitas-hoy-caba' ||
     pathname.startsWith('/api/auth/login')
 
   // Ignore static assets, next internals, and public logo assets

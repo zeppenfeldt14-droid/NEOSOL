@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check } from 'lucide-react'
+import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import html2canvas from 'html2canvas'
@@ -58,6 +58,19 @@ export default function IntelligentPlanner({
   })
   const pdfRef = useRef<HTMLDivElement>(null)
   const weeklyPdfRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = () => {
+    const link = `${window.location.origin}/visitas-hoy-caba`
+    navigator.clipboard.writeText(link)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch((err) => {
+        console.error('Error al copiar el enlace:', err)
+      })
+  }
 
   useEffect(() => {
     setLocalAccionesHoy(accionesHoy || [])
@@ -239,15 +252,34 @@ export default function IntelligentPlanner({
               <h2 className="card-title" style={{ margin: 0 }}>Ruta Programada para Hoy</h2>
               <p className="card-subtitle">Tu recorrido actual. Puedes eliminar visitas si hubo cambios.</p>
             </div>
-            <button 
-              onClick={() => handleDownloadPDF(pdfRef)} 
-              disabled={isGeneratingPDF}
-              className="btn btn-primary"
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              <Printer size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
-              {isGeneratingPDF ? 'Generando...' : 'Descargar PDF del Día'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {/* Botón Copiar Link (sólo si es la zona CABA) */}
+              {zonaName === 'CABA' && (
+                <button
+                  onClick={handleCopyLink}
+                  className={`btn ${copied ? 'btn-success bg-green-500/20 text-green-400 border-green-500/30' : 'btn-secondary border-white/10 text-secondary hover:text-white'}`}
+                  style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
+                  title={copied ? "¡Enlace Copiado!" : "Copiar Enlace de Ruta Móvil"}
+                >
+                  {copied ? <Check size={16} /> : <Link2 size={16} />}
+                </button>
+              )}
+              
+              {/* Botón Descargar (Cambiado a Icono) */}
+              <button 
+                onClick={() => handleDownloadPDF(pdfRef)} 
+                disabled={isGeneratingPDF}
+                className="btn btn-primary"
+                style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
+                title="Descargar PDF de Ruta"
+              >
+                {isGeneratingPDF ? (
+                  <div className="w-4.5 h-4.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Printer size={16} />
+                )}
+              </button>
+            </div>
           </div>
 
           <div ref={pdfRef} style={isGeneratingPDF ? { backgroundColor: 'white', color: 'black', padding: '2rem' } : {}}>
