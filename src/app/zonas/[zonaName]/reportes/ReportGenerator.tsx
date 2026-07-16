@@ -69,7 +69,7 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
 
               return (
                 <div key={v.id || index} style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-                  <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <h3 style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{index + 1}. {v.empresaNombre}</h3>
                       <span style={{ backgroundColor: pillBg, color: pillText, padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
