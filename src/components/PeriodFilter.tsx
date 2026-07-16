@@ -89,10 +89,10 @@ export function PeriodFilter() {
           right: 0,
           top: 'calc(100% + 8px)',
           minWidth: '220px',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
+          background: '#111625',
+          border: '1px solid rgba(255,255,255,0.15)',
           borderRadius: '12px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
           zIndex: 1000,
           overflow: 'hidden',
         }}>

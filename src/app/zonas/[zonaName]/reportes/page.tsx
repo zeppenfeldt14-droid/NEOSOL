@@ -113,7 +113,7 @@ export default async function ReportesPage(
         </div>
       </div>
 
-      <ReportGenerator data={reporteData} defaultEmail="lares.ernesto@galletitasneosol.com.ar" initialPeriod={period} />
+      <ReportGenerator data={reporteData} defaultEmail="lares.ernesto@galletitasneosol.com.ar" initialPeriod={period} zonaName={decodedZona} />
     </div>
   )
 }

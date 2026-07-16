@@ -145,7 +145,7 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
   )
 }
 
-export default function ReportGenerator({ data, defaultEmail, initialPeriod = '' }: { data: any, defaultEmail: string, initialPeriod?: string }) {
+export default function ReportGenerator({ data, defaultEmail, initialPeriod = '', zonaName = '' }: { data: any, defaultEmail: string, initialPeriod?: string, zonaName?: string }) {
   const reportRef = useRef<HTMLDivElement>(null)
   const previewReportRef = useRef<HTMLDivElement>(null)
   const [email, setEmail] = useState(defaultEmail)
@@ -160,7 +160,7 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
   // Cargar historial de la base de datos con el filtro de tiempo
   const fetchHistorial = () => {
     setLoadingHistorial(true)
-    fetch(`/api/reportes/historial?period=${initialPeriod}`)
+    fetch(`/api/reportes/historial?period=${initialPeriod}&zona=${encodeURIComponent(zonaName)}`)
       .then(res => res.json())
       .then(data => {
         setHistorial(data.reportes || [])
@@ -174,7 +174,7 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
 
   const loadMonthlyReport = () => {
     setStatus('generating')
-    fetch(`/api/reportes/mensual?period=${initialPeriod}`)
+    fetch(`/api/reportes/mensual?period=${initialPeriod}&zona=${encodeURIComponent(zonaName)}`)
       .then(res => res.json())
       .then(data => {
         if (data.reportData) {
