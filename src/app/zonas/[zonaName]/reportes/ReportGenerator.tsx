@@ -354,7 +354,7 @@ export default function ReportGenerator({ data, defaultEmail }: { data: any, def
           </div>
 
           {/* Vista Previa Novedosa y Escalable */}
-          <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto', display: 'flex', flexDirection: 'col', gap: '1rem' }}>
+          <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 className="card-title text-white mb-4">Vista Previa del Documento</h3>
             <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
               <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-40mm' }}>
