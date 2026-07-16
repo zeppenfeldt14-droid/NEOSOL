@@ -3,17 +3,24 @@ import ReportGenerator from './ReportGenerator'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/date'
+import { PeriodFilter } from '@/components/PeriodFilter'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ReportesPage({ params }: { params: Promise<{ zonaName: string }> }) {
+export default async function ReportesPage(
+  props: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string }> }
+) {
+  const { params, searchParams } = props
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
-  const { zonaName } = await params
+  const resolvedParams = await params
+  const { zonaName } = resolvedParams
   const decodedZona = decodeURIComponent(zonaName)
+  const resolvedSearchParams = await searchParams
+  const period = resolvedSearchParams.period || new Date().getMonth().toString()
 
   // Verify access permissions to this zone
   if (user.nivel === 3 && user.zona !== decodedZona) {
@@ -96,14 +103,17 @@ export default async function ReportesPage({ params }: { params: Promise<{ zonaN
 
   return (
     <div className="animate-fade-in">
-      <div className="page-header">
+      <div className="page-header flex justify-between items-center">
         <div>
           <h1 className="page-title">Generación de Reportes</h1>
           <p className="page-subtitle">Crea el reporte PDF modelo y envíalo por correo a gerencia.</p>
         </div>
+        <div>
+          <PeriodFilter />
+        </div>
       </div>
 
-      <ReportGenerator data={reporteData} defaultEmail="lares.ernesto@galletitasneosol.com.ar" />
+      <ReportGenerator data={reporteData} defaultEmail="lares.ernesto@galletitasneosol.com.ar" initialPeriod={period} />
     </div>
   )
 }

@@ -39,19 +39,41 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
         <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', border: '1px solid #f1f5f9', padding: '24px', marginBottom: '32px', borderLeft: '4px solid #1e3a5f' }}>
           <h2 style={{ color: '#1e3a5f', fontSize: '20px', fontWeight: 'bold', marginBottom: '12px' }}>Resumen Ejecutivo</h2>
           <p style={{ color: '#334155', lineHeight: '1.6', fontSize: '15px' }}>
-            Se presenta el informe de ruta del día {data.fecha}. Se relevaron un total de <strong>{data.visitas?.length || 0} puntos de venta/distribución</strong>. 
-            A continuación se detalla el resultado de cada visita y las próximas acciones a tomar.
+            {data.isMonthly ? data.notas : `Se presenta el informe de ruta del día ${data.fecha}. Se relevaron un total de ${data.visitas?.length || 0} puntos de venta/distribución. A continuación se detalla el resultado de cada visita y las próximas acciones a tomar.`}
           </p>
         </div>
 
+        {data.isMonthly && data.kpis && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e3a5f' }}>{data.kpis.totalVisitas}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Total Visitas</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #10b981', textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{data.kpis.empresasActivas}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Conversiones</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #ef4444', textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ef4444' }}>{data.kpis.empresasBajas}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Bajas / Descarte</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #3b82f6', textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3b82f6' }}>{data.kpis.accionesCompletadas}</div>
+              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Acciones OK</div>
+            </div>
+          </div>
+        )}
+
         {/* Visit Details */}
         <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ color: '#1e3a5f', fontSize: '20px', fontWeight: 'bold', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>Detalle de mi Recorrido</h2>
+          <h2 style={{ color: '#1e3a5f', fontSize: '20px', fontWeight: 'bold', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+            {data.isMonthly ? 'Visitas Destacadas (Muestra)' : 'Detalle de mi Recorrido'}
+          </h2>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {!data.visitas || data.visitas.length === 0 ? (
+            {!(data.visitas || data.visitasDestacadas) || (data.visitas || data.visitasDestacadas).length === 0 ? (
                <p style={{ color: '#64748b', fontStyle: 'italic' }}>No se registraron visitas.</p>
-            ) : data.visitas.map((v: any, index: number) => {
+            ) : (data.visitas || data.visitasDestacadas).map((v: any, index: number) => {
               
               let pillBg = '#e2e8f0'
               let pillText = '#1e293b'
@@ -123,7 +145,7 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
   )
 }
 
-export default function ReportGenerator({ data, defaultEmail }: { data: any, defaultEmail: string }) {
+export default function ReportGenerator({ data, defaultEmail, initialPeriod = '' }: { data: any, defaultEmail: string, initialPeriod?: string }) {
   const reportRef = useRef<HTMLDivElement>(null)
   const previewReportRef = useRef<HTMLDivElement>(null)
   const [email, setEmail] = useState(defaultEmail)
@@ -135,10 +157,10 @@ export default function ReportGenerator({ data, defaultEmail }: { data: any, def
   const [previewFile, setPreviewFile] = useState<string | null>(null)
   const [selectedReportData, setSelectedReportData] = useState<any>(null)
 
-  // Cargar historial de la base de datos
+  // Cargar historial de la base de datos con el filtro de tiempo
   const fetchHistorial = () => {
     setLoadingHistorial(true)
-    fetch('/api/reportes/historial')
+    fetch(`/api/reportes/historial?period=${initialPeriod}`)
       .then(res => res.json())
       .then(data => {
         setHistorial(data.reportes || [])
@@ -150,11 +172,29 @@ export default function ReportGenerator({ data, defaultEmail }: { data: any, def
       })
   }
 
+  const loadMonthlyReport = () => {
+    setStatus('generating')
+    fetch(`/api/reportes/mensual?period=${initialPeriod}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.reportData) {
+          setSelectedReportData(data.reportData)
+          setPreviewFile('Cierre_Mensual')
+        }
+        setStatus('idle')
+      })
+      .catch(err => {
+        console.error(err)
+        setStatus('error')
+        setErrorMessage('Error al cargar reporte mensual')
+      })
+  }
+
   useEffect(() => {
     if (activeTab === 'historial') {
       fetchHistorial()
     }
-  }, [activeTab])
+  }, [activeTab, initialPeriod])
 
   // Guarda la estructura del reporte en la base de datos
   const handleGuardarReporte = async () => {
@@ -412,6 +452,19 @@ export default function ReportGenerator({ data, defaultEmail }: { data: any, def
                 ))}
                 {historial.length === 0 && !loadingHistorial && (
                   <p style={{ color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', padding: '2rem 0' }}>No se encontraron reportes históricos.</p>
+                )}
+
+                {/* Botón Cierre Mensual Automático */}
+                {!loadingHistorial && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <button 
+                      onClick={loadMonthlyReport}
+                      className="btn btn-primary w-full justify-center"
+                      style={{ padding: '0.75rem', borderRadius: '10px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+                    >
+                      <AlertCircle size={16} /> Generar Cierre Ejecutivo del Período
+                    </button>
+                  </div>
                 )}
               </div>
             )}

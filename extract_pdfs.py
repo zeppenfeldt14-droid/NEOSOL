@@ -3,7 +3,7 @@ import os
 import json
 import re
 
-reports_dir = r"D:\Reporte de Visitas\Reportes de visitas"
+reports_dir = r"d:\Reporte de Visitas\crm-visitas\scratch\all_pdfs"
 files = [f for f in os.listdir(reports_dir) if f.endswith('.pdf')]
 
 all_texts = []
@@ -31,7 +31,7 @@ for file in files:
         "text": text
     })
 
-with open(r'd:\Reporte de Visitas\crm-visitas\pdf_texts.json', 'w', encoding='utf-8') as f:
+with open(r'd:\Reporte de Visitas\crm-visitas\scratch\all_texts.json', 'w', encoding='utf-8') as f:
     json.dump(all_texts, f, ensure_ascii=False, indent=2)
 
 print(f"Extracted text from {len(all_texts)} PDFs.")
