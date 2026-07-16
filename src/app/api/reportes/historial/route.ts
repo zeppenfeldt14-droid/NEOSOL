@@ -26,38 +26,40 @@ export async function GET(request: Request) {
       whereClause.zona = session.zona || ''
     }
 
-    // Filtro de tiempo
-    if (period !== null && period !== undefined) {
-      const year = new Date().getFullYear()
-      let startDate, endDate
-      
-      if (period.startsWith('Q')) {
-        // Trimestres
-        const q = parseInt(period.replace('Q', ''))
-        startDate = new Date(year, (q - 1) * 3, 1)
-        endDate = new Date(year, q * 3, 0, 23, 59, 59)
-      } else {
-        // Meses
-        const month = parseInt(period)
-        startDate = new Date(year, month, 1)
-        endDate = new Date(year, month + 1, 0, 23, 59, 59)
-      }
-      
-      whereClause.creadoEn = {
-        gte: startDate,
-        lte: endDate
-      }
-    }
-
-    // Buscar reportes ordenados por fecha de creación descendente
+    // Buscar reportes ordenados por fecha descendente
     const reportesDB = await prisma.reporteVisitas.findMany({
       where: whereClause,
-      orderBy: {
-        creadoEn: 'desc'
-      }
+      orderBy: { creadoEn: 'desc' }
     })
 
-    const reportes = reportesDB.map(r => {
+    // Filtro de tiempo por el campo 'fecha' (DD-MM-YYYY) del reporte.
+    // Esto asegura que reportes históricos aparezcan en el mes real de su fecha,
+    // no en el mes que fueron insertados en la BD.
+    let reportesFiltrados = reportesDB
+    if (period !== null && period !== undefined && period !== '') {
+      reportesFiltrados = reportesDB.filter(r => {
+        const partes = r.fecha.split('-') // DD-MM-YYYY
+        if (partes.length < 3) return false
+        
+        if (period.startsWith('Q')) {
+          const q = parseInt(period.replace('Q', ''))
+          const mesReporte = parseInt(partes[1]) - 1 // 0-indexed
+          const anoReporte = parseInt(partes[2])
+          const anoActual = new Date().getFullYear()
+          const mesInicio = (q - 1) * 3
+          const mesFin = q * 3 - 1
+          return anoReporte === anoActual && mesReporte >= mesInicio && mesReporte <= mesFin
+        } else {
+          const mesSeleccionado = parseInt(period) // 0-indexed (JS getMonth())
+          const mesReporte = parseInt(partes[1]) - 1 // convertir DD-MM-YYYY mes a 0-indexed
+          const anoReporte = parseInt(partes[2])
+          const anoActual = new Date().getFullYear()
+          return anoReporte === anoActual && mesReporte === mesSeleccionado
+        }
+      })
+    }
+
+    const reportes = reportesFiltrados.map(r => {
       let parsedData = {}
       try {
         parsedData = JSON.parse(r.datosJSON)
@@ -67,7 +69,7 @@ export async function GET(request: Request) {
 
       return {
         id: r.id,
-        filename: `${r.fecha}.pdf`, // Se mantiene filename para compatibilidad con la interfaz
+        filename: `${r.fecha}.pdf`,
         fecha: r.fecha,
         zona: r.zona,
         vendedorAlias: r.vendedorAlias,
