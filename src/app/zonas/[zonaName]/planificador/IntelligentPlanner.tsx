@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { CompleteActionButton } from '../empresas/[id]/ActionButtons'
+import { formatDate } from '@/lib/date'
 
 type EmpresaSugerida = {
   id: number
@@ -150,7 +151,7 @@ export default function IntelligentPlanner({
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`Ruta_Del_Dia_${new Date().toLocaleDateString('es-AR').replace(/\//g, '-')}.pdf`)
+      pdf.save(`Ruta_Del_Dia_${formatDate(new Date())}.pdf`)
     } catch (error) {
       console.error('Error generando PDF:', error)
       alert('Hubo un error al generar el PDF.')
@@ -187,8 +188,7 @@ export default function IntelligentPlanner({
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
       
-      const dateObj = new Date(date + 'T12:00:00Z')
-      const formattedDate = dateObj.toLocaleDateString('es-AR').replace(/\//g, '-')
+      const formattedDate = formatDate(dateObj)
       pdf.save(`Ruta_${formattedDate}.pdf`)
     } catch (error) {
       console.error('Error generando PDF semanal:', error)

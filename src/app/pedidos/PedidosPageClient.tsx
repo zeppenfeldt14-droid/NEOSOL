@@ -9,6 +9,7 @@ import {
   Trash2, Download
 } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+import { formatDate } from '@/lib/date'
 
 const MESES = [
   { value: 0, label: 'Enero' },
@@ -455,7 +456,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                       </span>
                     </td>
                     <td className="px-4 py-3 text-secondary text-xs whitespace-nowrap">
-                      {new Date(p.creadoEn).toLocaleDateString('es-AR')}
+                      {formatDate(p.creadoEn)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">

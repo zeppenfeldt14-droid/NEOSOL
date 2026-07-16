@@ -6,6 +6,7 @@ import IntelligentPlanner from './IntelligentPlanner'
 import { revalidatePath } from 'next/cache'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { formatDate } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -341,7 +342,7 @@ export default async function PlanificadorPage(props: {
               <tbody>
                 {accionesMes.map(accion => (
                   <tr key={accion.id}>
-                    <td>{accion.fechaVencimiento?.toLocaleDateString()}</td>
+                    <td>{formatDate(accion.fechaVencimiento)}</td>
                     <td style={{ fontWeight: 500 }}>
                       <Link href={`/empresas/${accion.empresaId}`}>{accion.empresa.nombre}</Link>
                     </td>

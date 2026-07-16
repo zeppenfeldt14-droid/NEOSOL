@@ -7,6 +7,7 @@ import {
   FileText, ChevronDown, ChevronUp, History, Eye, Calendar
 } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+import { formatDate } from '@/lib/date'
 
 interface Props {
   userNivel: number
@@ -418,9 +419,7 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                           {c.cuota}/{c.totalCuotas}
                         </td>
                         <td className="px-3 py-3 text-secondary text-xs whitespace-nowrap">
-                          {c.fechaVencimiento
-                            ? new Date(c.fechaVencimiento).toLocaleDateString('es-AR')
-                            : '—'}
+                          {formatDate(c.fechaVencimiento)}
                           {isVencida && <span title="Atrasada"><AlertTriangle size={12} className="text-red-400 animate-pulse ml-2 inline-block" /></span>}
                         </td>
                         <td className="px-3 py-3">
@@ -483,7 +482,7 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                             <div className="flex flex-col gap-1">
                               {c.pagos.map(p => (
                                 <div key={p.id} className="flex items-center gap-4 text-xs py-1 border-b border-white/3 last:border-0">
-                                  <span className="text-secondary">{new Date(p.creadoEn).toLocaleDateString('es-AR')}</span>
+                                  <span className="text-secondary">{formatDate(p.creadoEn)}</span>
                                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
                                     p.metodoPago === 'financiera' ? 'bg-orange-400/10 text-orange-400' :
                                     p.metodoPago === 'cheque'     ? 'bg-blue-400/10 text-blue-400' :

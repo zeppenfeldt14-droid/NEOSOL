@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import ReportGenerator from './ReportGenerator'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { formatDate } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,7 +75,7 @@ export default async function ReportesPage({ params }: { params: Promise<{ zonaN
 
   // Map to a serializable format for the Client Component
   const reporteData = {
-    fecha: new Date().toLocaleDateString('es-AR'),
+    fecha: formatDate(new Date()),
     visitas: visitas.map(v => ({
       id: v.id,
       empresaNombre: v.empresa.nombre,
@@ -89,7 +90,7 @@ export default async function ReportesPage({ params }: { params: Promise<{ zonaN
       id: p.id,
       empresaNombre: p.empresa.nombre,
       descripcion: p.descripcion,
-      vencimiento: p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString('es-AR') : 'Sin fecha'
+      vencimiento: p.fechaVencimiento ? formatDate(p.fechaVencimiento) : 'Sin fecha'
     }))
   }
 

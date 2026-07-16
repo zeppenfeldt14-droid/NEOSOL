@@ -9,6 +9,7 @@ import {
   Calculator,
   User
 } from 'lucide-react'
+import { formatDate } from '@/lib/date'
 
 interface Props {
   pedido: any
@@ -88,7 +89,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
             <div>
               <span className="text-secondary block mb-1">Fecha de Creación</span>
               <strong className="text-white text-sm">
-                {new Date(pedido.creadoEn).toLocaleDateString('es-AR')} {new Date(pedido.creadoEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                {formatDate(pedido.creadoEn)} {new Date(pedido.creadoEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </strong>
             </div>
           </div>
@@ -190,7 +191,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
                     <span className="text-secondary block mb-0.5">Día de Entrega Acordado</span>
                     <strong className="text-green-400 flex items-center gap-1 font-bold text-sm bg-green-400/10 border border-green-400/20 px-2 py-1 rounded-lg w-max mt-1">
                       <Calendar size={13} />
-                      {new Date(pedido.fechaEntrega).toLocaleDateString('es-AR')}
+                      {formatDate(pedido.fechaEntrega)}
                     </strong>
                   </div>
                 )}
@@ -233,7 +234,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
           {pedido.aprobadoPorAlias && (
             <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400 flex items-center gap-2">
               <User size={13} />
-              Aprobado por: <strong>{pedido.aprobadoPorAlias}</strong> el <strong>{pedido.aprobadoEn ? new Date(pedido.aprobadoEn).toLocaleDateString('es-AR') : '—'}</strong>
+              Aprobado por: <strong>{pedido.aprobadoPorAlias}</strong> el <strong>{pedido.aprobadoEn ? formatDate(pedido.aprobadoEn) : '—'}</strong>
             </div>
           )}
         </div>

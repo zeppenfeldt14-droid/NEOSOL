@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { DollarSign, Download, ChevronDown, ChevronUp, FileText, CheckCircle } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { formatDate } from '@/lib/date'
 
 interface ComisionesMes {
   mes: number
@@ -123,7 +124,7 @@ export function ComisionesList({ zonaName, selectedPeriod }: { zonaName: string,
         head: [['Factura', 'Fecha', 'Vendedor', 'Subtotal']],
         body: m.facturas.map(f => [
           f.numeroFactura + ' - ' + (f.pedido?.empresa?.nombre || ''),
-          new Date(f.creadoEn).toLocaleDateString(),
+          formatDate(f.creadoEn),
           '@' + (f.pedido?.vendedorAlias || ''),
           fmt(f.subtotal)
         ]),
@@ -141,7 +142,7 @@ export function ComisionesList({ zonaName, selectedPeriod }: { zonaName: string,
         head: [['Método', 'Fecha', 'Vendedor', 'Monto']],
         body: m.pagos.map(p => [
           p.metodoPago.toUpperCase() + ' - ' + (p.empresaAsociada || ''),
-          new Date(p.creadoEn).toLocaleDateString(),
+          formatDate(p.creadoEn),
           '@' + (p.vendedorAsociado || ''),
           fmt(p.montoFinal)
         ]),
@@ -280,7 +281,7 @@ export function ComisionesList({ zonaName, selectedPeriod }: { zonaName: string,
                             <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded border border-white/5">
                               <div className="flex flex-col">
                                 <span className="text-[10px] text-white font-bold">{f.numeroFactura} - {f.pedido?.empresa?.nombre || 'Empresa'}</span>
-                                <span className="text-[9px] text-secondary">{new Date(f.creadoEn).toLocaleDateString()} · @{f.pedido?.vendedorAlias}</span>
+                                <span className="text-[9px] text-secondary">{formatDate(f.creadoEn)} · @{f.pedido?.vendedorAlias}</span>
                               </div>
                               <span className="text-xs font-black text-white">{fmt(f.subtotal)}</span>
                             </div>
@@ -300,7 +301,7 @@ export function ComisionesList({ zonaName, selectedPeriod }: { zonaName: string,
                             <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded border border-white/5">
                               <div className="flex flex-col">
                                 <span className="text-[10px] text-white font-bold">{p.metodoPago.toUpperCase()} - {p.empresaAsociada}</span>
-                                <span className="text-[9px] text-secondary">{new Date(p.creadoEn).toLocaleDateString()} · @{p.vendedorAsociado}</span>
+                                <span className="text-[9px] text-secondary">{formatDate(p.creadoEn)} · @{p.vendedorAsociado}</span>
                               </div>
                               <span className="text-xs font-black text-white">{fmt(p.montoFinal)}</span>
                             </div>

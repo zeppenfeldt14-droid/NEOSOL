@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, Globe, BarChart3, FileText, DollarSign, RefreshCw, Eye } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+import { formatDate } from '@/lib/date'
 
 interface Props {
   userNivel: number
@@ -324,7 +325,7 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
                       </span>
                     </td>
                     <td className="px-3 py-3 text-secondary text-xs whitespace-nowrap">
-                      {new Date(f.creadoEn).toLocaleDateString('es-AR')}
+                      {formatDate(f.creadoEn)}
                     </td>
                     <td className="px-3 py-3">
                       <button

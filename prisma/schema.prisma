@@ -359,3 +359,14 @@ model PrecioProducto {
 
   @@unique([listaId, productoId])
 }
+
+model ReporteVisitas {
+  id            Int      @id @default(autoincrement())
+  fecha         String   // Formato 'DD-MM-YYYY'
+  zona          String   // Ej: 'CABA'
+  vendedorAlias String   // Ej: 'Ernesto Lares'
+  datosJSON     String   // Instantánea estructurada de visitas y notas del día (JSON String)
+  creadoEn      DateTime @default(now())
+
+  @@unique([fecha, zona])
+}

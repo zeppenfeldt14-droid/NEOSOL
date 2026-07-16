@@ -1,41 +1,43 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { getSessionUser } from '@/lib/auth'
 
 export async function GET() {
   try {
-    const reportsDir = 'D:\\Reporte de Visitas\\Reportes de visitas'
-    
-    if (!fs.existsSync(reportsDir)) {
-      return NextResponse.json({ reportes: [] })
-    }
+    const session = await getSessionUser()
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const files = fs.readdirSync(reportsDir)
-    
-    const reportes = files.filter(f => f.endsWith('.pdf') || f.endsWith('.png')).map(filename => {
-      const filePath = path.join(reportsDir, filename)
-      const stats = fs.statSync(filePath)
-      
-      const namePart = filename.replace(/\.(pdf|png)$/, '')
-      const parts = namePart.split('-')
-      let date = stats.mtime
-      if (parts.length === 3) {
-        date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`)
-      }
-
-      return {
-        filename,
-        size: stats.size,
-        date: date.toISOString(),
-        isImage: filename.endsWith('.png')
+    // Buscar reportes en la base de datos ordenados por fecha de creación descendente
+    const reportesDB = await prisma.reporteVisitas.findMany({
+      orderBy: {
+        creadoEn: 'desc'
       }
     })
 
-    reportes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const reportes = reportesDB.map(r => {
+      let parsedData = {}
+      try {
+        parsedData = JSON.parse(r.datosJSON)
+      } catch (e) {
+        console.error('Error al parsear datosJSON del reporte ID:', r.id, e)
+      }
+
+      return {
+        id: r.id,
+        filename: `${r.fecha}.pdf`, // Se mantiene filename para compatibilidad con la interfaz
+        fecha: r.fecha,
+        zona: r.zona,
+        vendedorAlias: r.vendedorAlias,
+        datosJSON: parsedData,
+        date: r.creadoEn.toISOString(),
+        isImage: false,
+        size: 0
+      }
+    })
 
     return NextResponse.json({ reportes })
   } catch (error) {
-    console.error('Error listing reports:', error)
+    console.error('Error listing reports from database:', error)
     return NextResponse.json({ error: 'Error al listar reportes' }, { status: 500 })
   }
 }
