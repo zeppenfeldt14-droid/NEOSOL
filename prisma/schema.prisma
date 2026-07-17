@@ -77,7 +77,8 @@ model Visita {
   // ── Plan Maestro: Check-in/out Georeferenciado ────────────────────────────
   latitudCheckIn   Float?   // GPS del preventista al momento del check-in
   longitudCheckIn  Float?
-  whatsappEnviado  Boolean  @default(false) // Confirmación automática al cliente
+  whatsappEnviado   Boolean  @default(false)
+  respuestaObtenida Boolean  @default(false)
   exhibicion       String?  // Cualitativo: 'buena' | 'regular' | 'mala' | null
   usuarioAlias     String?  // Alias del vendedor que registró la visita
 }

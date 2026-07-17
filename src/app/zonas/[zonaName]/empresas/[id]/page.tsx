@@ -7,6 +7,7 @@ import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
 import { getSessionUser } from '@/lib/auth'
 import { HistorialComprasClient } from './HistorialComprasClient'
+import { RespuestaObtenidaButton } from './RespuestaObtenidaButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -282,6 +283,15 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
                   <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '0.5rem', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}>
                     <strong>Próxima acción:</strong> {visita.proximaAccion}
                   </div>
+                )}
+
+                {(visita.tipo === 'whatsapp' || visita.tipo === 'correo') && (
+                  <RespuestaObtenidaButton 
+                    visitaId={visita.id} 
+                    initialStatus={visita.respuestaObtenida} 
+                    zonaName={zonaName}
+                    empresaId={empresaId}
+                  />
                 )}
               </div>
             ))}
