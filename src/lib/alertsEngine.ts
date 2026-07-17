@@ -66,8 +66,8 @@ export async function getPredictiveAlerts(params: {
 
     const diasDesdeUltimaInteraccion = Math.floor((hoy.getTime() - ultimaInteraccion.getTime()) / (1000 * 60 * 60 * 24))
 
-    // A. Prospecto: > 7 días sin visita o cotización
-    if (emp.estado === 'prospecto' && diasDesdeUltimaInteraccion > 7) {
+    // A. Prospecto: >= 7 días sin visita o cotización
+    if (emp.estado === 'prospecto' && diasDesdeUltimaInteraccion >= 7) {
       alertas.push({
         id: `prosp-${emp.id}`,
         empresaId: emp.id,
@@ -82,8 +82,8 @@ export async function getPredictiveAlerts(params: {
       })
     }
 
-    // B. Activa: Frecuencia semanal (ej. >3 al mes) y >14 días sin visita/pedido
-    if (emp.estado === 'activo' && (emp.frecuenciaCompra || 0) >= 4 && diasDesdeUltimaInteraccion > 14) {
+    // B. Activa: Frecuencia semanal (ej. >3 al mes) y >= 14 días sin visita/pedido
+    if (emp.estado === 'activo' && (emp.frecuenciaCompra || 0) >= 4 && diasDesdeUltimaInteraccion >= 14) {
       alertas.push({
         id: `stock-${emp.id}`,
         empresaId: emp.id,
