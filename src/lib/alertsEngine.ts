@@ -26,8 +26,7 @@ export async function getPredictiveAlerts(params: {
   // 1. Obtener empresas según el rol
   const empresasQuery: any = {
     include: {
-      visitas: { orderBy: { fecha: 'desc' }, take: 1 },
-      cobranzas: { where: { estado: 'pendiente' } }
+      visitas: { orderBy: { fecha: 'desc' }, take: 1 }
     }
   }
 
@@ -38,9 +37,18 @@ export async function getPredictiveAlerts(params: {
   }
 
   const empresas = await prisma.empresa.findMany(empresasQuery) as any[]
+  
+  // 2. Obtener cobranzas pendientes globalmente o filtradas por zona/vendedor
+  const cobranzasQuery: any = { where: { estado: 'pendiente' } }
+  if (params.usuarioNivel === 3 && params.vendedorAlias) {
+    cobranzasQuery.where.vendedorAlias = params.vendedorAlias
+  } else if (params.usuarioNivel === 2 && params.zona) {
+    cobranzasQuery.where.zona = params.zona
+  }
+  const cobranzasPendientes = await prisma.cobranza.findMany(cobranzasQuery)
 
   for (const emp of empresas) {
-    const ultimaVisita = emp.visitas[0]?.fecha || emp.creadoEn
+    const ultimaVisita = emp.visitas?.[0]?.fecha || emp.creadoEn
     const diasDesdeUltimaVisita = Math.floor((hoy.getTime() - new Date(ultimaVisita).getTime()) / (1000 * 60 * 60 * 24))
 
     // A. Prospecto: > 7 días sin visita o cotización
@@ -74,7 +82,7 @@ export async function getPredictiveAlerts(params: {
     }
 
     // C. Cobranza: Factura vence en < 48 horas (2 días)
-    const cobrosPendientes = emp.cobranzas || []
+    const cobrosPendientes = cobranzasPendientes.filter(c => c.empresaId === emp.id)
     for (const cobro of cobrosPendientes) {
       if (cobro.fechaVencimiento) {
         const diasParaVencer = Math.floor((new Date(cobro.fechaVencimiento).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
