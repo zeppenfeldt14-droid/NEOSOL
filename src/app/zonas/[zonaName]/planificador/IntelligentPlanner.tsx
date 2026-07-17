@@ -135,7 +135,11 @@ export default function IntelligentPlanner({
     try {
       await marcarVisitadaAction(accionId)
       setLocalAccionesHoy(prev => prev.filter(a => a.id !== accionId))
-    } finally { setMarcandoVisitada(null) }
+    } catch (e: any) {
+      alert(`Error al marcar visitado: ${e?.message || 'Error desconocido'}`)
+    } finally { 
+      setMarcandoVisitada(null) 
+    }
   }
 
   const handleGestionar = async () => {
@@ -151,14 +155,19 @@ export default function IntelligentPlanner({
       setLocalAccionesHoy(prev => prev.filter(a => a.id !== gestionandoAccion.id))
       setGestionandoAccion(null)
       setGestionNota('')
-    } finally { setIsGestionando(false) }
+    } catch (e: any) {
+      alert(`Error al gestionar la acción: ${e?.message || 'Error desconocido'}`)
+    } finally { 
+      setIsGestionando(false) 
+    }
   }
 
   const handleCambiarTipo = async (accionId: number, nuevoTipo: string) => {
     if (!cambiarTipoAccionAction) return
     try {
       await cambiarTipoAccionAction(accionId, nuevoTipo)
-    } catch (e) {
+    } catch (e: any) {
+      alert(`Error al cambiar tipo: ${e?.message || 'Error desconocido'}`)
       console.error(e)
     }
   }
@@ -483,45 +492,47 @@ export default function IntelligentPlanner({
               </div>
             )}
 
-            {/* GRUPO 1: Visitas */}
-            {accionesAgrupadas.visitas.length > 0 && (
-              <div style={{ marginBottom: accionesAgrupadas.otras.length > 0 ? '1.5rem' : 0 }}>
-                {!isGeneratingPDF && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', marginBottom: '0.75rem', backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: '6px', borderLeft: '3px solid #10b981' }}>
-                    <Building2 size={14} style={{ color: '#10b981' }} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Visitas Programadas ({accionesAgrupadas.visitas.length})
-                    </span>
+            <div className={`grid grid-cols-1 ${accionesAgrupadas.visitas.length > 0 && accionesAgrupadas.otras.length > 0 ? 'xl:grid-cols-2 gap-6' : ''}`}>
+              {/* GRUPO 1: Visitas */}
+              {accionesAgrupadas.visitas.length > 0 && (
+                <div>
+                  {!isGeneratingPDF && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', marginBottom: '0.75rem', backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: '6px', borderLeft: '3px solid #10b981' }}>
+                      <Building2 size={14} style={{ color: '#10b981' }} />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Visitas Programadas ({accionesAgrupadas.visitas.length})
+                      </span>
+                    </div>
+                  )}
+                  <div className={isGeneratingPDF ? '' : 'table-container'}>
+                    <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
+                      <thead>{tableHead(vista === 'semana')}</thead>
+                      <tbody>{accionesAgrupadas.visitas.map((a, i) => renderAccionRow(a, i, true))}</tbody>
+                    </table>
                   </div>
-                )}
-                <div className={isGeneratingPDF ? '' : 'table-container'}>
-                  <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
-                    <thead>{tableHead(vista === 'semana')}</thead>
-                    <tbody>{accionesAgrupadas.visitas.map((a, i) => renderAccionRow(a, i, true))}</tbody>
-                  </table>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* GRUPO 2: WhatsApp / Correo / Llamada */}
-            {accionesAgrupadas.otras.length > 0 && (
-              <div>
-                {!isGeneratingPDF && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', marginBottom: '0.75rem', backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: '6px', borderLeft: '3px solid #6366f1' }}>
-                    <AlertCircle size={14} style={{ color: '#818cf8' }} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Comunicaciones del Día ({accionesAgrupadas.otras.length})
-                    </span>
+              {/* GRUPO 2: WhatsApp / Correo / Llamada */}
+              {accionesAgrupadas.otras.length > 0 && (
+                <div>
+                  {!isGeneratingPDF && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', marginBottom: '0.75rem', backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: '6px', borderLeft: '3px solid #6366f1' }}>
+                      <AlertCircle size={14} style={{ color: '#818cf8' }} />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Comunicaciones del Día ({accionesAgrupadas.otras.length})
+                      </span>
+                    </div>
+                  )}
+                  <div className={isGeneratingPDF ? '' : 'table-container'}>
+                    <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
+                      <thead>{tableHead(vista === 'semana')}</thead>
+                      <tbody>{accionesAgrupadas.otras.map((a, i) => renderAccionRow(a, i, false))}</tbody>
+                    </table>
                   </div>
-                )}
-                <div className={isGeneratingPDF ? '' : 'table-container'}>
-                  <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
-                    <thead>{tableHead(vista === 'semana')}</thead>
-                    <tbody>{accionesAgrupadas.otras.map((a, i) => renderAccionRow(a, i, false))}</tbody>
-                  </table>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {localAccionesHoy.length === 0 && (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
