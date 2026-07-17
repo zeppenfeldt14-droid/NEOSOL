@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/date'
-import { marcarVisitadaAction, gestionarAccionNoVisitaAction } from './actions'
+import { marcarVisitadaAction, gestionarAccionNoVisitaAction, cambiarTipoAccionAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -326,6 +326,7 @@ export default async function PlanificadorPage(props: {
           reordenarRutaAction={reordenarRutaAction}
           marcarVisitadaAction={marcarVisitadaAction}
           gestionarAccionNoVisitaAction={gestionarAccionNoVisitaAction}
+          cambiarTipoAccionAction={cambiarTipoAccionAction}
           vista={vista}
         />
       )}

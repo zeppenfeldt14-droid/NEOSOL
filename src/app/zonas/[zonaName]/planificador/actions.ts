@@ -5,6 +5,37 @@ import { revalidatePath } from 'next/cache'
 import { getSessionUser, registrarAccion } from '@/lib/auth'
 
 /**
+ * Cambia el tipo de una acción en la base de datos de forma dinámica.
+ */
+export async function cambiarTipoAccionAction(accionId: number, nuevoTipo: string) {
+  const user = await getSessionUser()
+
+  await prisma.accion.update({
+    where: { id: accionId },
+    data: {
+      tipo: nuevoTipo
+    }
+  })
+
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'CAMBIAR_TIPO_ACCION',
+      `Cambio de tipo de acción a: ${nuevoTipo} — Acción ID: ${accionId}`
+    )
+  }
+
+  const accion = await prisma.accion.findUnique({
+    where: { id: accionId },
+    select: { empresa: { select: { zona: true } } }
+  })
+  const zona = accion?.empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
+}
+
+/**
  * Marca una visita programada como "visitada" (estado intermedio).
  * El vendedor usa este botón en el campo, rápido, sin completar el formulario.
  * La acción pasa a estado 'visitada' y aparece en Tareas Pendientes

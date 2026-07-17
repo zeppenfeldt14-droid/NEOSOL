@@ -41,6 +41,7 @@ export default function IntelligentPlanner({
   reordenarRutaAction,
   marcarVisitadaAction,
   gestionarAccionNoVisitaAction,
+  cambiarTipoAccionAction,
   vista = 'hoy'
 }: {
   sugerencias: EmpresaSugerida[]
@@ -53,6 +54,7 @@ export default function IntelligentPlanner({
   reordenarRutaAction?: (ids: number[]) => Promise<void>
   marcarVisitadaAction?: (id: number) => Promise<void>
   gestionarAccionNoVisitaAction?: (payload: { accionId: number; empresaId: number; tipo: string; notas?: string }) => Promise<void>
+  cambiarTipoAccionAction?: (accionId: number, nuevoTipo: string) => Promise<void>
   vista?: string
 }) {
   const params = useParams()
@@ -152,6 +154,15 @@ export default function IntelligentPlanner({
     } finally { setIsGestionando(false) }
   }
 
+  const handleCambiarTipo = async (accionId: number, nuevoTipo: string) => {
+    if (!cambiarTipoAccionAction) return
+    try {
+      await cambiarTipoAccionAction(accionId, nuevoTipo)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const filteredSugerencias = useMemo(() => {
     const empresasYaProgramadas = accionesHoy.map(a => a.empresaId)
     let result = sugerencias.filter(s => !empresasYaProgramadas.includes(s.id))
@@ -217,8 +228,49 @@ export default function IntelligentPlanner({
     finally { setGeneratingPdfDate(null) }
   }
 
-  // Render badge tipo
-  const renderTipoBadge = (tipo: string) => {
+  // Render selector interactivo de tipo
+  const renderTipoBadgeSelector = (accion: any) => {
+    if (isGeneratingPDF) {
+      const cfg = TIPO_CONFIG[accion.tipo] || { label: accion.tipo, color: '#94a3b8', bgColor: 'rgba(148,163,184,0.15)' }
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+          padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700,
+          backgroundColor: cfg.bgColor, color: cfg.color, border: `1px solid ${cfg.color}40`,
+          textTransform: 'uppercase', letterSpacing: '0.05em'
+        }}>
+          {cfg.label}
+        </span>
+      )
+    }
+
+    const cfg = TIPO_CONFIG[accion.tipo] || { color: '#94a3b8', bgColor: 'rgba(148,163,184,0.15)' }
+    return (
+      <select
+        value={accion.tipo}
+        onChange={(e) => handleCambiarTipo(accion.id, e.target.value)}
+        style={{
+          padding: '0.2rem 0.4rem',
+          borderRadius: '4px',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          backgroundColor: cfg.bgColor,
+          color: cfg.color,
+          border: `1px solid ${cfg.color}40`,
+          outline: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        <option value="visita_programada">Visita</option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="correo">Correo</option>
+        <option value="llamada">Llamada</option>
+      </select>
+    )
+  }
+
+  // Render badge estático
+  const renderTipoBadgeStatic = (tipo: string) => {
     const cfg = TIPO_CONFIG[tipo] || { label: tipo, color: '#94a3b8', bgColor: 'rgba(148,163,184,0.15)' }
     return (
       <span style={{
@@ -297,7 +349,7 @@ export default function IntelligentPlanner({
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', margin: '0 auto' }}>{index + 1}</div>
           )}
         </td>
-        {!isGeneratingPDF && <td style={{ width: '90px' }}>{renderTipoBadge(accion.tipo)}</td>}
+        {!isGeneratingPDF && <td style={{ width: '110px' }}>{renderTipoBadgeSelector(accion)}</td>}
         {vista === 'semana' && (
           <td><div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--primary)' }}>{accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-'}</div></td>
         )}
@@ -316,22 +368,21 @@ export default function IntelligentPlanner({
           </div>
           <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)', marginTop: '0.25rem' }}>{emp.barrio} • {emp.zona}</div>
         </td>
-        <td><div style={{ fontSize: '0.875rem', color: isGeneratingPDF ? 'black' : 'white' }}>{accion.descripcion}</div></td>
         {!isGeneratingPDF && (
           <td style={{ textAlign: 'right' }}>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
               {renderContextualBtn(accion)}
               {isVisita ? (
                 <button onClick={() => handleMarcarVisitada(accion.id)} disabled={isMarking}
-                  style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: isMarking ? 'not-allowed' : 'pointer', backgroundColor: isMarking ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600 }}
-                  title="Marcar como visitado. Registrá el resultado después en Tareas Pendientes.">
-                  {isMarking ? <div style={{ width: '12px', height: '12px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle2 size={13} />}
-                  Marcar Visitado
+                  style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: isMarking ? 'not-allowed' : 'pointer', backgroundColor: isMarking ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Marcar Visitado">
+                  {isMarking ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle2 size={16} />}
                 </button>
               ) : (
                 <button onClick={() => { setGestionandoAccion(accion); setGestionNota('') }}
-                  style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600 }}>
-                  <Check size={13} /> Gestionado
+                  style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: 'pointer', backgroundColor: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Gestionado">
+                  <Check size={16} />
                 </button>
               )}
               <input type="date" title="Re-agendar"
@@ -341,7 +392,7 @@ export default function IntelligentPlanner({
               />
               <button onClick={() => handleEliminarAccion(accion.id)}
                 style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title="Quitar de la ruta"><Trash2 size={14} /></button>
+                title="Quitar"><Trash2 size={14} /></button>
             </div>
           </td>
         )}
@@ -352,11 +403,10 @@ export default function IntelligentPlanner({
   const tableHead = (showSemana = false) => (
     <tr style={isGeneratingPDF ? { borderBottom: '2px solid #e5e7eb' } : {}}>
       <th style={{ width: '50px', textAlign: 'center' }}>#</th>
-      {!isGeneratingPDF && <th style={{ width: '90px' }}>Tipo</th>}
+      {!isGeneratingPDF && <th style={{ width: '110px' }}>Tipo</th>}
       {showSemana && <th>Fecha</th>}
       <th>Empresa</th>
       <th>Ubicación</th>
-      <th>Descripción</th>
       {!isGeneratingPDF && <th style={{ textAlign: 'right' }}>Acciones</th>}
     </tr>
   )
@@ -376,7 +426,6 @@ export default function IntelligentPlanner({
               <div>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Marcar como gestionado</p>
                 <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{gestionandoAccion.empresa.nombre}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', margin: 0 }}>{gestionandoAccion.descripcion}</p>
               </div>
             </div>
             <div>
@@ -521,7 +570,6 @@ export default function IntelligentPlanner({
                           <th style={{ width: '90px' }}>Tipo</th>
                           <th>Empresa</th>
                           <th>Ubicación</th>
-                          <th>Descripción</th>
                           {generatingPdfDate !== date && <th style={{ textAlign: 'right' }}>Acciones</th>}
                         </tr>
                       </thead>
@@ -530,7 +578,7 @@ export default function IntelligentPlanner({
                           const emp = accion.empresa
                           return (
                             <tr key={accion.id} style={{ borderBottom: generatingPdfDate === date ? '1px solid #f3f4f6' : '' }}>
-                              <td>{renderTipoBadge(accion.tipo)}</td>
+                              <td>{renderTipoBadgeStatic(accion.tipo)}</td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                   <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
@@ -544,7 +592,6 @@ export default function IntelligentPlanner({
                                 <div style={{ fontSize: '0.875rem' }}><MapPin size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />{emp.direccion || '-'}</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{emp.barrio} • {emp.zona}</div>
                               </td>
-                              <td><div style={{ fontSize: '0.875rem', color: generatingPdfDate === date ? 'black' : 'white' }}>{accion.descripcion}</div></td>
                               {generatingPdfDate !== date && (
                                 <td style={{ textAlign: 'right' }}>
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
