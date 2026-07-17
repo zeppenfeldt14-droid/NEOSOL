@@ -24,6 +24,7 @@ export async function POST() {
       await prisma.detallePedido.deleteMany({ where: { pedido: { empresaId: { in: empresaIds } } } })
       await prisma.pedido.deleteMany({ where: { empresaId: { in: empresaIds } } })
       await prisma.visita.deleteMany({ where: { empresaId: { in: empresaIds } } })
+      await prisma.accion.deleteMany({ where: { empresaId: { in: empresaIds } } })
       await prisma.empresa.deleteMany({ where: { id: { in: empresaIds } } })
     }
 

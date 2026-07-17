@@ -11,6 +11,15 @@ function randomItem<T>(arr: T[]): T {
 }
 
 function randomDate(start: Date, end: Date) {
+  // 50% probability of forcing the date into the current month (if end is today)
+  const isCurrentMonthBiased = Math.random() > 0.5;
+  if (isCurrentMonthBiased) {
+    const startOfThisMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    // If the overall start is before this month, we use startOfThisMonth to ensure we get current month dates
+    if (start < startOfThisMonth) {
+      return new Date(startOfThisMonth.getTime() + Math.random() * (end.getTime() - startOfThisMonth.getTime()));
+    }
+  }
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
 }
 
@@ -36,10 +45,10 @@ export async function POST() {
     }
 
     const configs = [
-      { zona: 'Zona SUR', empCount: 25, multiplier: 1.5 },
-      { zona: 'Zona OESTE', empCount: 15, multiplier: 1.2 },
-      { zona: 'Zona NORTE', empCount: 10, multiplier: 0.8 },
-      { zona: 'Tucumán', empCount: 10, multiplier: 0.8 },
+      { zona: 'Zona SUR', empCount: 33, multiplier: 1.5 },
+      { zona: 'Zona OESTE', empCount: 20, multiplier: 1.2 },
+      { zona: 'Zona NORTE', empCount: 13, multiplier: 0.8 },
+      { zona: 'Tucumán', empCount: 13, multiplier: 0.8 },
     ]
 
     let totalUsuarios = 0
@@ -83,16 +92,39 @@ export async function POST() {
         })
         totalEmpresas++
 
-        // 3. Create Visits
-        const numVisitas = randomInt(1, 3)
+        // 3. Create Visits & Actions
+        const numVisitas = randomInt(2, 5)
         for (let v = 0; v < numVisitas; v++) {
+          const r = randomItem(['muestra_dejada', 'contacto_positivo', 'interes_futuro', 'venta', 'reprogramado', 'sin_respuesta', 'negativo', 'neutro'])
+          const f = randomDate(firstDayOfYear, today)
           await prisma.visita.create({
             data: {
               empresaId: empresa.id,
-              fecha: randomDate(firstDayOfYear, today),
+              fecha: f,
               tipo: 'visita',
-              resultado: randomItem(['Pedido Cerrado', 'Rechazado', 'Reprogramar', 'Presupuesto Entregado']),
-              notas: 'Simulación de visita generada automáticamente.'
+              resultado: r,
+              notas: `Simulación de visita generada. Resultado: ${r.replace('_', ' ')}`
+            }
+          })
+        }
+
+        const numAcciones = randomInt(1, 3)
+        for (let a = 0; a < numAcciones; a++) {
+          const isPending = randomInt(1, 10) > 4
+          const f = isPending 
+            ? randomDate(new Date(), new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)) 
+            : randomDate(firstDayOfYear, today)
+
+          const t = randomItem(['visita_programada', 'correo', 'llamada', 'whatsapp'])
+          
+          await prisma.accion.create({
+            data: {
+              empresaId: empresa.id,
+              tipo: t,
+              descripcion: `Tarea generada por simulación: ${t}`,
+              fechaVencimiento: f,
+              estado: isPending ? 'pendiente' : 'completada',
+              completadaEn: isPending ? null : new Date(f.getTime() + 2 * 60 * 60 * 1000)
             }
           })
         }
