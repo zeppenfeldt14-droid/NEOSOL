@@ -74,6 +74,7 @@ export default function IntelligentPlanner({
   const pdfRef = useRef<HTMLDivElement>(null)
   const weeklyPdfRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [copied, setCopied] = useState(false)
+  const [copiedPrecios, setCopiedPrecios] = useState(false)
 
   // Mini-modal Gestionado
   const [gestionandoAccion, setGestionandoAccion] = useState<any | null>(null)
@@ -83,12 +84,20 @@ export default function IntelligentPlanner({
   // Estado loading para Marcar Visitado
   const [marcandoVisitada, setMarcandoVisitada] = useState<number | null>(null)
 
-  // Copiar link universal (todas las zonas)
+  // Copiar link de ruta del día
   const handleCopyLink = () => {
     const link = `${window.location.origin}/visitas-hoy/${encodeURIComponent(zonaName)}`
     navigator.clipboard.writeText(link)
       .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
       .catch(err => console.error('Error al copiar el enlace:', err))
+  }
+
+  // Copiar link de Lista de Precios pública
+  const handleCopyPreciosLink = () => {
+    const link = `${window.location.origin}/precios-publicos`
+    navigator.clipboard.writeText(link)
+      .then(() => { setCopiedPrecios(true); setTimeout(() => setCopiedPrecios(false), 2000) })
+      .catch(err => console.error('Error al copiar el enlace de precios:', err))
   }
 
   useEffect(() => { setLocalAccionesHoy(accionesHoy || []) }, [accionesHoy])
@@ -404,7 +413,14 @@ export default function IntelligentPlanner({
               <p className="card-subtitle">Tu recorrido actual. Puedes gestionar o eliminar acciones.</p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              {/* Botón link — disponible para TODAS las zonas */}
+              {/* Botón link de Lista de Precios */}
+              <button onClick={handleCopyPreciosLink}
+                className={`btn ${copiedPrecios ? 'btn-success' : 'btn-secondary'}`}
+                style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
+                title={copiedPrecios ? '¡Link de Precios Copiado!' : 'Copiar Link Lista de Precios'}>
+                {copiedPrecios ? <Check size={16} /> : <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>$</span>}
+              </button>
+              {/* Botón link de ruta del día */}
               <button onClick={handleCopyLink}
                 className={`btn ${copied ? 'btn-success' : 'btn-secondary'}`}
                 style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
@@ -597,12 +613,22 @@ export default function IntelligentPlanner({
         </div>
         {!showOnlyRoute && (
           <div style={{ marginTop: '1.5rem' }}>
-            <label className="form-label" style={{ marginBottom: '0.5rem' }}>Filtrar Sugerencias por Zona:</label>
+            <label className="form-label" style={{ marginBottom: '0.5rem' }}>Filtrar por Mini-Zona:</label>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setSelectedZonas([])}
+                className={`btn-toggle ${selectedZonas.length === 0 ? 'active' : ''}`}
+              >
+                Todas
+              </button>
               {zonas.map(z => (
-                <button key={z} onClick={() => toggleZona(z)}
-                  className={`badge ${selectedZonas.includes(z) ? 'badge-info' : 'badge-neutral'}`}
-                  style={{ cursor: 'pointer', padding: '0.4rem 0.8rem' }}>{z}</button>
+                <button
+                  key={z}
+                  onClick={() => toggleZona(z)}
+                  className={`btn-toggle ${selectedZonas.includes(z) ? 'active' : ''}`}
+                >
+                  {z}
+                </button>
               ))}
             </div>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { Download, Mail, Check, Loader2, FileText, Eye, History, FilePlus, AlertCircle } from 'lucide-react'
+import { Download, Mail, Check, Loader2, FileText, Eye, History, FilePlus, AlertCircle, Link2 } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -156,6 +156,14 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
   const [loadingHistorial, setLoadingHistorial] = useState(false)
   const [previewFile, setPreviewFile] = useState<string | null>(null)
   const [selectedReportData, setSelectedReportData] = useState<any>(null)
+  const [copiedReportes, setCopiedReportes] = useState(false)
+
+  const handleCopyReportesLink = () => {
+    const link = `${window.location.origin}/reportes-publicos/${encodeURIComponent(zonaName)}`
+    navigator.clipboard.writeText(link)
+      .then(() => { setCopiedReportes(true); setTimeout(() => setCopiedReportes(false), 2000) })
+      .catch(err => console.error('Error al copiar enlace:', err))
+  }
 
   // Cargar historial de la base de datos con el filtro de tiempo
   const fetchHistorial = () => {
@@ -336,6 +344,16 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
           style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px' }}
         >
           <History size={16} /> Historial de Reportes
+        </button>
+        {/* Botón copiar link público de reportes */}
+        <button
+          onClick={handleCopyReportesLink}
+          className={`btn ${copiedReportes ? 'btn-success' : 'btn-secondary border-white/5 text-secondary hover:text-white'}`}
+          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px', marginLeft: 'auto', padding: '0.5rem 0.875rem' }}
+          title={copiedReportes ? '¡Link Copiado!' : 'Copiar Link Público de Reportes'}
+        >
+          {copiedReportes ? <Check size={16} /> : <Link2 size={16} />}
+          {copiedReportes ? '¡Copiado!' : 'Link Reportes'}
         </button>
       </div>
 

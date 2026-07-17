@@ -234,4 +234,12 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
   revalidatePath(`/zonas/${finalZona}/empresas/${empresaId}`)
   revalidatePath(`/zonas/${finalZona}/empresas`)
 }
-\n\nexport async function toggleRespuestaObtenida(visitaId: number, currentStatus: boolean, zonaName: string, empresaId: number) {\n  await prisma.visita.update({\n    where: { id: visitaId },\n    data: { respuestaObtenida: !currentStatus }\n  })\n  revalidatePath(/zonas//empresas/)\n}\n
+
+export async function toggleRespuestaObtenida(visitaId: number, currentStatus: boolean, zonaName: string, empresaId: number) {
+  'use server'
+  await prisma.visita.update({
+    where: { id: visitaId },
+    data: { respuestaObtenida: !currentStatus }
+  })
+  revalidatePath(`/zonas/${zonaName}/empresas/${empresaId}`)
+}
