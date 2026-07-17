@@ -69,7 +69,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
               </p>
             </div>
             <div className="flex gap-2">
-              <QuickActionsClient id={empresa.id} estado={empresa.estado} />
+              <QuickActionsClient id={empresa.id} estado={empresa.estado} zonaName={zonaName} />
               <Link href={`/zonas/${zonaName}/empresas/${empresaId}/editar`} className="btn btn-secondary flex items-center gap-2">
                 <Edit size={16} /> Editar Ficha
               </Link>

@@ -74,178 +74,299 @@ export default function FichaPDFClient({ empresa }: { empresa: any }) {
       </div>
 
       {/* A4 Sheet */}
-      <div style={{ backgroundColor: 'white', color: textColor, margin: '0 auto', width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', position: 'relative', fontSize: '11px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} ref={reportRef}>
+      <div style={{
+        backgroundColor: 'white',
+        color: textColor,
+        margin: '0 auto',
+        width: '210mm',
+        height: '297mm',
+        padding: '12mm 15mm',
+        boxSizing: 'border-box',
+        position: 'relative',
+        fontSize: '11px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }} ref={reportRef}>
         
-        {/* Document Title Header */}
-        <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '4px 8px', display: 'flex', justifyContent: 'space-between', border: `1px solid ${blueBg}` }}>
-          <span>Ficha Alta de cliente/Información General - NEOSOL</span>
+        <div>
+          {/* Document Title Header */}
+          <div style={{
+            backgroundColor: blueBg,
+            color: 'white',
+            fontWeight: 'bold',
+            padding: '6px',
+            textAlign: 'center',
+            fontSize: '12px',
+            textTransform: 'uppercase',
+            border: `1px solid ${blueBg}`,
+            letterSpacing: '0.5px'
+          }}>
+            Ficha Alta de cliente/Información General - NEOSOL
+          </div>
+
+          {/* Top metadata table */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, borderTop: 'none', marginBottom: '10px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '50%', padding: '5px', borderRight: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '8px', color: '#4b5563', marginRight: '6px' }}>Fecha de alta:</span>
+                  <strong style={{ fontSize: '11px' }}>{new Date(empresa.creadoEn).toLocaleDateString('es-AR')}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '5px' }}>
+                  <span style={{ fontSize: '8px', color: '#4b5563', marginRight: '6px', paddingLeft: '4px' }}>CODIGO INTERNO Nº:</span>
+                  <strong style={{ fontSize: '11px' }}>{empresa.id.toString().padStart(6, '0')}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* DATOS DEL CLIENTE */}
+          <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '3px 8px', fontSize: '9px', border: `1px solid ${blueBg}`, borderBottom: 'none' }}>
+            DATOS DEL CLIENTE
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, marginBottom: '10px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}`, borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>RAZON SOCIAL (Institución):</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.nombre}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>NOMBRE DE FANTASIA:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.nombre}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}`, borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Dirección Fiscal / Legal:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.direccionFiscal || '---'}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Transporte:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.transporte || '---'}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}`, borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Dirección de Entrega:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.direccion || '---'}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Partido:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.partido || '---'}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}`, borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Localidad:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.barrio || '---'}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Tel.:</span>
+                  <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>e-mail empresa:</span>
+                  <strong style={{ fontSize: '9.5px' }}>{empresa.email || '---'}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '4px 6px' }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Celular:</span>
+                  <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* DATOS IMPOSITIVOS */}
+          <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '3px 8px', fontSize: '9px', border: `1px solid ${blueBg}`, borderBottom: 'none' }}>
+            DATOS IMPOSITIVOS
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, marginBottom: '10px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '33.3%', padding: '4px 6px', borderRight: `1px solid ${blueBg}`, borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>CUIT Nº:</span>
+                  <strong style={{ fontSize: '9.5px' }}>{empresa.cuit || '---'}</strong>
+                </td>
+                <td style={{ width: '33.3%', padding: '4px 6px', borderRight: `1px solid ${blueBg}`, borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>ING. BRUTOS Nº:</span>
+                  <strong style={{ fontSize: '9.5px' }}>{empresa.cuit || '---'}</strong>
+                </td>
+                <td style={{ width: '33.4%', padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>DNI:</span>
+                  <strong style={{ fontSize: '9.5px' }}>---</strong>
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={3} style={{ padding: '4px 6px' }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>ACTIVIDAD:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.actividad || '---'}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* DATOS BANCARIOS */}
+          <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '3px 8px', fontSize: '9px', border: `1px solid ${blueBg}`, borderBottom: 'none' }}>
+            DATOS BANCARIOS
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, marginBottom: '10px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '33.3%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Institución:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>---</strong>
+                </td>
+                <td style={{ width: '33.3%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Sucursal:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>---</strong>
+                </td>
+                <td style={{ width: '33.4%', padding: '4px 6px' }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Tipo y Nº de Cuenta:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.notas || '---'}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* CONTACTO COMERCIAL */}
+          <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '3px 8px', fontSize: '9px', border: `1px solid ${blueBg}`, borderBottom: 'none' }}>
+            CONTACTO COMERCIAL
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, marginBottom: '10px' }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Nombre y Apellido (Responsable):</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.responsable || '---'}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '0', borderBottom: `1px solid ${blueBg}` }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
+                          <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>TEL.:</span>
+                          <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                        </td>
+                        <td style={{ width: '50%', padding: '4px 6px' }}>
+                          <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Celular:</span>
+                          <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>correo electrónico:</span>
+                  <strong style={{ fontSize: '9.5px' }}>{empresa.email || '---'}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '4px 6px' }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Productos de interés:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.productosInteres || '---'}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* CONTACTO DE COBRANZAS */}
+          <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '3px 8px', fontSize: '9px', border: `1px solid ${blueBg}`, borderBottom: 'none' }}>
+            CONTACTO DE COBRANZAS
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, marginBottom: '10px' }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Nombre y Apellido (Responsable Cobranzas):</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.contactoCobranzas || '---'}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '0', borderBottom: `1px solid ${blueBg}` }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
+                          <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>TEL.:</span>
+                          <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                        </td>
+                        <td style={{ width: '50%', padding: '4px 6px' }}>
+                          <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Celular:</span>
+                          <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '4px 6px', borderBottom: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>correo electrónico:</span>
+                  <strong style={{ fontSize: '9.5px' }}>---</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '0' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
+                          <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>COBRADOR:</span>
+                          <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>---</strong>
+                        </td>
+                        <td style={{ width: '50%', padding: '4px 6px' }}>
+                          <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>dias de pago:</span>
+                          <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.diasPago || '---'}</strong>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        {/* Date and ID */}
-        <div style={{ display: 'flex', border: `1px solid ${blueBg}`, borderTop: 'none', marginBottom: '16px' }}>
-          <div style={{ width: '50%', padding: '4px', borderRight: `1px solid ${blueBg}`, display: 'flex', alignItems: 'center' }}>
-            <span style={{ width: '100px', fontSize: '10px' }}>Fecha de alta:</span>
-            <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{new Date(empresa.creadoEn).toLocaleDateString('es-AR')}</span>
-          </div>
-          <div style={{ width: '50%', padding: '4px', display: 'flex', alignItems: 'center' }}>
-            <span style={{ width: '130px', fontSize: '10px', paddingLeft: '8px' }}>CODIGO INTERNO Nº:</span>
-            <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{empresa.id.toString().padStart(6, '0')}</span>
-          </div>
-        </div>
+        {/* Footer info: Vendedor Asignado y Firmas */}
+        <div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${blueBg}`, marginBottom: '25px' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '50%', padding: '5px 8px', borderRight: `1px solid ${blueBg}` }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', marginRight: '6px' }}>VENDEDOR ASIGNADO:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.vendedorAsignado || '---'}</strong>
+                </td>
+                <td style={{ width: '50%', padding: '5px 8px' }}>
+                  <span style={{ fontSize: '7.5px', color: '#4b5563', marginRight: '6px', paddingLeft: '4px' }}>Sucursal:</span>
+                  <strong style={{ fontSize: '9.5px', textTransform: 'uppercase' }}>{empresa.zona || '---'}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-        {/* DATOS DEL CLIENTE */}
-        <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '4px 8px', fontSize: '10px', border: `1px solid ${blueBg}` }}>
-          DATOS DEL CLIENTE
-        </div>
-        <div style={{ border: `1px solid ${blueBg}`, borderTop: 'none', display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
-          
-          <div style={{ display: 'flex', borderBottom: `1px solid ${blueBg}`, padding: '4px', alignItems: 'center' }}>
-            <span style={{ width: '180px', fontSize: '10px' }}>RAZÓN SOCIAL (Institución):</span>
-            <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.nombre}</span>
-          </div>
-          
-          <div style={{ display: 'flex', borderBottom: `1px solid ${blueBg}` }}>
-            <div style={{ width: '50%', padding: '4px', display: 'flex', alignItems: 'center', borderRight: `1px solid ${blueBg}` }}>
-              <span style={{ width: '140px', fontSize: '10px' }}>Dirección Fiscal / Legal:</span>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.direccionFiscal || '---'}</span>
+          {/* Firmas */}
+          <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '8.5px', marginTop: '25px', padding: '0 10px' }}>
+            <div style={{ textAlign: 'center', width: '220px' }}>
+              <div style={{ borderTop: '1px solid black', marginBottom: '4px' }}></div>
+              <strong style={{ textTransform: 'uppercase', fontSize: '8px', color: '#374151' }}>Firma Cliente</strong>
             </div>
-            <div style={{ width: '50%', padding: '4px', display: 'flex', alignItems: 'center' }}>
-              <span style={{ width: '90px', fontSize: '10px', paddingLeft: '8px' }}>Transporte:</span>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.transporte || '---'}</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', borderBottom: `1px solid ${blueBg}` }}>
-            <div style={{ width: '50%', padding: '4px', display: 'flex', alignItems: 'center', borderRight: `1px solid ${blueBg}` }}>
-              <span style={{ width: '100px', fontSize: '10px' }}>Localidad: CABA</span>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase', paddingLeft: '8px' }}>{empresa.barrio || '---'}</span>
-            </div>
-            <div style={{ width: '50%', padding: '4px', display: 'flex', alignItems: 'center' }}>
-              <span style={{ width: '60px', fontSize: '10px', paddingLeft: '8px' }}>Partido:</span>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.partido || '---'}</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', borderBottom: `1px solid ${blueBg}`, padding: '4px', alignItems: 'center' }}>
-            <span style={{ width: '180px', fontSize: '10px' }}>Dirección de Entrega:</span>
-            <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.direccion || '---'}</span>
-          </div>
-          
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center' }}>
-            <span style={{ width: '140px', fontSize: '10px' }}>e-mail empresa:</span>
-            <span style={{ fontWeight: 'bold' }}>{empresa.email || '---'}</span>
-          </div>
-        </div>
-
-        {/* DATOS IMPOSITIVOS */}
-        <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '4px 8px', fontSize: '10px', border: `1px solid ${blueBg}` }}>
-          DATOS IMPOSITIVOS
-        </div>
-        <div style={{ border: `1px solid ${blueBg}`, borderTop: 'none', display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
-          
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center', borderBottom: `1px solid ${blueBg}` }}>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', borderRight: `1px solid ${blueBg}`, paddingRight: '8px' }}>
-              <span style={{ width: '100px', fontSize: '10px' }}>CUIT Nº:</span>
-              <span style={{ fontWeight: 'bold' }}>{empresa.cuit || '---'}</span>
-            </div>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
-              <span style={{ width: '100px', fontSize: '10px' }}>DNI:</span>
-              <span style={{ fontWeight: 'bold' }}>---</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center' }}>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', borderRight: `1px solid ${blueBg}`, paddingRight: '8px' }}>
-              <span style={{ width: '100px', fontSize: '10px' }}>ACTIVIDAD:</span>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.actividad || '---'}</span>
-            </div>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
-              <span style={{ width: '140px', fontSize: '10px' }}>Productos de interés:</span>
-              <span style={{ fontWeight: 'bold' }}>{empresa.productosInteres || '---'}</span>
+            <div style={{ textAlign: 'center', width: '220px' }}>
+              <div style={{ borderTop: '1px solid black', marginBottom: '4px' }}></div>
+              <strong style={{ textTransform: 'uppercase', fontSize: '8px', color: '#374151' }}>Firma Vendedor / Aclaración</strong>
             </div>
           </div>
         </div>
 
-        {/* DATOS BANCARIOS */}
-        <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '4px 8px', fontSize: '10px', border: `1px solid ${blueBg}` }}>
-          DATOS BANCARIOS
-        </div>
-        <div style={{ border: `1px solid ${blueBg}`, borderTop: 'none', padding: '4px', marginBottom: '16px', minHeight: '40px', display: 'flex', alignItems: 'flex-start' }}>
-          <span style={{ width: '180px', fontSize: '10px' }}>Tipo y Nº de Cuenta / Notas:</span>
-          <span style={{ fontWeight: 'bold', whiteSpace: 'pre-wrap' }}>{empresa.notas || '---'}</span>
-        </div>
-
-        {/* CONTACTO COMERCIAL */}
-        <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '4px 8px', fontSize: '10px', border: `1px solid ${blueBg}` }}>
-          CONTACTO COMERCIAL
-        </div>
-        <div style={{ border: `1px solid ${blueBg}`, borderTop: 'none', display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
-          
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center', borderBottom: `1px solid ${blueBg}` }}>
-            <span style={{ width: '200px', fontSize: '10px' }}>Nombre y Apellido (Responsable):</span>
-            <span style={{ fontWeight: 'bold' }}>{empresa.responsable || '---'}</span>
-          </div>
-
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center', borderBottom: `1px solid ${blueBg}` }}>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', borderRight: `1px solid ${blueBg}`, paddingRight: '8px' }}>
-              <span style={{ width: '60px', fontSize: '10px' }}>TEL.:</span>
-              <span style={{ fontWeight: 'bold' }}>{empresa.telefono || '---'}</span>
-            </div>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
-              <span style={{ width: '60px', fontSize: '10px' }}>Celular:</span>
-              <span style={{ fontWeight: 'bold' }}>{empresa.telefono || '---'}</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center', borderBottom: `1px solid ${blueBg}` }}>
-            <span style={{ width: '140px', fontSize: '10px' }}>correo electrónico:</span>
-            <span style={{ fontWeight: 'bold' }}>{empresa.email || '---'}</span>
-          </div>
-
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center' }}>
-            <span style={{ width: '180px', fontSize: '10px' }}>VENDEDOR ASIGNADO:</span>
-            <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.vendedorAsignado || '---'}</span>
-            <span style={{ width: '80px', fontSize: '10px', marginLeft: '16px', textAlign: 'right', paddingRight: '8px' }}>Sucursal:</span>
-            <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.zona || '---'}</span>
-          </div>
-        </div>
-
-        {/* CONTACTO DE COBRANZAS */}
-        <div style={{ backgroundColor: blueBg, color: 'white', fontWeight: 'bold', padding: '4px 8px', fontSize: '10px', border: `1px solid ${blueBg}` }}>
-          CONTACTO DE COBRANZAS
-        </div>
-        <div style={{ border: `1px solid ${blueBg}`, borderTop: 'none', display: 'flex', flexDirection: 'column', marginBottom: '60px' }}>
-          
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center', borderBottom: `1px solid ${blueBg}` }}>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', borderRight: `1px solid ${blueBg}`, paddingRight: '8px' }}>
-              <span style={{ width: '180px', fontSize: '10px' }}>CONTACTO DE COBRANZAS:</span>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{empresa.contactoCobranzas || '---'}</span>
-            </div>
-            <div style={{ width: '50%', display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
-              <span style={{ width: '100px', fontSize: '10px' }}>Días de pago:</span>
-              <span style={{ fontWeight: 'bold' }}>{empresa.diasPago || '---'}</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', padding: '4px', alignItems: 'center' }}>
-            <span style={{ width: '140px', fontSize: '10px' }}>correo electrónico:</span>
-            <span style={{ fontWeight: 'bold' }}>---</span>
-          </div>
-        </div>
-
-        {/* Firma */}
-        <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '10px', marginTop: '40px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '180px', borderTop: '1px solid black', marginBottom: '4px', margin: '0 auto' }}></div>
-            <span>Firma Cliente</span>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '180px', borderTop: '1px solid black', marginBottom: '4px', margin: '0 auto' }}></div>
-            <span>Firma Vendedor / Aclaración</span>
-          </div>
-        </div>
-
-      </div>
     </div>
+  </div>
   )
 }

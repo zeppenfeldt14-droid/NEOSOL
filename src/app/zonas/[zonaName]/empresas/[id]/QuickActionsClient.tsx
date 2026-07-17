@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export function QuickActionsClient({ id, estado }: { id: number, estado: string }) {
+export function QuickActionsClient({ id, estado, zonaName }: { id: number, estado: string, zonaName: string }) {
   const [isUpdating, setIsUpdating] = useState(false)
   const router = useRouter()
 
@@ -119,7 +119,7 @@ export function QuickActionsClient({ id, estado }: { id: number, estado: string 
       )}
 
       <Link 
-        href={`/empresas/${id}/ficha-pdf`} 
+        href={`/zonas/${zonaName}/empresas/${id}/ficha-pdf`} 
         target="_blank"
         className="btn btn-secondary text-xs px-3"
       >
