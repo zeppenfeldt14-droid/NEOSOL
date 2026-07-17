@@ -170,7 +170,6 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const visitasDeHoy = await prisma.accion.findMany({
     where: {
       estado: 'pendiente',
-      tipo: 'visita_programada',
       fechaVencimiento: {
         gte: today,
         lt: tomorrow
@@ -475,21 +474,24 @@ export default async function DashboardPage({ params, searchParams }: { params: 
             ) : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                  {visitasDeHoy.map((visita, index) => (
-                    <div key={visita.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px' }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem', flexShrink: 0 }}>
-                        {index + 1}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <Link href={`/zonas/${zonaName}/empresas/${visita.empresaId}`} style={{ fontWeight: 500, fontSize: '0.875rem', color: 'white', display: 'block' }}>
-                          {visita.empresa.nombre}
-                        </Link>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {visita.empresa.zona || 'Sin Zona'} • {visita.empresa.barrio || 'Sin Localidad'}
+                  {visitasDeHoy.map((visita, index) => {
+                    const emoji = visita.tipo === 'whatsapp' ? '💬' : visita.tipo === 'correo' ? '📧' : visita.tipo === 'llamada' ? '📞' : '🏢'
+                    return (
+                      <div key={visita.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem', flexShrink: 0 }}>
+                          {index + 1}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <Link href={`/zonas/${zonaName}/empresas/${visita.empresaId}`} style={{ fontWeight: 500, fontSize: '0.875rem', color: 'white', display: 'block' }}>
+                            {emoji} {visita.empresa.nombre}
+                          </Link>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {visita.empresa.zona || 'Sin Zona'} • {visita.empresa.barrio || 'Sin Localidad'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                   <Link href={`/zonas/${zonaName}/planificador?vista=hoy`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
