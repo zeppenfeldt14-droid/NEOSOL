@@ -386,7 +386,7 @@ export default function IntelligentPlanner({
                         {!isGeneratingPDF && (
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                              <CompleteActionButton accionId={accion.id} empresaId={emp.id} />
+                              <CompleteActionButton accionId={accion.id} empresaId={emp.id} empresaNombre={emp.nombre} />
                               
                               <input 
                                 type="date"
