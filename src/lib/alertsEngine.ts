@@ -142,9 +142,9 @@ export async function getPredictiveAlerts(params: {
 
   // Filtrado de escalado según RBAC
   return alertas.filter(a => {
+    if (params.usuarioNivel === 1) return true // Gerencia ve TODO en esta vista
     if (params.usuarioNivel === 3) return true // Vendedor ve todo lo suyo
     if (params.usuarioNivel === 2) return a.escaladaNivel2 // Nivel 2 solo ve las escaladas a su nivel o mayor
-    if (params.usuarioNivel === 1) return a.escaladaNivel1 // Gerencia ve lo escalado a N1
     return false
   })
 }
