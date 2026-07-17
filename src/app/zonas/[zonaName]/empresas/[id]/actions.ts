@@ -55,7 +55,7 @@ export async function addAccion(empresaId: number, formData: FormData) {
   const tipo = formData.get('tipo') as string
   const descripcion = formData.get('descripcion') as string
   const fechaVencimiento = formData.get('fechaVencimiento') as string
-  const prioridad = formData.get('prioridad') as string
+  const prioridad = (formData.get('prioridad') as string) || 'media'
 
   await prisma.accion.create({
     data: {

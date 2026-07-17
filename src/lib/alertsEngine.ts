@@ -27,7 +27,8 @@ export async function getPredictiveAlerts(params: {
   // 1. Obtener empresas según el rol
   const empresasQuery: any = {
     include: {
-      visitas: { orderBy: { fecha: 'desc' }, take: 1 }
+      visitas: { orderBy: { fecha: 'desc' }, take: 1 },
+      acciones: { orderBy: { creadoEn: 'desc' }, take: 1 }
     }
   }
 
@@ -52,38 +53,48 @@ export async function getPredictiveAlerts(params: {
   const cobranzasPendientes = await prisma.cobranza.findMany(cobranzasQuery)
 
   for (const emp of empresas) {
-    const ultimaVisita = emp.visitas?.[0]?.fecha || emp.creadoEn
-    const diasDesdeUltimaVisita = Math.floor((hoy.getTime() - new Date(ultimaVisita).getTime()) / (1000 * 60 * 60 * 24))
+    const ultimaVisita = emp.visitas?.[0]?.fecha
+    const ultimaAccion = emp.acciones?.[0]?.creadoEn
+    
+    // Encontrar la interacción más reciente
+    const fechas = [
+      ultimaVisita ? new Date(ultimaVisita).getTime() : 0,
+      ultimaAccion ? new Date(ultimaAccion).getTime() : 0,
+      new Date(emp.creadoEn).getTime()
+    ]
+    const ultimaInteraccion = new Date(Math.max(...fechas))
+
+    const diasDesdeUltimaInteraccion = Math.floor((hoy.getTime() - ultimaInteraccion.getTime()) / (1000 * 60 * 60 * 24))
 
     // A. Prospecto: > 7 días sin visita o cotización
-    if (emp.estado === 'prospecto' && diasDesdeUltimaVisita > 7) {
+    if (emp.estado === 'prospecto' && diasDesdeUltimaInteraccion > 7) {
       alertas.push({
         id: `prosp-${emp.id}`,
         empresaId: emp.id,
         empresaNombre: emp.nombre,
         tipo: 'seguimiento_pendiente',
         nivelSeveridad: 'amarillo',
-        mensaje: `Prospecto inactivo hace ${diasDesdeUltimaVisita} días.`,
+        mensaje: `Prospecto inactivo hace ${diasDesdeUltimaInteraccion} días.`,
         accionRecomendada: 'Registra una Visita o envíale un WhatsApp para activar el interés.',
         fechaGeneracion: hoy.toISOString(),
-        escaladaNivel2: diasDesdeUltimaVisita > 9, // +48 hrs
-        escaladaNivel1: diasDesdeUltimaVisita > 11
+        escaladaNivel2: diasDesdeUltimaInteraccion > 9, // +48 hrs
+        escaladaNivel1: diasDesdeUltimaInteraccion > 11
       })
     }
 
     // B. Activa: Frecuencia semanal (ej. >3 al mes) y >14 días sin visita/pedido
-    if (emp.estado === 'activo' && (emp.frecuenciaCompra || 0) >= 4 && diasDesdeUltimaVisita > 14) {
+    if (emp.estado === 'activo' && (emp.frecuenciaCompra || 0) >= 4 && diasDesdeUltimaInteraccion > 14) {
       alertas.push({
         id: `stock-${emp.id}`,
         empresaId: emp.id,
         empresaNombre: emp.nombre,
         tipo: 'quiebre_stock',
         nivelSeveridad: 'rojo',
-        mensaje: `Cliente frecuente inactivo hace ${diasDesdeUltimaVisita} días.`,
+        mensaje: `Cliente frecuente inactivo hace ${diasDesdeUltimaInteraccion} días.`,
         accionRecomendada: 'Visítalo urgentemente o llámalo. Riesgo de quiebre de stock.',
         fechaGeneracion: hoy.toISOString(),
-        escaladaNivel2: diasDesdeUltimaVisita > 16,
-        escaladaNivel1: diasDesdeUltimaVisita > 18
+        escaladaNivel2: diasDesdeUltimaInteraccion > 16,
+        escaladaNivel1: diasDesdeUltimaInteraccion > 18
       })
     }
 
