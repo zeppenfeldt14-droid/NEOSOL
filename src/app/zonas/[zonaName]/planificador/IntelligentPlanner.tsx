@@ -142,26 +142,6 @@ export default function IntelligentPlanner({
     }
   }
 
-  const handleGestionar = async () => {
-    if (!gestionarAccionNoVisitaAction || !gestionandoAccion) return
-    setIsGestionando(true)
-    try {
-      await gestionarAccionNoVisitaAction({
-        accionId: gestionandoAccion.id,
-        empresaId: gestionandoAccion.empresa.id,
-        tipo: gestionandoAccion.tipo,
-        notas: gestionNota || undefined,
-      })
-      setLocalAccionesHoy(prev => prev.filter(a => a.id !== gestionandoAccion.id))
-      setGestionandoAccion(null)
-      setGestionNota('')
-    } catch (e: any) {
-      alert(`Error al gestionar la acción: ${e?.message || 'Error desconocido'}`)
-    } finally { 
-      setIsGestionando(false) 
-    }
-  }
-
   const handleCambiarTipo = async (accionId: number, nuevoTipo: string) => {
     if (!cambiarTipoAccionAction) return
     try {
@@ -381,19 +361,11 @@ export default function IntelligentPlanner({
           <td style={{ textAlign: 'right' }}>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
               {renderContextualBtn(accion)}
-              {isVisita ? (
-                <button onClick={() => handleMarcarVisitada(accion.id)} disabled={isMarking}
-                  style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: isMarking ? 'not-allowed' : 'pointer', backgroundColor: isMarking ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  title="Marcar Visitado">
-                  {isMarking ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle2 size={16} />}
-                </button>
-              ) : (
-                <button onClick={() => { setGestionandoAccion(accion); setGestionNota('') }}
-                  style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: 'pointer', backgroundColor: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  title="Gestionado">
-                  <Check size={16} />
-                </button>
-              )}
+              <button onClick={() => handleMarcarVisitada(accion.id)} disabled={isMarking}
+                style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: isMarking ? 'not-allowed' : 'pointer', backgroundColor: isMarking ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Completar para Registrar Resultado">
+                {isMarking ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle2 size={16} />}
+              </button>
               <input type="date" title="Re-agendar"
                 defaultValue={accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toISOString().split('T')[0] : ''}
                 onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
@@ -422,42 +394,6 @@ export default function IntelligentPlanner({
 
   return (
     <div className="space-y-8">
-
-      {/* MINI-MODAL: Confirmar Gestionado */}
-      {gestionandoAccion && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', padding: '1rem' }}
-          onClick={e => { if (e.target === e.currentTarget) { setGestionandoAccion(null); setGestionNota('') } }}>
-          <div style={{ width: '100%', maxWidth: '400px', background: 'linear-gradient(135deg, #141a2e 0%, #1a2240 100%)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: TIPO_CONFIG[gestionandoAccion.tipo]?.bgColor || 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: TIPO_CONFIG[gestionandoAccion.tipo]?.color || '#818cf8', fontSize: '1.25rem' }}>
-                {gestionandoAccion.tipo === 'whatsapp' ? '💬' : gestionandoAccion.tipo === 'correo' ? '📧' : '📞'}
-              </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Marcar como gestionado</p>
-                <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{gestionandoAccion.empresa.nombre}</h3>
-              </div>
-            </div>
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Nota (opcional)</label>
-              <textarea value={gestionNota} onChange={e => setGestionNota(e.target.value)}
-                placeholder={`Detalles del ${gestionandoAccion.tipo} realizado...`} rows={3}
-                style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button onClick={() => { setGestionandoAccion(null); setGestionNota('') }}
-                style={{ flex: 1, padding: '0.65rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.875rem' }}>
-                Cancelar
-              </button>
-              <button onClick={handleGestionar} disabled={isGestionando}
-                style={{ flex: 2, padding: '0.65rem', borderRadius: '8px', cursor: isGestionando ? 'not-allowed' : 'pointer', border: 'none', background: isGestionando ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                {isGestionando ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <><Check size={15} /> Confirmar</>}
-              </button>
-            </div>
-          </div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      )}
 
       {/* BLOQUE HOY */}
       {(localAccionesHoy.length > 0 || vista === 'hoy') && (

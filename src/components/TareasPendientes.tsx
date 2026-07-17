@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { ClipboardList, CheckCircle2, Clock, ChevronRight } from 'lucide-react'
@@ -57,6 +57,7 @@ export default function TareasPendientes({ tareasVisitadas, tareasCompletadasHoy
           accionId={checkoutAccion.id}
           empresaId={checkoutAccion.empresaId}
           empresaNombre={checkoutAccion.empresaNombre}
+          tipo={checkoutAccion.tipo}
           onClose={handleCheckoutClose}
         />
       )}

@@ -35,10 +35,11 @@ type Props = {
   accionId: number
   empresaId: number
   empresaNombre: string
+  tipo?: string
   onClose: () => void
 }
 
-export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre, onClose }: Props) {
+export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre, tipo = 'visita_programada', onClose }: Props) {
   const [isPending, startTransition] = useTransition()
 
   const [resultado, setResultado] = useState('')
@@ -58,6 +59,8 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
   const [sigPrioridad, setSigPrioridad] = useState('media')
   const [error, setError] = useState('')
 
+  const tipoLabel = tipo === 'whatsapp' ? 'WhatsApp' : tipo === 'correo' ? 'Correo' : tipo === 'llamada' ? 'Llamada' : 'Visita'
+
   const handleSubmit = () => {
     if (!resultado) { setError('Seleccioná un resultado para continuar.'); return }
     if (!notas.trim()) { setError('Las notas son obligatorias.'); return }
@@ -67,6 +70,7 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
       await completarVisitaConRegistro({
         accionId,
         empresaId,
+        tipo: tipo === 'visita_programada' ? 'visita' : tipo,
         resultado,
         contacto,
         cargo,
@@ -92,18 +96,16 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div
-        style={{
-          width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto',
-          background: 'linear-gradient(135deg, #141a2e 0%, #1a2240 100%)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '20px',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.15)',
-          animation: 'modalSlideIn 0.25s cubic-bezier(0.34,1.56,0.64,1)'
-        }}
-      >
-        {/* Header */}
+      <div style={{
+        width: '100%', maxWidth: '420px', background: 'linear-gradient(135deg, #141a2e 0%, #1a2240 100%)',
+        borderRadius: '20px', border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden',
+        position: 'relative', animation: 'modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* HEADER */}
         <div style={{
+          background: 'rgba(255,255,255,0.03)',
           padding: '1.5rem 1.5rem 1rem',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'
@@ -118,7 +120,7 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
                 <Check size={16} color="white" />
               </div>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Check-out de Visita
+                Registro de {tipoLabel}
               </span>
             </div>
             <h2 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>{empresaNombre}</h2>

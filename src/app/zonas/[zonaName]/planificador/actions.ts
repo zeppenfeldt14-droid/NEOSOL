@@ -122,6 +122,7 @@ export async function gestionarAccionNoVisitaAction(payload: {
 export async function completarVisitaConRegistro(payload: {
   accionId: number
   empresaId: number
+  tipo?: string
   // Datos de la visita
   resultado: string
   contacto: string
@@ -152,7 +153,7 @@ export async function completarVisitaConRegistro(payload: {
     data: {
       empresaId: payload.empresaId,
       fecha: hoy,
-      tipo: 'visita',
+      tipo: payload.tipo || 'visita',
       resultado: payload.resultado,
       contacto: payload.contacto || '',
       cargo: payload.cargo || null,
