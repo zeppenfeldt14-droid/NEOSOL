@@ -271,7 +271,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
     }
   })
 
-  const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+  const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
   const weeklyData = daysOfWeek.map((dayName, idx) => {
     const d = new Date(startOfWeek)
     d.setDate(d.getDate() + idx)
@@ -445,12 +445,10 @@ export default async function DashboardPage({ params, searchParams }: { params: 
             <div className="badge badge-success" style={{ padding: '0.15rem 0.4rem' }}><CheckCircle size={12} /></div>
           </div>
           <div className="stat-value text-accent" style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-            {efectividad !== null ? `${efectividad}%` : '-'}
+            {efectividad !== null ? `${efectividad}%` : '0%'}
           </div>
           <div className="text-secondary" style={{ fontSize: '0.7rem' }}>
-            {empresasContactadasMes > 0 
-              ? `${nuevosClientesMes} nuevo(s) / ${empresasContactadasMes} contactadas ${labelPeriodo}` 
-              : `Sin contactos ${labelPeriodo}`}
+            {`${nuevosClientesMes} nuevo(s) / ${empresasContactadasMes} contactada(s) ${labelPeriodo}`}
           </div>
         </div>
       </div>
