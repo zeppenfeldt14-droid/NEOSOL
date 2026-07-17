@@ -246,11 +246,6 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="glass-panel card delay-300" style={{ gridColumn: 'span 2' }}>
-          <h3 className="card-title m-0">Historial de Compras</h3>
-          <HistorialComprasClient empresaId={empresaId} userNivel={user.nivel} />
-        </div>
-
         <div className="glass-panel card delay-300">
           <h3 className="card-title border-b pb-4" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1rem' }}>Historial de Visitas</h3>
           
@@ -294,6 +289,11 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
               <p style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>No hay visitas registradas aún.</p>
             )}
           </div>
+        </div>
+
+        <div className="glass-panel card delay-300" style={{ gridColumn: 'span 2' }}>
+          <h3 className="card-title m-0">Historial de Compras</h3>
+          <HistorialComprasClient empresaId={empresaId} userNivel={user.nivel} />
         </div>
       </div>
     </div>
