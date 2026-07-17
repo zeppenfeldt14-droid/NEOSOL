@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AlertTriangle, Clock, RefreshCw, DollarSign, X, CheckCircle, ChevronRight, AlertCircle } from 'lucide-react'
+import { AlertTriangle, Clock, RefreshCw, DollarSign, X, ChevronRight, AlertCircle, Info } from 'lucide-react'
 import Link from 'next/link'
 import { PredictiveAlert } from '@/lib/alertsEngine'
 
@@ -12,89 +12,110 @@ interface AlertsDashboardProps {
 
 export function AlertsDashboard({ alerts, zonaName }: AlertsDashboardProps) {
   const [visibleAlerts, setVisibleAlerts] = useState<PredictiveAlert[]>(alerts)
+  const [showAll, setShowAll] = useState(false)
 
   if (visibleAlerts.length === 0) return null
 
   const getAlertIcon = (tipo: string) => {
     switch (tipo) {
-      case 'seguimiento_pendiente': return <Clock className="text-yellow-500" size={24} />
-      case 'quiebre_stock': return <AlertTriangle className="text-red-500" size={24} />
-      case 'alerta_cobranza': return <DollarSign className="text-orange-500" size={24} />
-      case 'oportunidad_reactivacion': return <RefreshCw className="text-blue-500" size={24} />
-      default: return <AlertCircle className="text-gray-400" size={24} />
+      case 'seguimiento_pendiente': return <Clock className="text-yellow-400" size={20} />
+      case 'quiebre_stock': return <AlertTriangle className="text-red-400" size={20} />
+      case 'alerta_cobranza': return <DollarSign className="text-orange-400" size={20} />
+      case 'oportunidad_reactivacion': return <RefreshCw className="text-blue-400" size={20} />
+      default: return <AlertCircle className="text-gray-400" size={20} />
     }
   }
 
   const getAlertColorClasses = (severidad: string) => {
     switch (severidad) {
-      case 'amarillo': return 'border-yellow-500/50 bg-yellow-500/10'
-      case 'rojo': return 'border-red-500/50 bg-red-500/10'
-      case 'naranja': return 'border-orange-500/50 bg-orange-500/10'
-      case 'azul': return 'border-blue-500/50 bg-blue-500/10'
-      default: return 'border-gray-500/50 bg-gray-500/10'
+      case 'amarillo': return 'border-yellow-500/30 bg-yellow-950/40 text-yellow-100'
+      case 'rojo': return 'border-red-500/30 bg-red-950/40 text-red-100'
+      case 'naranja': return 'border-orange-500/30 bg-orange-950/40 text-orange-100'
+      case 'azul': return 'border-blue-500/30 bg-blue-950/40 text-blue-100'
+      default: return 'border-gray-500/30 bg-gray-900/40 text-gray-100'
     }
   }
 
   const handleDismiss = (id: string) => {
     setVisibleAlerts(prev => prev.filter(a => a.id !== id))
-    // Here we could call an API to mark it as dismissed in the future if we persist them
   }
 
+  const displayedAlerts = showAll ? visibleAlerts : visibleAlerts.slice(0, 3)
+
   return (
-    <div className="mb-8 animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <AlertCircle className="text-accent" /> Centro de Inteligencia
-          <span className="badge badge-danger text-xs">{visibleAlerts.length}</span>
+    <div className="mb-6 animate-fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <AlertCircle className="text-accent" size={20} /> Alertas de Inteligencia
+          <span className="badge badge-danger text-xs px-2 py-0.5 rounded-full">{visibleAlerts.length}</span>
         </h2>
+        
+        {visibleAlerts.length > 3 && (
+          <button 
+            onClick={() => setShowAll(!showAll)}
+            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            {showAll ? 'Ver menos' : `Ver todas (${visibleAlerts.length})`}
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {visibleAlerts.map((alert) => (
+      <div className="flex flex-col gap-2">
+        {displayedAlerts.map((alert) => (
           <div 
             key={alert.id}
-            className={`relative rounded-xl border p-4 backdrop-blur-md shadow-lg flex flex-col gap-3 transition-all hover:-translate-y-1 ${getAlertColorClasses(alert.nivelSeveridad)}`}
-            style={{ minHeight: '140px' }}
+            className={`relative rounded-lg border p-3 backdrop-blur-md shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-all ${getAlertColorClasses(alert.nivelSeveridad)}`}
           >
-            <button 
-              onClick={() => handleDismiss(alert.id)}
-              className="absolute top-2 right-2 p-1 hover:bg-black/20 rounded-full transition-colors"
-              title="Ocultar alerta"
-            >
-              <X size={16} className="opacity-70 hover:opacity-100" />
-            </button>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-black/20 rounded-lg shrink-0">
-                {getAlertIcon(alert.tipo)}
+            <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 min-w-0 w-full">
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="p-1.5 bg-black/30 rounded-md shrink-0">
+                  {getAlertIcon(alert.tipo)}
+                </div>
+                {(alert.escaladaNivel1 || alert.escaladaNivel2) && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 border border-red-400/30 px-1.5 py-0.5 rounded shrink-0">
+                    Escalada
+                  </span>
+                )}
               </div>
-              <div>
-                <Link href={`/zonas/${zonaName}/empresas/${alert.empresaId}`} className="font-semibold text-lg hover:underline decoration-white/50">
-                  {alert.empresaNombre}
-                </Link>
-                <p className="text-sm opacity-90 mt-1 leading-tight">
-                  {alert.mensaje}
-                </p>
+              
+              <div className="flex-1 min-w-0 pr-6 sm:pr-0">
+                <div className="flex items-center gap-2">
+                  <Link href={`/zonas/${zonaName}/empresas/${alert.empresaId}`} className="font-semibold truncate hover:underline">
+                    {alert.empresaNombre}
+                  </Link>
+                  <span className="text-xs opacity-70 hidden md:inline truncate">- {alert.mensaje}</span>
+                </div>
+                
+                {alert.accionRecomendada && (
+                  <p className="text-sm mt-0.5 opacity-90 flex items-center gap-1.5">
+                    <span className="text-lg leading-none">👉</span> {alert.accionRecomendada}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="mt-auto flex gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 shrink-0">
               <Link 
                 href={`/zonas/${zonaName}/empresas/${alert.empresaId}`} 
-                className="flex-1 bg-white/10 hover:bg-white/20 text-center py-2 rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center justify-center gap-1"
+                className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 px-4 py-1.5 rounded-md text-sm font-medium transition-colors border border-white/10 flex items-center justify-center gap-1 whitespace-nowrap"
               >
                 Atender <ChevronRight size={16} />
               </Link>
+              <button 
+                onClick={() => handleDismiss(alert.id)}
+                className="p-1.5 bg-black/20 hover:bg-black/40 rounded-md transition-colors"
+                title="Ocultar temporalmente"
+              >
+                <X size={16} className="opacity-70 hover:opacity-100" />
+              </button>
             </div>
-            
-            {(alert.escaladaNivel1 || alert.escaladaNivel2) && (
-              <div className="absolute -top-2 -left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md uppercase tracking-wider flex items-center gap-1">
-                <AlertTriangle size={10} />
-                Escalada
-              </div>
-            )}
           </div>
         ))}
+      </div>
+
+      <div className="mt-3 flex items-start gap-2 text-xs text-gray-400 bg-white/5 p-2 rounded border border-white/5">
+        <Info size={14} className="shrink-0 mt-0.5 text-blue-400" />
+        <p>Las alertas desaparecen automáticamente cuando registras una nueva visita, nota o actualización en el perfil del cliente.</p>
       </div>
     </div>
   )

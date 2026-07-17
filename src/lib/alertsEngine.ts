@@ -7,6 +7,7 @@ export type PredictiveAlert = {
   tipo: 'seguimiento_pendiente' | 'quiebre_stock' | 'alerta_cobranza' | 'oportunidad_reactivacion'
   nivelSeveridad: 'amarillo' | 'rojo' | 'naranja' | 'azul'
   mensaje: string
+  accionRecomendada: string
   fechaGeneracion: string
   escaladaNivel2?: boolean
   escaladaNivel1?: boolean
@@ -30,9 +31,11 @@ export async function getPredictiveAlerts(params: {
     }
   }
 
+  // Filtro estricto por zona (importante para dashboards de Zona) y rol
   if (params.usuarioNivel === 3 && params.vendedorAlias) {
     empresasQuery.where = { vendedorAsignado: params.vendedorAlias }
-  } else if (params.usuarioNivel === 2 && params.zona) {
+    if (params.zona) empresasQuery.where.zona = params.zona
+  } else if (params.zona) {
     empresasQuery.where = { zona: params.zona }
   }
 
@@ -42,7 +45,8 @@ export async function getPredictiveAlerts(params: {
   const cobranzasQuery: any = { where: { estado: 'pendiente' } }
   if (params.usuarioNivel === 3 && params.vendedorAlias) {
     cobranzasQuery.where.vendedorAlias = params.vendedorAlias
-  } else if (params.usuarioNivel === 2 && params.zona) {
+    if (params.zona) cobranzasQuery.where.zona = params.zona
+  } else if (params.zona) {
     cobranzasQuery.where.zona = params.zona
   }
   const cobranzasPendientes = await prisma.cobranza.findMany(cobranzasQuery)
@@ -59,7 +63,8 @@ export async function getPredictiveAlerts(params: {
         empresaNombre: emp.nombre,
         tipo: 'seguimiento_pendiente',
         nivelSeveridad: 'amarillo',
-        mensaje: `Prospecto inactivo hace ${diasDesdeUltimaVisita} días. Requiere seguimiento.`,
+        mensaje: `Prospecto inactivo hace ${diasDesdeUltimaVisita} días.`,
+        accionRecomendada: 'Registra una Visita o envíale un WhatsApp para activar el interés.',
         fechaGeneracion: hoy.toISOString(),
         escaladaNivel2: diasDesdeUltimaVisita > 9, // +48 hrs
         escaladaNivel1: diasDesdeUltimaVisita > 11
@@ -74,7 +79,8 @@ export async function getPredictiveAlerts(params: {
         empresaNombre: emp.nombre,
         tipo: 'quiebre_stock',
         nivelSeveridad: 'rojo',
-        mensaje: `Posible quiebre de stock. Cliente frecuente inactivo hace ${diasDesdeUltimaVisita} días.`,
+        mensaje: `Cliente frecuente inactivo hace ${diasDesdeUltimaVisita} días.`,
+        accionRecomendada: 'Visítalo urgentemente o llámalo. Riesgo de quiebre de stock.',
         fechaGeneracion: hoy.toISOString(),
         escaladaNivel2: diasDesdeUltimaVisita > 16,
         escaladaNivel1: diasDesdeUltimaVisita > 18
@@ -94,6 +100,7 @@ export async function getPredictiveAlerts(params: {
             tipo: 'alerta_cobranza',
             nivelSeveridad: 'naranja',
             mensaje: `Cobranza próxima a vencer en ${diasParaVencer} días (Monto: $${cobro.saldoPendiente}).`,
+            accionRecomendada: 'Comunícate para coordinar el pago o asienta la cobranza si ya pagó.',
             fechaGeneracion: hoy.toISOString(),
             escaladaNivel2: diasParaVencer < 0,
             escaladaNivel1: diasParaVencer < -2
@@ -112,7 +119,8 @@ export async function getPredictiveAlerts(params: {
           empresaNombre: emp.nombre,
           tipo: 'oportunidad_reactivacion',
           nivelSeveridad: 'azul',
-          mensaje: `Cliente de baja hace ${diasDeBaja} días. Enviar promo de reactivación.`,
+          mensaje: `Cliente de baja hace ${diasDeBaja} días.`,
+          accionRecomendada: 'Envíale una promoción o el catálogo nuevo para intentar recuperarlo.',
           fechaGeneracion: hoy.toISOString(),
           escaladaNivel2: false, // Las reactivaciones no suelen escalar punitivamente
           escaladaNivel1: false
