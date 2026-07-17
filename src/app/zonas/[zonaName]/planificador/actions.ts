@@ -5,6 +5,83 @@ import { revalidatePath } from 'next/cache'
 import { getSessionUser, registrarAccion } from '@/lib/auth'
 
 /**
+ * Marca una visita programada como "visitada" (estado intermedio).
+ * El vendedor usa este botón en el campo, rápido, sin completar el formulario.
+ * La acción pasa a estado 'visitada' y aparece en Tareas Pendientes
+ * del módulo de Gestión de Visitas para registrar el resultado después.
+ */
+export async function marcarVisitadaAction(accionId: number) {
+  const user = await getSessionUser()
+
+  await prisma.accion.update({
+    where: { id: accionId },
+    data: {
+      estado: 'visitada',
+    }
+  })
+
+  if (user) {
+    await registrarAccion(
+      user.id,
+      user.alias,
+      'MARCAR_VISITADA',
+      `Visita marcada como visitada — Acción ID: ${accionId}`
+    )
+  }
+
+  const accion = await prisma.accion.findUnique({
+    where: { id: accionId },
+    select: { empresa: { select: { zona: true } } }
+  })
+  const zona = accion?.empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
+}
+
+/**
+ * Gestiona una acción de tipo whatsapp, correo o llamada.
+ * La marca como completada y registra un log en Visita.
+ * No genera tarea intermedia — se resuelve en un solo clic ("Gestionado").
+ */
+export async function gestionarAccionNoVisitaAction(payload: {
+  accionId: number
+  empresaId: number
+  tipo: string
+  notas?: string
+}) {
+  const user = await getSessionUser()
+  const hoy = new Date()
+
+  await prisma.$transaction([
+    prisma.accion.update({
+      where: { id: payload.accionId },
+      data: {
+        estado: 'completada',
+        completadaEn: hoy,
+      }
+    }),
+    prisma.visita.create({
+      data: {
+        empresaId: payload.empresaId,
+        fecha: hoy,
+        tipo: payload.tipo, // 'whatsapp' | 'correo' | 'llamada'
+        resultado: 'gestionado',
+        notas: payload.notas || `${payload.tipo} gestionado`,
+        usuarioAlias: user?.alias || null,
+      }
+    })
+  ])
+
+  const empresa = await prisma.empresa.findUnique({
+    where: { id: payload.empresaId },
+    select: { zona: true }
+  })
+  const zona = empresa?.zona || 'CABA'
+  revalidatePath(`/zonas/${zona}/planificador`)
+  revalidatePath(`/zonas/${zona}`)
+}
+
+/**
  * Cierra una visita de ruta (Accion) de forma inteligente:
  * 1. Marca la Accion como completada
  * 2. Crea un registro en Visita (historial + KPIs)

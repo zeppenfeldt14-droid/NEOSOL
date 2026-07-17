@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2 } from 'lucide-react'
+import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2, MessageCircle, Mail, CheckCircle2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import html2canvas from 'html2canvas'
@@ -22,6 +22,14 @@ type EmpresaSugerida = {
   motivo: string
 }
 
+// Configuración visual por tipo de acción
+const TIPO_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
+  visita_programada: { label: 'Visita',    color: '#10b981', bgColor: 'rgba(16,185,129,0.15)' },
+  whatsapp:         { label: 'WhatsApp',   color: '#25d366', bgColor: 'rgba(37,211,102,0.15)' },
+  correo:           { label: 'Correo',     color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)'  },
+  llamada:          { label: 'Llamada',    color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)' },
+}
+
 export default function IntelligentPlanner({
   sugerencias,
   zonas,
@@ -31,6 +39,8 @@ export default function IntelligentPlanner({
   eliminarAccionAction,
   reagendarAccionAction,
   reordenarRutaAction,
+  marcarVisitadaAction,
+  gestionarAccionNoVisitaAction,
   vista = 'hoy'
 }: {
   sugerencias: EmpresaSugerida[]
@@ -41,6 +51,8 @@ export default function IntelligentPlanner({
   eliminarAccionAction?: (id: number) => Promise<void>
   reagendarAccionAction?: (id: number, dateStr: string) => Promise<void>
   reordenarRutaAction?: (ids: number[]) => Promise<void>
+  marcarVisitadaAction?: (id: number) => Promise<void>
+  gestionarAccionNoVisitaAction?: (payload: { accionId: number; empresaId: number; tipo: string; notas?: string }) => Promise<void>
   vista?: string
 }) {
   const params = useParams()
@@ -54,28 +66,30 @@ export default function IntelligentPlanner({
   const [localAccionesHoy, setLocalAccionesHoy] = useState<any[]>([])
   const [targetDate, setTargetDate] = useState<string>(() => {
     const d = new Date()
-    d.setDate(d.getDate() + 1) // default to tomorrow
+    d.setDate(d.getDate() + 1)
     return d.toISOString().split('T')[0]
   })
   const pdfRef = useRef<HTMLDivElement>(null)
   const weeklyPdfRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [copied, setCopied] = useState(false)
 
+  // Mini-modal Gestionado
+  const [gestionandoAccion, setGestionandoAccion] = useState<any | null>(null)
+  const [gestionNota, setGestionNota] = useState('')
+  const [isGestionando, setIsGestionando] = useState(false)
+
+  // Estado loading para Marcar Visitado
+  const [marcandoVisitada, setMarcandoVisitada] = useState<number | null>(null)
+
+  // Copiar link universal (todas las zonas)
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/visitas-hoy-caba`
+    const link = `${window.location.origin}/visitas-hoy/${encodeURIComponent(zonaName)}`
     navigator.clipboard.writeText(link)
-      .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      })
-      .catch((err) => {
-        console.error('Error al copiar el enlace:', err)
-      })
+      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+      .catch(err => console.error('Error al copiar el enlace:', err))
   }
 
-  useEffect(() => {
-    setLocalAccionesHoy(accionesHoy || [])
-  }, [accionesHoy])
+  useEffect(() => { setLocalAccionesHoy(accionesHoy || []) }, [accionesHoy])
 
   const moveAccionIndex = (oldIndex: number, newIndex: number) => {
     if (newIndex < 0 || newIndex >= localAccionesHoy.length || oldIndex === newIndex) return
@@ -83,25 +97,15 @@ export default function IntelligentPlanner({
     const [removed] = newArray.splice(oldIndex, 1)
     newArray.splice(newIndex, 0, removed)
     setLocalAccionesHoy(newArray)
-    if (reordenarRutaAction) {
-      reordenarRutaAction(newArray.map(a => a.id))
-    }
+    if (reordenarRutaAction) reordenarRutaAction(newArray.map(a => a.id))
   }
 
   const toggleZona = (zona: string) => {
-    setSelectedZonas(prev => 
-      prev.includes(zona) ? prev.filter(z => z !== zona) : [...prev, zona]
-    )
+    setSelectedZonas(prev => prev.includes(zona) ? prev.filter(z => z !== zona) : [...prev, zona])
   }
 
   const toggleEmpresa = (id: number) => {
-    setSelectedRoute(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(x => x !== id)
-      } else {
-        return [...prev, id]
-      }
-    })
+    setSelectedRoute(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
   const handleCrearRuta = async () => {
@@ -113,172 +117,311 @@ export default function IntelligentPlanner({
         setSelectedRoute([])
         setShowOnlyRoute(true)
       }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
+    } catch (error) { console.error(error) }
+    finally { setIsSubmitting(false) }
   }
-  
+
   const handleEliminarAccion = async (accionId: number) => {
-    if (eliminarAccionAction && confirm('¿Estás seguro de que deseas eliminar esta visita de la ruta de hoy?')) {
+    if (eliminarAccionAction && confirm('¿Eliminar esta acción de la ruta?')) {
       await eliminarAccionAction(accionId)
     }
   }
 
-  const handleDownloadPDF = async (elementRef: React.RefObject<HTMLDivElement | null>) => {
-    if (!elementRef.current) return
-    
+  const handleMarcarVisitada = async (accionId: number) => {
+    if (!marcarVisitadaAction) return
+    setMarcandoVisitada(accionId)
     try {
-      setIsGeneratingPDF(true)
-      const element = elementRef.current
-      
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      })
-      
-      const imgData = canvas.toDataURL('image/jpeg', 1.0)
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      })
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`Ruta_Del_Dia_${formatDate(new Date())}.pdf`)
-    } catch (error) {
-      console.error('Error generando PDF:', error)
-      alert('Hubo un error al generar el PDF.')
-    } finally {
-      setIsGeneratingPDF(false)
-    }
+      await marcarVisitadaAction(accionId)
+      setLocalAccionesHoy(prev => prev.filter(a => a.id !== accionId))
+    } finally { setMarcandoVisitada(null) }
   }
 
-  const handleDownloadWeeklyPDF = async (date: string) => {
-    const element = weeklyPdfRefs.current[date]
-    if (!element) return
-    
+  const handleGestionar = async () => {
+    if (!gestionarAccionNoVisitaAction || !gestionandoAccion) return
+    setIsGestionando(true)
     try {
-      setGeneratingPdfDate(date)
-      // Esperar a que React aplique los estilos de PDF (150ms)
-      await new Promise((resolve) => setTimeout(resolve, 150))
-      
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
+      await gestionarAccionNoVisitaAction({
+        accionId: gestionandoAccion.id,
+        empresaId: gestionandoAccion.empresa.id,
+        tipo: gestionandoAccion.tipo,
+        notas: gestionNota || undefined,
       })
-      
-      const imgData = canvas.toDataURL('image/jpeg', 1.0)
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      })
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight)
-      
-      const dateObj = new Date(date + 'T12:00:00Z')
-      const formattedDate = formatDate(dateObj)
-      pdf.save(`Ruta_${formattedDate}.pdf`)
-    } catch (error) {
-      console.error('Error generando PDF semanal:', error)
-      alert('Hubo un error al generar el PDF.')
-    } finally {
-      setGeneratingPdfDate(null)
-    }
+      setLocalAccionesHoy(prev => prev.filter(a => a.id !== gestionandoAccion.id))
+      setGestionandoAccion(null)
+      setGestionNota('')
+    } finally { setIsGestionando(false) }
   }
 
-  // Filtrar sugerencias excluyendo las que ya están en la ruta de hoy
   const filteredSugerencias = useMemo(() => {
     const empresasYaProgramadas = accionesHoy.map(a => a.empresaId)
     let result = sugerencias.filter(s => !empresasYaProgramadas.includes(s.id))
-
     if (showOnlyRoute) {
       result = result.filter(s => selectedRoute.includes(s.id))
       result.sort((a, b) => selectedRoute.indexOf(a.id) - selectedRoute.indexOf(b.id))
       return result
     }
-
     if (selectedZonas.length > 0) {
       result = result.filter(s => s.zona && selectedZonas.includes(s.zona))
     }
-
     return result
   }, [sugerencias, selectedZonas, showOnlyRoute, selectedRoute, accionesHoy])
 
-  const openGoogleMaps = (e: React.MouseEvent, direccion: string, barrio: string) => {
-    e.stopPropagation()
-    const query = encodeURIComponent(`${direccion || ''}, ${barrio || ''}, CABA`)
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
-  }
+  // Agrupar: visitas primero, luego whatsapp/correo/llamada
+  const accionesAgrupadas = useMemo(() => {
+    const visitas = localAccionesHoy.filter(a => a.tipo === 'visita_programada')
+    const otras = localAccionesHoy.filter(a => a.tipo !== 'visita_programada')
+    const ordenTipo: Record<string, number> = { whatsapp: 0, correo: 1, llamada: 2 }
+    otras.sort((a, b) => (ordenTipo[a.tipo] ?? 9) - (ordenTipo[b.tipo] ?? 9))
+    return { visitas, otras }
+  }, [localAccionesHoy])
 
-  // Group future actions by date
   const groupedFuturas = useMemo(() => {
     const groups: Record<string, any[]> = {}
     if (!accionesFuturas) return []
-    
     accionesFuturas.forEach(accion => {
       if (!accion.fechaVencimiento) return
       const dateKey = new Date(accion.fechaVencimiento).toISOString().split('T')[0]
       if (!groups[dateKey]) groups[dateKey] = []
       groups[dateKey].push(accion)
     })
-    
     return Object.entries(groups)
-      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, items]) => ({ date, items }))
   }, [accionesFuturas])
 
+  const handleDownloadPDF = async (elementRef: React.RefObject<HTMLDivElement | null>) => {
+    if (!elementRef.current) return
+    try {
+      setIsGeneratingPDF(true)
+      const canvas = await html2canvas(elementRef.current, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' })
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width)
+      pdf.save(`Ruta_Del_Dia_${formatDate(new Date())}.pdf`)
+    } catch (e) { alert('Error al generar PDF.') }
+    finally { setIsGeneratingPDF(false) }
+  }
+
+  const handleDownloadWeeklyPDF = async (date: string) => {
+    const element = weeklyPdfRefs.current[date]
+    if (!element) return
+    try {
+      setGeneratingPdfDate(date)
+      await new Promise(r => setTimeout(r, 150))
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' })
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width)
+      pdf.save(`Ruta_${formatDate(new Date(date + 'T12:00:00Z'))}.pdf`)
+    } catch (e) { alert('Error al generar PDF.') }
+    finally { setGeneratingPdfDate(null) }
+  }
+
+  // Render badge tipo
+  const renderTipoBadge = (tipo: string) => {
+    const cfg = TIPO_CONFIG[tipo] || { label: tipo, color: '#94a3b8', bgColor: 'rgba(148,163,184,0.15)' }
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+        padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700,
+        backgroundColor: cfg.bgColor, color: cfg.color, border: `1px solid ${cfg.color}40`,
+        textTransform: 'uppercase', letterSpacing: '0.05em'
+      }}>
+        {cfg.label}
+      </span>
+    )
+  }
+
+  // Render botón contextual según tipo
+  const renderContextualBtn = (accion: any) => {
+    const emp = accion.empresa
+    if (accion.tipo === 'visita_programada') {
+      return (
+        <button
+          onClick={e => { e.stopPropagation(); const q = encodeURIComponent(`${emp.direccion||''}, ${emp.barrio||''}, CABA`); window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank') }}
+          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
+        >
+          <Navigation size={13} /> Navegar
+        </button>
+      )
+    }
+    if (accion.tipo === 'whatsapp') {
+      const phone = emp.telefono?.replace(/\D/g, '') || ''
+      return phone ? (
+        <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', backgroundColor: 'rgba(37,211,102,0.2)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', textDecoration: 'none' }}>
+          <MessageCircle size={13} /> WhatsApp
+        </a>
+      ) : <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sin tel.</span>
+    }
+    if (accion.tipo === 'correo') {
+      return emp.email ? (
+        <a href={`mailto:${emp.email}`} onClick={e => e.stopPropagation()}
+          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', textDecoration: 'none' }}>
+          <Mail size={13} /> Correo
+        </a>
+      ) : <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sin email</span>
+    }
+    if (accion.tipo === 'llamada') {
+      return emp.telefono ? (
+        <a href={`tel:${emp.telefono}`} onClick={e => e.stopPropagation()}
+          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', backgroundColor: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', textDecoration: 'none' }}>
+          <Phone size={13} /> {emp.telefono}
+        </a>
+      ) : <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sin tel.</span>
+    }
+    return null
+  }
+
+  const renderAccionRow = (accion: any, index: number, isVisita: boolean) => {
+    const emp = accion.empresa
+    const isMarking = marcandoVisitada === accion.id
+    return (
+      <tr key={accion.id} style={{ borderBottom: isGeneratingPDF ? '1px solid #f3f4f6' : '' }}>
+        <td style={{ textAlign: 'center', width: '60px' }}>
+          {isGeneratingPDF ? (
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#1B365D', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem', margin: '0 auto' }}>{index + 1}</div>
+          ) : isVisita ? (
+            <input type="number" defaultValue={index + 1} min={1} max={accionesAgrupadas.visitas.length} disabled={vista === 'semana'}
+              style={{ width: '48px', textAlign: 'center', padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', opacity: vista === 'semana' ? 0.5 : 1 }}
+              onBlur={e => {
+                if (vista === 'semana') return
+                const newOrder = parseInt(e.target.value)
+                const currentIndex = localAccionesHoy.findIndex(a => a.id === accion.id)
+                if (!isNaN(newOrder) && newOrder > 0 && newOrder <= accionesAgrupadas.visitas.length) moveAccionIndex(currentIndex, newOrder - 1)
+                else e.target.value = (index + 1).toString()
+              }}
+              onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+            />
+          ) : (
+            <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', margin: '0 auto' }}>{index + 1}</div>
+          )}
+        </td>
+        {!isGeneratingPDF && <td style={{ width: '90px' }}>{renderTipoBadge(accion.tipo)}</td>}
+        {vista === 'semana' && (
+          <td><div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--primary)' }}>{accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-'}</div></td>
+        )}
+        <td>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Building2 size={16} style={{ color: isGeneratingPDF ? '#4b5563' : 'var(--text-muted)' }} />
+            <div>
+              <div style={{ fontWeight: 500, color: isGeneratingPDF ? 'black' : 'white' }}>{emp.nombre}</div>
+              <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)' }}>{emp.estado?.toUpperCase()}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style={{ fontSize: '0.875rem' }}>
+            <MapPin size={12} style={{ display: 'inline', color: isGeneratingPDF ? '#9ca3af' : 'var(--text-muted)', marginRight: '4px' }} />{emp.direccion || '-'}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)', marginTop: '0.25rem' }}>{emp.barrio} • {emp.zona}</div>
+        </td>
+        <td><div style={{ fontSize: '0.875rem', color: isGeneratingPDF ? 'black' : 'white' }}>{accion.descripcion}</div></td>
+        {!isGeneratingPDF && (
+          <td style={{ textAlign: 'right' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+              {renderContextualBtn(accion)}
+              {isVisita ? (
+                <button onClick={() => handleMarcarVisitada(accion.id)} disabled={isMarking}
+                  style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: isMarking ? 'not-allowed' : 'pointer', backgroundColor: isMarking ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600 }}
+                  title="Marcar como visitado. Registrá el resultado después en Tareas Pendientes.">
+                  {isMarking ? <div style={{ width: '12px', height: '12px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle2 size={13} />}
+                  Marcar Visitado
+                </button>
+              ) : (
+                <button onClick={() => { setGestionandoAccion(accion); setGestionNota('') }}
+                  style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.4)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600 }}>
+                  <Check size={13} /> Gestionado
+                </button>
+              )}
+              <input type="date" title="Re-agendar"
+                defaultValue={accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toISOString().split('T')[0] : ''}
+                onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
+                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
+              />
+              <button onClick={() => handleEliminarAccion(accion.id)}
+                style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Quitar de la ruta"><Trash2 size={14} /></button>
+            </div>
+          </td>
+        )}
+      </tr>
+    )
+  }
+
+  const tableHead = (showSemana = false) => (
+    <tr style={isGeneratingPDF ? { borderBottom: '2px solid #e5e7eb' } : {}}>
+      <th style={{ width: '50px', textAlign: 'center' }}>#</th>
+      {!isGeneratingPDF && <th style={{ width: '90px' }}>Tipo</th>}
+      {showSemana && <th>Fecha</th>}
+      <th>Empresa</th>
+      <th>Ubicación</th>
+      <th>Descripción</th>
+      {!isGeneratingPDF && <th style={{ textAlign: 'right' }}>Acciones</th>}
+    </tr>
+  )
+
   return (
     <div className="space-y-8">
-      {/* SECCIÓN 1: RUTAS PROGRAMADAS */}
-      <div className="grid gap-6">
-        
-        {/* BLOQUE HOY */}
-        {(localAccionesHoy.length > 0 || vista === 'hoy') && (
-          <div className="glass-panel card" style={{ marginBottom: '2rem', borderTop: '4px solid var(--primary)' }}>
+
+      {/* MINI-MODAL: Confirmar Gestionado */}
+      {gestionandoAccion && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', padding: '1rem' }}
+          onClick={e => { if (e.target === e.currentTarget) { setGestionandoAccion(null); setGestionNota('') } }}>
+          <div style={{ width: '100%', maxWidth: '400px', background: 'linear-gradient(135deg, #141a2e 0%, #1a2240 100%)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: TIPO_CONFIG[gestionandoAccion.tipo]?.bgColor || 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: TIPO_CONFIG[gestionandoAccion.tipo]?.color || '#818cf8', fontSize: '1.25rem' }}>
+                {gestionandoAccion.tipo === 'whatsapp' ? '💬' : gestionandoAccion.tipo === 'correo' ? '📧' : '📞'}
+              </div>
+              <div>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Marcar como gestionado</p>
+                <h3 style={{ color: 'white', fontSize: '1rem', fontWeight: 700, margin: 0 }}>{gestionandoAccion.empresa.nombre}</h3>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', margin: 0 }}>{gestionandoAccion.descripcion}</p>
+              </div>
+            </div>
+            <div>
+              <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Nota (opcional)</label>
+              <textarea value={gestionNota} onChange={e => setGestionNota(e.target.value)}
+                placeholder={`Detalles del ${gestionandoAccion.tipo} realizado...`} rows={3}
+                style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button onClick={() => { setGestionandoAccion(null); setGestionNota('') }}
+                style={{ flex: 1, padding: '0.65rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.875rem' }}>
+                Cancelar
+              </button>
+              <button onClick={handleGestionar} disabled={isGestionando}
+                style={{ flex: 2, padding: '0.65rem', borderRadius: '8px', cursor: isGestionando ? 'not-allowed' : 'pointer', border: 'none', background: isGestionando ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                {isGestionando ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <><Check size={15} /> Confirmar</>}
+              </button>
+            </div>
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
+      {/* BLOQUE HOY */}
+      {(localAccionesHoy.length > 0 || vista === 'hoy') && (
+        <div className="glass-panel card" style={{ marginBottom: '2rem', borderTop: '4px solid var(--primary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <h2 className="card-title" style={{ margin: 0 }}>Ruta Programada para Hoy</h2>
-              <p className="card-subtitle">Tu recorrido actual. Puedes eliminar visitas si hubo cambios.</p>
+              <p className="card-subtitle">Tu recorrido actual. Puedes gestionar o eliminar acciones.</p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              {/* Botón Copiar Link (sólo si es la zona CABA) */}
-              {zonaName === 'CABA' && (
-                <button
-                  onClick={handleCopyLink}
-                  className={`btn ${copied ? 'btn-success bg-green-500/20 text-green-400 border-green-500/30' : 'btn-secondary border-white/10 text-secondary hover:text-white'}`}
-                  style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
-                  title={copied ? "¡Enlace Copiado!" : "Copiar Enlace de Ruta Móvil"}
-                >
-                  {copied ? <Check size={16} /> : <Link2 size={16} />}
-                </button>
-              )}
-              
-              {/* Botón Descargar (Cambiado a Icono) */}
-              <button 
-                onClick={() => handleDownloadPDF(pdfRef)} 
-                disabled={isGeneratingPDF}
+              {/* Botón link — disponible para TODAS las zonas */}
+              <button onClick={handleCopyLink}
+                className={`btn ${copied ? 'btn-success' : 'btn-secondary'}`}
+                style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
+                title={copied ? '¡Enlace Copiado!' : 'Copiar Enlace de Ruta Móvil'}>
+                {copied ? <Check size={16} /> : <Link2 size={16} />}
+              </button>
+              <button onClick={() => handleDownloadPDF(pdfRef)} disabled={isGeneratingPDF}
                 className="btn btn-primary"
                 style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
-                title="Descargar PDF de Ruta"
-              >
-                {isGeneratingPDF ? (
-                  <div className="w-4.5 h-4.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Printer size={16} />
-                )}
+                title="Descargar PDF de Ruta">
+                {isGeneratingPDF ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Printer size={16} />}
               </button>
             </div>
           </div>
@@ -287,329 +430,170 @@ export default function IntelligentPlanner({
             {isGeneratingPDF && (
               <div style={{ marginBottom: '2rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1B365D' }}>Mi Ruta del Día</h1>
-                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                  {new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
             )}
-            
-            <div className={isGeneratingPDF ? '' : 'table-container'}>
-              <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
-                <thead>
-                  <tr style={isGeneratingPDF ? { borderBottom: '2px solid #e5e7eb' } : {}}>
-                    <th style={{ width: '50px', textAlign: 'center' }}>#</th>
-                    {vista === 'semana' && <th>Fecha</th>}
-                    <th>Empresa</th>
-                    <th>Ubicación</th>
-                    <th>Motivo de Visita</th>
-                    {!isGeneratingPDF && <th style={{ textAlign: 'right' }}>Acciones</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {localAccionesHoy.map((accion, index) => {
-                    const emp = accion.empresa
-                    return (
-                      <tr key={accion.id} style={{ borderBottom: isGeneratingPDF ? '1px solid #f3f4f6' : '' }}>
-                        <td style={{ textAlign: 'center', width: '60px' }}>
-                          {isGeneratingPDF ? (
-                            <div style={{ 
-                              width: '28px', height: '28px', borderRadius: '50%', 
-                              backgroundColor: '#1B365D', color: 'white', 
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontWeight: 'bold', fontSize: '0.875rem', margin: '0 auto'
-                            }}>
-                              {index + 1}
-                            </div>
-                          ) : (
-                            <input 
-                              key={`${accion.id}-${index}`}
-                              type="number"
-                              defaultValue={index + 1}
-                              min={1}
-                              max={localAccionesHoy.length}
-                              disabled={vista === 'semana'}
-                              style={{ 
-                                width: '48px', textAlign: 'center', padding: '0.25rem',
-                                borderRadius: '4px', border: '1px solid var(--text-muted)',
-                                backgroundColor: 'transparent', color: 'white',
-                                opacity: vista === 'semana' ? 0.5 : 1
-                              }}
-                              onBlur={(e) => {
-                                if (vista === 'semana') return
-                                const newOrder = parseInt(e.target.value)
-                                if (!isNaN(newOrder) && newOrder > 0 && newOrder <= localAccionesHoy.length) {
-                                  moveAccionIndex(index, newOrder - 1)
-                                } else {
-                                  e.target.value = (index + 1).toString()
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.currentTarget.blur()
-                                }
-                              }}
-                            />
-                          )}
-                        </td>
-                        {vista === 'semana' && (
-                          <td>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--primary)' }}>
-                              {accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }) : '-'}
-                            </div>
-                          </td>
-                        )}
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <Building2 size={16} style={{ color: isGeneratingPDF ? '#4b5563' : 'var(--text-muted)' }} />
-                            <div>
-                              <div style={{ fontWeight: 500, color: isGeneratingPDF ? 'black' : 'white' }}>{emp.nombre}</div>
-                              <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)' }}>
-                                {emp.estado?.toUpperCase()}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div style={{ fontSize: '0.875rem' }}>
-                            <MapPin size={12} style={{ display: 'inline', color: isGeneratingPDF ? '#9ca3af' : 'var(--text-muted)', marginRight: '4px' }} />
-                            {emp.direccion || '-'}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)', marginTop: '0.25rem' }}>
-                            {emp.barrio} • {emp.zona}
-                          </div>
-                        </td>
-                        <td>
-                          <div style={{ fontSize: '0.875rem', color: isGeneratingPDF ? 'black' : 'white' }}>
-                            {accion.descripcion}
-                          </div>
-                        </td>
-                        {!isGeneratingPDF && (
-                          <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                              <CompleteActionButton accionId={accion.id} empresaId={emp.id} empresaNombre={emp.nombre} />
-                              
-                              <input 
-                                type="date"
-                                title="Re-agendar"
-                                defaultValue={accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toISOString().split('T')[0] : ''}
-                                onChange={async (e) => {
-                                  if (e.target.value && reagendarAccionAction) {
-                                    await reagendarAccionAction(accion.id, e.target.value)
-                                  }
-                                }}
-                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
-                              />
-                              
-                              <button 
-                                onClick={(e) => openGoogleMaps(e, emp.direccion, emp.barrio)}
-                                className="btn btn-secondary"
-                                style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', borderColor: 'transparent' }}
-                              >
-                                <Navigation size={14} /> Navegar
-                              </button>
-                              <button 
-                                onClick={() => handleEliminarAccion(accion.id)}
-                                style={{ 
-                                  padding: '0.25rem 0.5rem',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                                  color: 'var(--error)',
-                                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                                title="Quitar de la ruta"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })}
-                  
-                  {localAccionesHoy.length === 0 && (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                        No hay visitas programadas para hoy.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+
+            {/* GRUPO 1: Visitas */}
+            {accionesAgrupadas.visitas.length > 0 && (
+              <div style={{ marginBottom: accionesAgrupadas.otras.length > 0 ? '1.5rem' : 0 }}>
+                {!isGeneratingPDF && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', marginBottom: '0.75rem', backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: '6px', borderLeft: '3px solid #10b981' }}>
+                    <Building2 size={14} style={{ color: '#10b981' }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Visitas Programadas ({accionesAgrupadas.visitas.length})
+                    </span>
+                  </div>
+                )}
+                <div className={isGeneratingPDF ? '' : 'table-container'}>
+                  <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
+                    <thead>{tableHead(vista === 'semana')}</thead>
+                    <tbody>{accionesAgrupadas.visitas.map((a, i) => renderAccionRow(a, i, true))}</tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* GRUPO 2: WhatsApp / Correo / Llamada */}
+            {accionesAgrupadas.otras.length > 0 && (
+              <div>
+                {!isGeneratingPDF && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', marginBottom: '0.75rem', backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: '6px', borderLeft: '3px solid #6366f1' }}>
+                    <AlertCircle size={14} style={{ color: '#818cf8' }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Comunicaciones del Día ({accionesAgrupadas.otras.length})
+                    </span>
+                  </div>
+                )}
+                <div className={isGeneratingPDF ? '' : 'table-container'}>
+                  <table className="table" style={isGeneratingPDF ? { color: 'black' } : {}}>
+                    <thead>{tableHead(vista === 'semana')}</thead>
+                    <tbody>{accionesAgrupadas.otras.map((a, i) => renderAccionRow(a, i, false))}</tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {localAccionesHoy.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                No hay acciones programadas para hoy.
+              </div>
+            )}
           </div>
         </div>
-        )}
+      )}
 
-        {/* BLOQUE FUTURAS (Solo en vista semana) */}
-        {vista === 'semana' && groupedFuturas.length > 0 && (
-          <div className="glass-panel card">
-            <h2 className="card-title" style={{ margin: 0, marginBottom: '1.5rem' }}>Planificación por Fecha</h2>
-            
-            <div className="space-y-6">
-              {groupedFuturas.map(({ date, items }) => {
-                const dateObj = new Date(date + 'T12:00:00Z') // prevent timezone shift on display
-                return (
-                  <div 
-                    key={date} 
-                    ref={el => { weeklyPdfRefs.current[date] = el }}
-                    style={generatingPdfDate === date 
-                      ? { backgroundColor: 'white', color: 'black', padding: '2rem' } 
-                      : { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '1rem', border: '1px solid rgba(255,255,255,0.05)' }
-                    }
-                  >
-                    {generatingPdfDate === date && (
-                      <div style={{ marginBottom: '2rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1B365D' }}>Mi Ruta de Visitas</h1>
-                        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                          {dateObj.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                      </div>
+      {/* BLOQUE FUTURAS */}
+      {vista === 'semana' && groupedFuturas.length > 0 && (
+        <div className="glass-panel card">
+          <h2 className="card-title" style={{ margin: 0, marginBottom: '1.5rem' }}>Planificación por Fecha</h2>
+          <div className="space-y-6">
+            {groupedFuturas.map(({ date, items }) => {
+              const dateObj = new Date(date + 'T12:00:00Z')
+              return (
+                <div key={date} ref={el => { weeklyPdfRefs.current[date] = el }}
+                  style={generatingPdfDate === date
+                    ? { backgroundColor: 'white', color: 'black', padding: '2rem' }
+                    : { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '1rem', border: '1px solid rgba(255,255,255,0.05)' }
+                  }>
+                  {generatingPdfDate === date && (
+                    <div style={{ marginBottom: '2rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
+                      <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1B365D' }}>Mi Ruta de Visitas</h1>
+                      <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>{dateObj.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: generatingPdfDate === date ? 'none' : '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: generatingPdfDate === date ? '#1B365D' : 'var(--primary)', margin: 0 }}>
+                      {dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </h3>
+                    {generatingPdfDate !== date && (
+                      <button onClick={() => handleDownloadWeeklyPDF(date)} disabled={generatingPdfDate !== null}
+                        className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                        <Printer size={14} style={{ marginRight: '0.25rem', display: 'inline' }} />
+                        {generatingPdfDate === date ? 'Generando...' : 'Descargar PDF'}
+                      </button>
                     )}
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: generatingPdfDate === date ? 'none' : '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                      <h3 style={{ fontSize: '1rem', fontWeight: 600, color: generatingPdfDate === date ? '#1B365D' : 'var(--primary)', margin: 0 }}>
-                        {dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                      </h3>
-                      {generatingPdfDate !== date && (
-                        <button
-                          onClick={() => handleDownloadWeeklyPDF(date)}
-                          disabled={generatingPdfDate !== null}
-                          className="btn btn-secondary"
-                          style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                        >
-                          <Printer size={14} style={{ marginRight: '0.25rem', display: 'inline' }} />
-                          {generatingPdfDate === date ? 'Generando...' : 'Descargar PDF'}
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className={generatingPdfDate === date ? '' : 'table-container'}>
-                      <table className="table" style={generatingPdfDate === date ? { color: 'black' } : {}}>
-                        <thead>
-                          <tr style={generatingPdfDate === date ? { borderBottom: '2px solid #e5e7eb' } : {}}>
-                            <th>Empresa</th>
-                            <th>Ubicación</th>
-                            <th>Motivo de Visita</th>
-                            {generatingPdfDate !== date && <th style={{ textAlign: 'right' }}>Acciones</th>}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {items.map((accion) => {
-                            const emp = accion.empresa
-                            return (
-                              <tr key={accion.id} style={{ borderBottom: generatingPdfDate === date ? '1px solid #f3f4f6' : '' }}>
-                                <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <Building2 size={16} style={{ color: generatingPdfDate === date ? '#4b5563' : 'var(--text-muted)' }} />
-                                    <div>
-                                      <div style={{ fontWeight: 500, color: generatingPdfDate === date ? 'black' : 'white' }}>{emp.nombre}</div>
-                                      <div style={{ fontSize: '0.75rem', color: generatingPdfDate === date ? '#6b7280' : 'var(--text-muted)' }}>{emp.estado?.toUpperCase()}</div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td>
-                                  <div style={{ fontSize: '0.875rem' }}>
-                                    <MapPin size={12} style={{ display: 'inline', color: generatingPdfDate === date ? '#9ca3af' : 'var(--text-muted)', marginRight: '4px' }} />
-                                    {emp.direccion || '-'}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: generatingPdfDate === date ? '#6b7280' : 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                    {emp.barrio} • {emp.zona}
-                                  </div>
-                                </td>
-                                <td>
-                                  <div style={{ fontSize: '0.875rem', color: generatingPdfDate === date ? 'black' : 'white' }}>{accion.descripcion}</div>
-                                </td>
-                                {generatingPdfDate !== date && (
-                                  <td style={{ textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                      
-                                      <input 
-                                        type="date"
-                                        title="Re-agendar"
-                                        defaultValue={date}
-                                        onChange={async (e) => {
-                                          if (e.target.value && reagendarAccionAction) {
-                                            await reagendarAccionAction(accion.id, e.target.value)
-                                          }
-                                        }}
-                                        style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
-                                      />
-
-                                      <button 
-                                        onClick={() => handleEliminarAccion(accion.id)}
-                                        style={{ 
-                                          padding: '0.25rem 0.5rem',
-                                          borderRadius: '4px',
-                                          backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                                          color: 'var(--error)',
-                                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                                          cursor: 'pointer',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center'
-                                        }}
-                                        title="Quitar de la ruta"
-                                      >
-                                        <Trash2 size={14} />
-                                      </button>
-                                    </div>
-                                  </td>
-                                )}
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
                   </div>
-                )
-              })}
-            </div>
+                  <div className={generatingPdfDate === date ? '' : 'table-container'}>
+                    <table className="table" style={generatingPdfDate === date ? { color: 'black' } : {}}>
+                      <thead>
+                        <tr style={generatingPdfDate === date ? { borderBottom: '2px solid #e5e7eb' } : {}}>
+                          <th style={{ width: '90px' }}>Tipo</th>
+                          <th>Empresa</th>
+                          <th>Ubicación</th>
+                          <th>Descripción</th>
+                          {generatingPdfDate !== date && <th style={{ textAlign: 'right' }}>Acciones</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map(accion => {
+                          const emp = accion.empresa
+                          return (
+                            <tr key={accion.id} style={{ borderBottom: generatingPdfDate === date ? '1px solid #f3f4f6' : '' }}>
+                              <td>{renderTipoBadge(accion.tipo)}</td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
+                                  <div>
+                                    <div style={{ fontWeight: 500, color: generatingPdfDate === date ? 'black' : 'white' }}>{emp.nombre}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{emp.estado?.toUpperCase()}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ fontSize: '0.875rem' }}><MapPin size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />{emp.direccion || '-'}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{emp.barrio} • {emp.zona}</div>
+                              </td>
+                              <td><div style={{ fontSize: '0.875rem', color: generatingPdfDate === date ? 'black' : 'white' }}>{accion.descripcion}</div></td>
+                              {generatingPdfDate !== date && (
+                                <td style={{ textAlign: 'right' }}>
+                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                    <input type="date" title="Re-agendar" defaultValue={date}
+                                      onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
+                                      style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
+                                    />
+                                    <button onClick={() => handleEliminarAccion(accion.id)}
+                                      style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                      title="Quitar"><Trash2 size={14} /></button>
+                                  </div>
+                                </td>
+                              )}
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* SECCIÓN 2: CREADOR INTELIGENTE DE RUTAS */}
+      {/* CREADOR INTELIGENTE */}
       <div className="glass-panel card" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MapIcon style={{ color: 'var(--primary)' }} /> Creador Inteligente de Rutas
           </h2>
-          
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
             {selectedRoute.length > 0 && (
               <>
-                <button 
-                  onClick={() => setShowOnlyRoute(!showOnlyRoute)}
-                  className={`btn ${showOnlyRoute ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '0.5rem 1rem' }}
-                >
+                <button onClick={() => setShowOnlyRoute(!showOnlyRoute)}
+                  className={`btn ${showOnlyRoute ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem' }}>
                   {showOnlyRoute ? 'Ver Sugerencias' : `Ver Selección (${selectedRoute.length})`}
                 </button>
-
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   {vista === 'semana' && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Para fecha:</span>
-                      <input 
-                        type="date"
-                        value={targetDate}
-                        onChange={(e) => setTargetDate(e.target.value)}
-                        style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.875rem' }}
-                      />
+                      <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)}
+                        style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.875rem' }} />
                     </div>
                   )}
-                  <button 
-                    onClick={handleCrearRuta} 
-                    disabled={isSubmitting}
-                    className="btn btn-primary"
-                    style={{ padding: '0.5rem 1rem' }}
-                  >
+                  <button onClick={handleCrearRuta} disabled={isSubmitting}
+                    className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>
                     {isSubmitting ? 'Programando...' : `Añadir (${selectedRoute.length}) a la Ruta`}
                   </button>
                 </div>
@@ -617,26 +601,21 @@ export default function IntelligentPlanner({
             )}
           </div>
         </div>
-
         {!showOnlyRoute && (
           <div style={{ marginTop: '1.5rem' }}>
             <label className="form-label" style={{ marginBottom: '0.5rem' }}>Filtrar Sugerencias por Zona:</label>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               {zonas.map(z => (
-                <button
-                  key={z}
-                  onClick={() => toggleZona(z)}
+                <button key={z} onClick={() => toggleZona(z)}
                   className={`badge ${selectedZonas.includes(z) ? 'badge-info' : 'badge-neutral'}`}
-                  style={{ cursor: 'pointer', padding: '0.4rem 0.8rem' }}
-                >
-                  {z}
-                </button>
+                  style={{ cursor: 'pointer', padding: '0.4rem 0.8rem' }}>{z}</button>
               ))}
             </div>
           </div>
         )}
       </div>
 
+      {/* TABLA SUGERENCIAS */}
       <div className="table-container">
         <table className="table">
           <thead>
@@ -651,83 +630,41 @@ export default function IntelligentPlanner({
           </thead>
           <tbody>
             {filteredSugerencias.map(s => {
-              const index = selectedRoute.indexOf(s.id)
-              const isSelected = index !== -1
-              const sequenceNum = index + 1
-
+              const idx = selectedRoute.indexOf(s.id)
+              const isSel = idx !== -1
               return (
-                <tr 
-                  key={s.id} 
-                  onClick={() => toggleEmpresa(s.id)}
-                  style={{ 
-                    cursor: 'pointer',
-                    backgroundColor: isSelected ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
-                  }}
-                >
+                <tr key={s.id} onClick={() => toggleEmpresa(s.id)}
+                  style={{ cursor: 'pointer', backgroundColor: isSel ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent' }}>
                   <td style={{ textAlign: 'center' }}>
-                    {isSelected ? (
-                      <div style={{ 
-                        width: '28px', height: '28px', borderRadius: '50%', 
-                        backgroundColor: 'var(--primary)', 
-                        color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 'bold', fontSize: '0.875rem', margin: '0 auto'
-                      }}>
-                        {sequenceNum}
-                      </div>
-                    ) : (
-                      <div style={{ 
-                        width: '24px', height: '24px', borderRadius: '4px',
-                        border: '2px solid var(--text-muted)', margin: '0 auto'
-                      }} />
-                    )}
+                    {isSel
+                      ? <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem', margin: '0 auto' }}>{idx + 1}</div>
+                      : <div style={{ width: '24px', height: '24px', borderRadius: '4px', border: '2px solid var(--text-muted)', margin: '0 auto' }} />
+                    }
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
                       <div>
                         <div style={{ fontWeight: 500 }}>{s.nombre}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {s.estado.toUpperCase()}
-                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.estado.toUpperCase()}</div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <div style={{ fontSize: '0.875rem' }}>
-                      <MapPin size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />
-                      {s.direccion || '-'}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      {s.barrio} • {s.zona}
-                    </div>
+                    <div style={{ fontSize: '0.875rem' }}><MapPin size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />{s.direccion || '-'}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{s.barrio} • {s.zona}</div>
                   </td>
+                  <td><div style={{ fontSize: '0.875rem' }}><Phone size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />{s.telefono || '-'}</div></td>
                   <td>
-                    <div style={{ fontSize: '0.875rem' }}>
-                      <Phone size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />
-                      {s.telefono || '-'}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ 
-                      fontSize: '0.75rem', fontWeight: 500, padding: '0.25rem 0.5rem', 
-                      borderRadius: '4px', display: 'inline-block',
-                      backgroundColor: 'rgba(var(--warning-rgb), 0.1)',
-                      color: 'var(--warning)'
-                    }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 500, padding: '0.25rem 0.5rem', borderRadius: '4px', display: 'inline-block', backgroundColor: 'rgba(var(--warning-rgb), 0.1)', color: 'var(--warning)' }}>
                       {s.motivo}
                     </div>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <Link 
-                        href={`/zonas/${zonaName}/empresas/${s.id}`} 
-                        onClick={e => e.stopPropagation()}
-                        className="btn btn-secondary" 
-                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                      >
-                        Ver Ficha
-                      </Link>
-                    </div>
+                    <Link href={`/zonas/${zonaName}/empresas/${s.id}`} onClick={e => e.stopPropagation()}
+                      className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
+                      Ver Ficha
+                    </Link>
                   </td>
                 </tr>
               )
@@ -735,9 +672,7 @@ export default function IntelligentPlanner({
             {filteredSugerencias.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                  {sugerencias.length === 0 
-                    ? "No hay empresas que cumplan los criterios para sugerir visitas hoy." 
-                    : "No hay empresas en la selección o zonas actuales."}
+                  {sugerencias.length === 0 ? 'No hay empresas que cumplan los criterios para sugerir visitas hoy.' : 'No hay empresas en la selección o zonas actuales.'}
                 </td>
               </tr>
             )}

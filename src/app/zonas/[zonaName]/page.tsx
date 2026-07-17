@@ -8,6 +8,7 @@ import { PeriodFilter } from '@/components/PeriodFilter'
 import { getSessionUser } from '@/lib/auth'
 import { getPredictiveAlerts } from '@/lib/alertsEngine'
 import { AlertsDashboard } from '@/components/AlertsDashboard'
+import TareasPendientes from '@/components/TareasPendientes'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -213,6 +214,27 @@ export default async function DashboardPage({ params, searchParams }: { params: 
     }
   })
 
+  // Acciones en estado 'visitada' (marcadas en campo, pendientes de registrar resultado)
+  const accionesVisitadas = await prisma.accion.findMany({
+    where: {
+      estado: 'visitada',
+      ...whereAccion
+    },
+    include: { empresa: { select: { id: true, nombre: true } } },
+    orderBy: { id: 'asc' }
+  })
+
+  // Acciones completadas HOY (historial del día)
+  const accionesCompletadasHoy = await prisma.accion.findMany({
+    where: {
+      estado: 'completada',
+      completadaEn: { gte: today, lt: tomorrow },
+      ...whereAccion
+    },
+    include: { empresa: { select: { id: true, nombre: true } } },
+    orderBy: { completadaEn: 'desc' }
+  })
+
   const reprogramadasCount = visitasEjecutadasHoy.filter(v => v.resultado.toLowerCase().includes('reprogram')).length
   const atendidasCount = visitasEjecutadasHoy.length - reprogramadasCount
 
@@ -353,7 +375,32 @@ export default async function DashboardPage({ params, searchParams }: { params: 
         </div>
       </div>
 
-      <AlertsDashboard alerts={predicAlerts} zonaName={encodeURIComponent(decodedZona)} />
+      {/* Alertas de Inteligencia (50%) + Tareas Pendientes (50%) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem', alignItems: 'start' }}>
+        {/* Alertas — lado izquierdo */}
+        <div>
+          <AlertsDashboard alerts={predicAlerts} zonaName={encodeURIComponent(decodedZona)} />
+        </div>
+        {/* Tareas Pendientes — lado derecho */}
+        <TareasPendientes
+          tareasVisitadas={accionesVisitadas.map(a => ({
+            id: a.id,
+            empresaId: a.empresaId,
+            empresaNombre: a.empresa.nombre,
+            tipo: a.tipo,
+            descripcion: a.descripcion,
+          }))}
+          tareasCompletadasHoy={accionesCompletadasHoy.map(a => ({
+            id: a.id,
+            empresaId: a.empresaId,
+            empresaNombre: a.empresa.nombre,
+            tipo: a.tipo,
+            descripcion: a.descripcion,
+            completadaEn: a.completadaEn,
+          }))}
+          zonaName={encodeURIComponent(decodedZona)}
+        />
+      </div>
 
       {/* Stats Grid */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: '2rem' }}>

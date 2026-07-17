@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/date'
+import { marcarVisitadaAction, gestionarAccionNoVisitaAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -163,7 +164,8 @@ export default async function PlanificadorPage(props: {
     orderBy: { fechaVencimiento: 'asc' }
   })
 
-  // Acciones para hoy
+  // Acciones para hoy — incluye TODOS los tipos: visita, whatsapp, correo, llamada
+  // Estados incluidos: 'pendiente' (no gestionadas) — excluyendo 'visitada' que ya están en Tareas Pendientes
   const paraHoy = await prisma.accion.findMany({
     where: {
       estado: 'pendiente',
@@ -322,6 +324,8 @@ export default async function PlanificadorPage(props: {
           eliminarAccionAction={eliminarAccionAction}
           reagendarAccionAction={reagendarAccionAction}
           reordenarRutaAction={reordenarRutaAction}
+          marcarVisitadaAction={marcarVisitadaAction}
+          gestionarAccionNoVisitaAction={gestionarAccionNoVisitaAction}
           vista={vista}
         />
       )}
