@@ -38,10 +38,19 @@ model Empresa {
   creadoEn         DateTime @default(now())
   actualizadoEn    DateTime @updatedAt
 
-  visitas  Visita[]
-  acciones Accion[]
-  alertas  Alerta[]
-  pedidos  Pedido[]
+  // ── Plan Maestro: Customer 360 & Inteligencia Predictiva ──────────────────
+  sentimentScore   Int?     // 0-100: umbral < 40 = alerta de churn (Zigpoll)
+  latitud          Float?   // Coordenada para ruteo y geofencing
+  longitud         Float?
+  frecuenciaCompra Int?     // Compras/mes calculado — para alertas de upsell
+  limiteCreditoARs Float?   // Límite de crédito aprobado en ARS
+  saldoDeudorARs   Float?   @default(0) // Saldo deudor actual
+
+  visitas         Visita[]
+  acciones        Accion[]
+  alertas         Alerta[]
+  pedidos         Pedido[]
+  ticketsSoporte  TicketSoporte[]
 }
 
 model SubZona {
@@ -64,6 +73,13 @@ model Visita {
   notas         String?
   proximaAccion String?
   creadoEn      DateTime @default(now())
+
+  // ── Plan Maestro: Check-in/out Georeferenciado ────────────────────────────
+  latitudCheckIn   Float?   // GPS del preventista al momento del check-in
+  longitudCheckIn  Float?
+  whatsappEnviado  Boolean  @default(false) // Confirmación automática al cliente
+  exhibicion       String?  // Cualitativo: 'buena' | 'regular' | 'mala' | null
+  usuarioAlias     String?  // Alias del vendedor que registró la visita
 }
 
 model Accion {
@@ -369,4 +385,29 @@ model ReporteVisitas {
   creadoEn      DateTime @default(now())
 
   @@unique([fecha, zona])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO CRM 360: Tickets de Soporte y Engagement Tracking
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TicketSoporte {
+  id          Int       @id @default(autoincrement())
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  tipo        String    // 'entrega' | 'calidad' | 'facturacion' | 'otro'
+  prioridad   String    @default("media")  // 'alta' | 'media' | 'baja'
+  estado      String    @default("abierto") // 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado'
+
+  asunto      String
+  descripcion String
+  resolucion  String?
+
+  reportadoPorAlias String?
+  asignadoA         String?  // Alias del responsable interno
+
+  creadoEn    DateTime  @default(now())
+  cerradoEn   DateTime?
+  actualizadoEn DateTime @updatedAt
 }
