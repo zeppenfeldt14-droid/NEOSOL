@@ -6,6 +6,8 @@ import { MonthlyVisitsChart } from '@/components/charts/MonthlyVisitsChart'
 import { WeeklyVisitsChart } from '@/components/charts/WeeklyVisitsChart'
 import { PeriodFilter } from '@/components/PeriodFilter'
 import { getSessionUser } from '@/lib/auth'
+import { getPredictiveAlerts } from '@/lib/alertsEngine'
+import { AlertsDashboard } from '@/components/AlertsDashboard'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -88,6 +90,11 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const empresasClientes = await prisma.empresa.count({ where: { estado: 'activo', ...whereEmpresa } })
   const accionesPendientes = await prisma.accion.count({ where: { estado: 'pendiente', ...whereAccion } })
 
+  const predicAlerts = await getPredictiveAlerts({
+    usuarioNivel: user.nivel,
+    vendedorAlias: user.alias,
+    zona: decodedZona
+  })
 
   // Efectividad: nuevos clientes este mes / empresas contactadas este mes × 100
   const now = new Date()
@@ -345,6 +352,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
           </Link>
         </div>
       </div>
+
+      <AlertsDashboard alerts={predicAlerts} zonaName={encodeURIComponent(decodedZona)} />
 
       {/* Stats Grid */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: '2rem' }}>
