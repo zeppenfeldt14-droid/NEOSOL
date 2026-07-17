@@ -6,8 +6,8 @@ import { AppShellClient } from './AppShellClient'
 import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
-  title: 'CRM Neosol Visitas',
-  description: 'Sistema de gestión de visitas y empresas',
+  title: 'CRM NEOSOL',
+  description: 'Sistema de gestión',
 }
 
 export default async function RootLayout({
@@ -25,7 +25,7 @@ export default async function RootLayout({
   const logo = logoConfig ? logoConfig.valor : null
 
   // If there is no authenticated user session (e.g. /login) OR they are visiting the mobile landing page, render page full screen
-  if (!user || pathname === '/visitas-hoy-caba') {
+  if (!user || pathname.startsWith('/visitas-hoy')) {
     return (
       <html lang="es">
         <body>
