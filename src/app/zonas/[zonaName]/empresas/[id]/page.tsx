@@ -44,6 +44,17 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   }
 
 
+  // Serializar la empresa para pasar al cliente sin problemas de fechas
+  const serializedEmpresa = {
+    ...empresa,
+    creadoEn: empresa.creadoEn.toISOString(),
+    actualizadoEn: empresa.actualizadoEn.toISOString(),
+    fechaBaja: empresa.fechaBaja ? empresa.fechaBaja.toISOString() : null,
+    visitas: [],
+    acciones: [],
+    alertas: []
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -69,7 +80,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
               </p>
             </div>
             <div className="flex gap-2">
-              <QuickActionsClient id={empresa.id} estado={empresa.estado} zonaName={zonaName} />
+              <QuickActionsClient id={empresa.id} estado={empresa.estado} zonaName={zonaName} empresa={serializedEmpresa} />
               <Link href={`/zonas/${zonaName}/empresas/${empresaId}/editar`} className="btn btn-secondary flex items-center gap-2">
                 <Edit size={16} /> Editar Ficha
               </Link>
