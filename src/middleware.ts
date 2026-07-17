@@ -9,6 +9,9 @@ export function middleware(request: NextRequest) {
   const isPublicPath = 
     pathname === '/login' || 
     pathname === '/visitas-hoy-caba' ||
+    pathname.startsWith('/visitas-hoy') ||
+    pathname.startsWith('/precios-publicos') ||
+    pathname.startsWith('/reportes-publicos') ||
     pathname.startsWith('/api/auth/login')
 
   // Ignore static assets, next internals, and public logo assets

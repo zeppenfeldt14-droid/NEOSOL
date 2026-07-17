@@ -209,13 +209,13 @@ export default async function PlanificadorPage(props: {
     }
   })
 
-  const currentMs = new Date().getTime()
-  const sugerencias = []
+  // Fetch available sub-zones in DB for this major zone
   const dbSubZonas = await prisma.subZona.findMany({
     where: { zona: decodedZona },
     orderBy: { nombre: 'asc' }
   })
 
+  // Get unique sub-zones (combining predefined ones with actual company subZones)
   const zonasSet = new Set<string>()
   dbSubZonas.forEach(sz => zonasSet.add(sz.nombre.trim().toUpperCase()))
   empresasAll.forEach(emp => {
@@ -226,8 +226,10 @@ export default async function PlanificadorPage(props: {
   zonasSet.add('SIN ASIGNAR')
   zonasSet.add('CORREO')
 
-  for (const emp of empresasAll) {
+  const currentMs = new Date().getTime()
+  const sugerencias = []
 
+  for (const emp of empresasAll) {
     const ultimaVisita = emp.visitas[0]?.fecha
     let diasDesde = null
     
@@ -240,8 +242,7 @@ export default async function PlanificadorPage(props: {
         sugerencias.push({
           id: emp.id,
           nombre: emp.nombre,
-          zona: emp.zona ? emp.zona.trim().toUpperCase() : null,
-          subZona: emp.subZona ? emp.subZona.trim().toUpperCase() : null,
+          zona: emp.subZona ? emp.subZona.trim().toUpperCase() : 'SIN ASIGNAR',
           barrio: emp.barrio,
           direccion: emp.direccion,
           telefono: emp.telefono,
@@ -266,8 +267,7 @@ export default async function PlanificadorPage(props: {
       sugerencias.push({
         id: emp.id,
         nombre: emp.nombre,
-        zona: emp.zona ? emp.zona.trim().toUpperCase() : null,
-        subZona: emp.subZona ? emp.subZona.trim().toUpperCase() : null,
+        zona: emp.subZona ? emp.subZona.trim().toUpperCase() : 'SIN ASIGNAR',
         barrio: emp.barrio,
         direccion: emp.direccion,
         telefono: emp.telefono,

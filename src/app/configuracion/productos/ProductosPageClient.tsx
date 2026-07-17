@@ -458,6 +458,7 @@ export function ProductosPageClient({ userNivel }: Props) {
               </button>
             </>
           )}
+
           <button
             onClick={handleCopyPreciosLink}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold transition-all ${
@@ -468,8 +469,9 @@ export function ProductosPageClient({ userNivel }: Props) {
             title="Copiar link público de precios para compartir sin login"
           >
             {copiedPrecios ? <Check size={14} /> : <Link2 size={14} />}
-            {copiedPrecios ? '¡Link copiado!' : 'Link Público'}
+            {copiedPrecios ? '¡Link copiado!' : 'Link Público ($)'}
           </button>
+
           <button
             onClick={handleExportPDF}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-secondary hover:text-white hover:border-white/30 text-xs font-bold transition-all"

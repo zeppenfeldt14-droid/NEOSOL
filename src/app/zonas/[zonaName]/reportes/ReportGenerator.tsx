@@ -326,30 +326,30 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
     <div className="w-full">
       
       {/* Tabs */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6 border-b border-white/5 pb-3">
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
         <button 
           onClick={() => {
             setActiveTab('generador')
             setSelectedReportData(null)
             setPreviewFile(null)
           }} 
-          className={`btn ${activeTab === 'generador' ? 'btn-primary' : 'btn-secondary border-white/5 text-secondary hover:text-white'} flex-1 sm:flex-initial`}
-          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px', justifyContent: 'center' }}
+          className={`btn ${activeTab === 'generador' ? 'btn-primary' : 'btn-secondary border-white/5 text-secondary hover:text-white'}`}
+          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px' }}
         >
           <FilePlus size={16} /> Generar Reporte de Hoy
         </button>
         <button 
           onClick={() => setActiveTab('historial')} 
-          className={`btn ${activeTab === 'historial' ? 'btn-primary' : 'btn-secondary border-white/5 text-secondary hover:text-white'} flex-1 sm:flex-initial`}
-          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px', justifyContent: 'center' }}
+          className={`btn ${activeTab === 'historial' ? 'btn-primary' : 'btn-secondary border-white/5 text-secondary hover:text-white'}`}
+          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px' }}
         >
           <History size={16} /> Historial de Reportes
         </button>
         {/* Botón copiar link público de reportes */}
         <button
           onClick={handleCopyReportesLink}
-          className={`btn ${copiedReportes ? 'btn-success' : 'btn-secondary border-white/5 text-secondary hover:text-white'} flex-1 sm:flex-initial`}
-          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px', justifyContent: 'center', padding: '0.5rem 0.875rem' }}
+          className={`btn ${copiedReportes ? 'btn-success' : 'btn-secondary border-white/5 text-secondary hover:text-white'}`}
+          style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderRadius: '10px', marginLeft: 'auto', padding: '0.5rem 0.875rem' }}
           title={copiedReportes ? '¡Link Copiado!' : 'Copiar Link Público de Reportes'}
         >
           {copiedReportes ? <Check size={16} /> : <Link2 size={16} />}
@@ -359,7 +359,7 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
 
       {/* Tab Generador */}
       {activeTab === 'generador' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
           
           {/* Controles */}
           <div className="glass-panel card" style={{ padding: '1.5rem' }}>
@@ -426,7 +426,7 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
 
       {/* Tab Historial */}
       {activeTab === 'historial' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
           
           {/* Lista de Reportes de la DB */}
           <div className="glass-panel card" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>

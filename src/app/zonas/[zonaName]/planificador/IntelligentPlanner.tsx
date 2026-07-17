@@ -13,7 +13,6 @@ type EmpresaSugerida = {
   id: number
   nombre: string
   zona: string | null
-  subZona: string | null
   barrio: string | null
   direccion: string | null
   telefono: string | null
@@ -162,7 +161,7 @@ export default function IntelligentPlanner({
       return result
     }
     if (selectedZonas.length > 0) {
-      result = result.filter(s => s.subZona && selectedZonas.includes(s.subZona))
+      result = result.filter(s => s.zona && selectedZonas.includes(s.zona))
     }
     return result
   }, [sugerencias, selectedZonas, showOnlyRoute, selectedRoute, accionesHoy])
