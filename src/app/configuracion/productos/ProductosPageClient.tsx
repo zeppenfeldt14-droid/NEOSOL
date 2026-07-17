@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Package, Plus, Pencil, Trash2, Download, Search,
   Save, X, CheckCircle2, AlertCircle, RefreshCw,
-  Printer, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Percent
+  Printer, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Percent, Link2, Check
 } from 'lucide-react'
 
 interface Producto {
@@ -51,6 +51,14 @@ export function ProductosPageClient({ userNivel }: Props) {
   const [tarifaVer, setTarifaVer] = useState<'min' | 'max'>('max')
   const [priceLists, setPriceLists] = useState<any[]>([])
   const [selectedListId, setSelectedListId] = useState<number | null>(null)
+  const [copiedPrecios, setCopiedPrecios] = useState(false)
+
+  const handleCopyPreciosLink = () => {
+    const link = `${window.location.origin}/precios-publicos`
+    navigator.clipboard.writeText(link)
+      .then(() => { setCopiedPrecios(true); setTimeout(() => setCopiedPrecios(false), 2500) })
+      .catch(err => console.error('Error al copiar link:', err))
+  }
 
   // Modal state
   const [modal, setModal] = useState<'crear' | 'editar' | null>(null)
@@ -450,6 +458,18 @@ export function ProductosPageClient({ userNivel }: Props) {
               </button>
             </>
           )}
+          <button
+            onClick={handleCopyPreciosLink}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold transition-all ${
+              copiedPrecios
+                ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                : 'bg-white/5 border-white/10 text-secondary hover:text-white hover:border-white/30'
+            }`}
+            title="Copiar link público de precios para compartir sin login"
+          >
+            {copiedPrecios ? <Check size={14} /> : <Link2 size={14} />}
+            {copiedPrecios ? '¡Link copiado!' : 'Link Público'}
+          </button>
           <button
             onClick={handleExportPDF}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-secondary hover:text-white hover:border-white/30 text-xs font-bold transition-all"

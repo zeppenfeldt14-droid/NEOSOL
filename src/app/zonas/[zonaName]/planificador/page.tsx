@@ -211,10 +211,22 @@ export default async function PlanificadorPage(props: {
 
   const currentMs = new Date().getTime()
   const sugerencias = []
+  const dbSubZonas = await prisma.subZona.findMany({
+    where: { zona: decodedZona },
+    orderBy: { nombre: 'asc' }
+  })
+
   const zonasSet = new Set<string>()
+  dbSubZonas.forEach(sz => zonasSet.add(sz.nombre.trim().toUpperCase()))
+  empresasAll.forEach(emp => {
+    if (emp.subZona) {
+      zonasSet.add(emp.subZona.trim().toUpperCase())
+    }
+  })
+  zonasSet.add('SIN ASIGNAR')
+  zonasSet.add('CORREO')
 
   for (const emp of empresasAll) {
-    if (emp.zona) zonasSet.add(emp.zona.trim().toUpperCase())
 
     const ultimaVisita = emp.visitas[0]?.fecha
     let diasDesde = null
@@ -229,6 +241,7 @@ export default async function PlanificadorPage(props: {
           id: emp.id,
           nombre: emp.nombre,
           zona: emp.zona ? emp.zona.trim().toUpperCase() : null,
+          subZona: emp.subZona ? emp.subZona.trim().toUpperCase() : null,
           barrio: emp.barrio,
           direccion: emp.direccion,
           telefono: emp.telefono,
@@ -254,6 +267,7 @@ export default async function PlanificadorPage(props: {
         id: emp.id,
         nombre: emp.nombre,
         zona: emp.zona ? emp.zona.trim().toUpperCase() : null,
+        subZona: emp.subZona ? emp.subZona.trim().toUpperCase() : null,
         barrio: emp.barrio,
         direccion: emp.direccion,
         telefono: emp.telefono,

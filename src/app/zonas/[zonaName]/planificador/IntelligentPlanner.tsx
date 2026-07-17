@@ -13,6 +13,7 @@ type EmpresaSugerida = {
   id: number
   nombre: string
   zona: string | null
+  subZona: string | null
   barrio: string | null
   direccion: string | null
   telefono: string | null
@@ -74,7 +75,6 @@ export default function IntelligentPlanner({
   const pdfRef = useRef<HTMLDivElement>(null)
   const weeklyPdfRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [copied, setCopied] = useState(false)
-  const [copiedPrecios, setCopiedPrecios] = useState(false)
 
   // Mini-modal Gestionado
   const [gestionandoAccion, setGestionandoAccion] = useState<any | null>(null)
@@ -90,14 +90,6 @@ export default function IntelligentPlanner({
     navigator.clipboard.writeText(link)
       .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
       .catch(err => console.error('Error al copiar el enlace:', err))
-  }
-
-  // Copiar link de Lista de Precios pública
-  const handleCopyPreciosLink = () => {
-    const link = `${window.location.origin}/precios-publicos`
-    navigator.clipboard.writeText(link)
-      .then(() => { setCopiedPrecios(true); setTimeout(() => setCopiedPrecios(false), 2000) })
-      .catch(err => console.error('Error al copiar el enlace de precios:', err))
   }
 
   useEffect(() => { setLocalAccionesHoy(accionesHoy || []) }, [accionesHoy])
@@ -170,7 +162,7 @@ export default function IntelligentPlanner({
       return result
     }
     if (selectedZonas.length > 0) {
-      result = result.filter(s => s.zona && selectedZonas.includes(s.zona))
+      result = result.filter(s => s.subZona && selectedZonas.includes(s.subZona))
     }
     return result
   }, [sugerencias, selectedZonas, showOnlyRoute, selectedRoute, accionesHoy])
@@ -413,13 +405,6 @@ export default function IntelligentPlanner({
               <p className="card-subtitle">Tu recorrido actual. Puedes gestionar o eliminar acciones.</p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              {/* Botón link de Lista de Precios */}
-              <button onClick={handleCopyPreciosLink}
-                className={`btn ${copiedPrecios ? 'btn-success' : 'btn-secondary'}`}
-                style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
-                title={copiedPrecios ? '¡Link de Precios Copiado!' : 'Copiar Link Lista de Precios'}>
-                {copiedPrecios ? <Check size={16} /> : <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>$</span>}
-              </button>
               {/* Botón link de ruta del día */}
               <button onClick={handleCopyLink}
                 className={`btn ${copied ? 'btn-success' : 'btn-secondary'}`}

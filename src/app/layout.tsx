@@ -24,10 +24,13 @@ export default async function RootLayout({
   })
   const logo = logoConfig ? logoConfig.valor : null
 
-  // If there is no authenticated user session (e.g. /login) OR they are visiting the mobile landing page, render page full screen
-  if (!user || pathname.startsWith('/visitas-hoy')) {
+  // If there is no authenticated user session (e.g. /login) OR they are visiting the mobile landing pages, render page full screen
+  if (!user || pathname.startsWith('/visitas-hoy') || pathname.startsWith('/precios-publicos') || pathname.startsWith('/reportes-publicos')) {
     return (
       <html lang="es">
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        </head>
         <body>
           <div className="min-h-screen bg-[#0B132B]">
             {children}
