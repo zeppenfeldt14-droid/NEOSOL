@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { DailyRouteChart } from '@/components/charts/DailyRouteChart'
 import { MonthlyVisitsChart } from '@/components/charts/MonthlyVisitsChart'
 import { WeeklyVisitsChart } from '@/components/charts/WeeklyVisitsChart'
+import { ActionsBreakdownChart } from '@/components/charts/ActionsBreakdownChart'
+import { ResponsesPieChart } from '@/components/charts/ResponsesPieChart'
 import { PeriodFilter } from '@/components/PeriodFilter'
 import { getSessionUser } from '@/lib/auth'
 import { getPredictiveAlerts } from '@/lib/alertsEngine'
@@ -247,7 +249,9 @@ export default async function DashboardPage({ params, searchParams }: { params: 
       ...whereVisita
     },
     select: {
-      fecha: true
+      fecha: true,
+      tipo: true,
+      respuestaObtenida: true
     }
   })
 
@@ -357,6 +361,21 @@ export default async function DashboardPage({ params, searchParams }: { params: 
     activos: activosPorMes[idx],
     bajas:   bajasPorMes[idx]
   }))
+
+  const actionsBreakdownData = months.map((month, idx) => {
+    const visitsInMonth = visitasEsteAño.filter(v => v.fecha.getMonth() === idx)
+    return {
+      month,
+      visitas: visitsInMonth.filter(v => v.tipo === 'visita' || v.tipo === 'visita_programada' || !v.tipo).length,
+      whatsapp: visitsInMonth.filter(v => v.tipo === 'whatsapp').length,
+      correos: visitsInMonth.filter(v => v.tipo === 'correo').length,
+      llamadas: visitsInMonth.filter(v => v.tipo === 'llamada').length
+    }
+  })
+
+  const visitasPeriodo = visitasEsteAño.filter(v => v.fecha >= startOfMonth && v.fecha <= endOfMonth)
+  const conRespuestaCount = visitasPeriodo.filter(v => v.respuestaObtenida).length
+  const sinRespuestaCount = visitasPeriodo.length - conRespuestaCount
 
 
   return (
@@ -590,6 +609,25 @@ export default async function DashboardPage({ params, searchParams }: { params: 
         </h3>
         <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Rendimiento anual del {today.getFullYear()}</p>
         <MonthlyVisitsChart data={monthlyData} />
+      </div>
+
+      {/* Row: Actions Breakdown (70%) and Responses Donut (30%) */}
+      <div className="grid gap-6" style={{ gridTemplateColumns: '7fr 3fr', marginTop: '1.5rem' }}>
+        <div className="glass-panel card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h3 className="card-title">Desglose de Acciones</h3>
+          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Visitas, WhatsApp, Correos y Llamadas realizadas este año</p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ActionsBreakdownChart data={actionsBreakdownData} />
+          </div>
+        </div>
+
+        <div className="glass-panel card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h3 className="card-title">Acciones vs. Respuestas</h3>
+          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Acciones con respuesta vs. sin respuesta ({labelPeriodo})</p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ResponsesPieChart conRespuesta={conRespuestaCount} sinRespuesta={sinRespuestaCount} />
+          </div>
+        </div>
       </div>
 
       {/* Actualizaciones Recientes */}
