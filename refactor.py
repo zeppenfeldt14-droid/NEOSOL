@@ -1,45 +1,10 @@
-import { prisma } from '@/lib/prisma'
-import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit, Tag, Navigation } from 'lucide-react'
-import { CompleteActionButton } from './ActionButtons'
-import { addVisita, addAccion, addAlerta } from './actions'
-import { QuickActionsClient } from './QuickActionsClient'
-import { getSessionUser } from '@/lib/auth'
-import { HistorialComprasClient } from './HistorialComprasClient'
-import { RespuestaObtenidaButton } from './RespuestaObtenidaButton'
-import { NuevaAccionForm } from './NuevaAccionForm'
+import re
 
-export const dynamic = 'force-dynamic'
+with open('src/app/zonas/[zonaName]/empresas/[id]/page.tsx', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-const getRubroDisplayName = (name: string) => {
-  if (!name) return 'No asignado';
-  const match = name.match(/^CATEGORIA\s+(\d+)$/i);
-  if (match) {
-    return `Categoría ${match[1]}`;
-  }
-  return name;
-};
-
-const getRubroEmoji = (name: string) => {
-  if (!name) return '🏷️';
-  const mapping: Record<string, string> = {
-    'CATEGORIA 1': '🍬',
-    'CATEGORIA 2': '🍽️',
-    'CATEGORIA 3': '🛒',
-    'CATEGORIA 4': '🧀',
-    'CATEGORIA 5': '🌱',
-    'CATEGORIA 6': '🏪',
-    'CATEGORIA 7': '🚚',
-    'CATEGORIA 8': '🎉',
-    'CATEGORIA 9': '❌',
-    'CATEGORIA 10': '📦',
-    'CATEGORIA 11': '🏥'
-  };
-  return mapping[name.toUpperCase()] || '🏷️';
-};
-
-
+# Define the components to insert
+components = """
 function InfoGeneral({ empresa }: { empresa: any }) {
   return (
     <div className="flex flex-col gap-4">
@@ -260,103 +225,15 @@ function HistorialVisitas({ empresa, zonaName, empresaId }: { empresa: any, zona
     </div>
   )
 }
+"""
 
+content = content.replace('export default async function EmpresaPage', components + '\n\nexport default async function EmpresaPage')
 
-export default async function EmpresaPage({ params }: { params: Promise<{ id: string; zonaName: string }> }) {
-  const user = await getSessionUser()
-  if (!user) {
-    redirect('/login')
-  }
+# Now replace the return statement body
+start_idx = content.find('<div className="grid lg:grid-cols-3 gap-6">')
+end_idx = content.rfind('</div>\n    </div>\n  )\n}')
 
-  const { id, zonaName } = await params
-  const decodedZona = decodeURIComponent(zonaName)
-  const empresaId = parseInt(id)
-  
-  if (isNaN(empresaId)) {
-    notFound()
-  }
-
-  const empresa = await prisma.empresa.findUnique({
-    where: { id: empresaId },
-    include: {
-      visitas: { orderBy: { fecha: 'desc' } },
-      acciones: { orderBy: { fechaVencimiento: 'asc' } },
-      alertas: { orderBy: { creadoEn: 'desc' } }
-    }
-  })
-
-  if (!empresa) {
-    notFound()
-  }
-
-  // Security: level 3 users can only access their assigned companies
-  if (user.nivel === 3 && empresa.vendedorAsignado !== user.alias) {
-    notFound()
-  }
-
-
-  const hasPendingDeleteRequest = await prisma.solicitudEliminacion.findFirst({
-    where: {
-      tipo: 'EMPRESA',
-      targetId: empresaId,
-      estado: 'pendiente'
-    }
-  })
-
-  // Serializar la empresa para pasar al cliente sin problemas de fechas
-  const serializedEmpresa = {
-    ...empresa,
-    creadoEn: empresa.creadoEn.toISOString(),
-    actualizadoEn: empresa.actualizadoEn.toISOString(),
-    fechaBaja: empresa.fechaBaja ? empresa.fechaBaja.toISOString() : null,
-    visitas: [],
-    acciones: [],
-    alertas: []
-  }
-
-  return (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div className="w-full">
-          <Link href={`/zonas/${zonaName}/empresas`} className="flex items-center gap-2" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-            <ArrowLeft size={16} /> Volver a empresas
-          </Link>
-          <div className="flex justify-between items-start md:items-center mb-6 w-full flex-col md:flex-row gap-4">
-            <div>
-              <h1 className="page-title !mb-0 flex items-center gap-2">
-                <Building2 className="text-primary" /> {empresa.nombre}
-              </h1>
-              <p className="page-subtitle mt-1 flex items-center gap-2">
-                <span className={`badge ${
-                  empresa.estado === 'prospecto' ? 'badge-warning' :
-                  empresa.estado === 'activo'    ? 'badge-success' :
-                  empresa.estado === 'baja'      ? 'badge-danger'  :
-                  'badge-neutral'
-                }`}>
-                  {empresa.estado === 'baja' ? '🔴 BAJA' : empresa.estado}
-                </span>
-                {empresa.zona && <span>• {empresa.zona}</span>}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <QuickActionsClient 
-                id={empresa.id} 
-                estado={empresa.estado} 
-                zonaName={zonaName} 
-                empresa={serializedEmpresa}
-                userNivel={user.nivel}
-                userAlias={user.alias}
-                hasPendingDeleteRequest={!!hasPendingDeleteRequest}
-              />
-              <Link href={`/zonas/${zonaName}/empresas/${empresaId}/editar`} className="btn btn-secondary flex items-center gap-2">
-                <Edit size={16} /> Editar Ficha
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      
+desktop_mobile_view = """
       {/* ── DESKTOP VIEW ── */}
       <div className="hidden md:block">
         <div className="grid lg:grid-cols-3 gap-6">
@@ -452,7 +329,11 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
             <HistorialComprasClient empresaId={empresaId} userNivel={user.nivel} />
           </div>
         </details>
-      </div>
-    </div>
-  )
-}
+      </div>"""
+
+new_content = content[:start_idx] + desktop_mobile_view + '\n    </div>\n  )\n}'
+
+with open('src/app/zonas/[zonaName]/empresas/[id]/page.tsx', 'w', encoding='utf-8') as f:
+    f.write(new_content)
+
+print('File refactored successfully.')

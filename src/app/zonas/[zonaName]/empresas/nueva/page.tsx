@@ -79,7 +79,7 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
         </div>
       </div>
 
-      <div className="glass-panel p-6">
+      <div className="glass-panel p-4 md:p-6">
         <form action={createEmpresa} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <input type="hidden" name="defaultZona" value={decodedZona} />
           

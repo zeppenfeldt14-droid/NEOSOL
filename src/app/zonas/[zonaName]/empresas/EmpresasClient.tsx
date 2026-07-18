@@ -381,7 +381,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
         </div>
       </div>
 
-      <div className="table-container">
+      <div className="hidden md:block table-container">
         <table className="table">
           <thead>
             <tr>
@@ -459,6 +459,60 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
           </tbody>
         </table>
       </div>
+
+      {/* ── MOBILE VIEW (CARDS) ────────────────────────────────────────── */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filteredEmpresas.map((empresa: Empresa) => (
+          <Link
+            key={empresa.id}
+            href={`/zonas/${zonaName}/empresas/${empresa.id}`}
+            className="block p-4 rounded-xl bg-black/20 border border-white/5 shadow-sm hover:border-white/10 transition-colors"
+          >
+            <div className="flex justify-between items-start gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Building2 size={16} className="text-primary" />
+                <h3 className="text-white font-bold text-sm leading-tight">{empresa.nombre}</h3>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${
+                empresa.estado === 'activo' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 
+                empresa.estado === 'descartada' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                empresa.estado === 'baja' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+              }`}>
+                {empresa.estado}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-secondary uppercase font-bold">Ubicación</span>
+                <span className="text-xs text-white/80">{empresa.barrio || '—'}</span>
+                <span className="text-[10px] text-secondary">{empresa.subZona || 'SIN ASIGNAR'}</span>
+              </div>
+              <div className="flex flex-col gap-1 text-right">
+                <span className="text-[9px] text-secondary uppercase font-bold">Rubro / Contacto</span>
+                <span className="text-xs text-white/80 truncate">{getRubroDisplayName(empresa.rubro || 'SIN RUBRO')}</span>
+                <span className="text-[10px] text-secondary flex items-center justify-end gap-1">
+                  <Phone size={10} /> {empresa.telefono || '—'}
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+        {filteredEmpresas.length === 0 && (
+          <div className="text-center p-8 bg-black/10 rounded-xl border border-white/5 text-secondary text-sm">
+            No se encontraron empresas
+          </div>
+        )}
+      </div>
+
+      {/* Floating Action Button (Mobile) */}
+      <Link 
+        href={`/zonas/${zonaName}/empresas/nueva`}
+        className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-[0_4px_20px_rgba(59,130,246,0.5)] flex items-center justify-center z-50 active:scale-95 transition-transform"
+      >
+        <Plus size={24} />
+      </Link>
     </div>
   )
 }

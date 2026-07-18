@@ -87,6 +87,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const [empresaBusqueda, setEmpresaBusqueda]         = useState('')
   const [showEmpresaDropdown, setShowEmpresaDropdown] = useState(false)
   const [lineasPedido, setLineasPedido]               = useState<LineaPedido[]>([])
+  const [productoBusqueda, setProductoBusqueda]       = useState('')
 
   // Negociación
   const [condicionIdx, setCondicionIdx]       = useState(0)
@@ -548,7 +549,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="hidden md:grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* ── LEFT: Main form (2/3) ───────────────────────────────────────── */}
         <div className="xl:col-span-2 flex flex-col gap-6">
 
@@ -1165,6 +1166,126 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
           </div>
         </div>
       </div>
+
+      {/* ── MOBILE VIEW (PRE-PEDIDO) ────────────────────────────────────────── */}
+      <div className="flex md:hidden flex-col gap-4 mb-24">
+        {/* Empresa Selector */}
+        <div className="glass-panel p-4 rounded-xl flex flex-col gap-3">
+          <label className="text-xs font-black uppercase text-secondary">Cliente</label>
+          {empresaSeleccionada ? (
+            <div className="flex justify-between items-center bg-primary/10 border border-primary/20 p-3 rounded-xl">
+              <div>
+                <p className="text-white font-bold text-sm">{empresaSeleccionada.nombre}</p>
+                <p className="text-secondary text-[10px]">{empresaSeleccionada.direccion || 'Sin dirección'}</p>
+              </div>
+              <button onClick={() => setEmpresaSeleccionada(null)} className="text-white bg-black/50 p-2 rounded-full">
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary z-10" />
+              <input
+                type="text"
+                placeholder="Buscar cliente..."
+                value={empresaBusqueda}
+                onChange={e => {
+                  setEmpresaBusqueda(e.target.value)
+                  setShowEmpresaDropdown(true)
+                }}
+                onFocus={() => setShowEmpresaDropdown(true)}
+                className="form-input bg-black/40 border border-white/10 rounded-xl pl-9"
+              />
+              {showEmpresaDropdown && empresasFiltradas.length > 0 && (
+                <div className="absolute z-50 top-full mt-1 w-full glass-panel card border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-48 overflow-y-auto">
+                  {empresasFiltradas.map(e => (
+                    <button
+                      key={e.id}
+                      onClick={() => {
+                        setEmpresaSeleccionada(e)
+                        setShowEmpresaDropdown(false)
+                        setEmpresaBusqueda('')
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      <p className="text-white text-xs font-bold">{e.nombre}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Productos */}
+        <div className="glass-panel p-4 rounded-xl flex flex-col gap-4">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary z-10" />
+            <input
+              type="text"
+              placeholder="Buscar producto..."
+              value={productoBusqueda}
+              onChange={e => setProductoBusqueda(e.target.value)}
+              className="form-input bg-black/40 border border-white/10 rounded-xl pl-9 text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {productos
+              .filter(p => p.nombre.toLowerCase().includes(productoBusqueda.toLowerCase()) || p.codigoInterno.includes(productoBusqueda))
+              .map(prod => {
+                const linea = lineasPedido.find(l => l.producto.id === prod.id)
+                const cantidad = linea ? linea.cantidadCajas : 0
+                return (
+                  <div key={prod.id} className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
+                    <div className="flex flex-col flex-1 pr-2">
+                      <span className="text-[10px] text-primary font-bold">{prod.codigoInterno}</span>
+                      <span className="text-white text-xs font-semibold leading-tight">{prod.nombre}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => setCantidadDirecta(prod.id, cantidad - 1)}
+                        className="bg-white/10 p-2 rounded-full text-white active:bg-white/20"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="text-white font-bold w-6 text-center">{cantidad}</span>
+                      <button 
+                        onClick={() => {
+                          if (!linea) {
+                            agregarProducto(prod)
+                            setTimeout(() => setCantidadDirecta(prod.id, 1), 50)
+                          } else {
+                            setCantidadDirecta(prod.id, cantidad + 1)
+                          }
+                        }}
+                        className="bg-primary p-2 rounded-full text-white active:bg-primary/80"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Fixed Bottom Bar */}
+      <div className="md:hidden fixed bottom-16 left-0 w-full bg-dark/95 backdrop-blur-md border-t border-white/10 p-4 z-50 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-secondary uppercase font-bold">Saldo Aprox.</span>
+          <span className="text-white font-black text-lg">{fmt(totalGeneral)}</span>
+        </div>
+        <button
+          onClick={() => handleGuardar(false)}
+          disabled={submitting || !empresaSeleccionada || lineasPedido.filter(l=>l.cantidadCajas>0).length===0}
+          className="btn btn-primary shadow-lg shadow-primary/20 !px-6 disabled:opacity-50"
+        >
+          {submitting ? 'Guardando...' : 'Guardar Borrador'}
+        </button>
+      </div>
+
     </div>
   )
 }

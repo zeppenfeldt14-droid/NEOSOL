@@ -588,7 +588,7 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/5 text-left">
@@ -752,6 +752,97 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── MOBILE VIEW (CARDS) ────────────────────────────────────────── */}
+        <div className="md:hidden flex flex-col gap-4 p-4 bg-black/20 border-t border-white/5">
+          {loading ? (
+            <div className="py-10 flex flex-col items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-secondary text-xs">Cargando...</span>
+            </div>
+          ) : cobranzas.length === 0 ? (
+            <div className="py-10 flex flex-col items-center text-center gap-2">
+              <Banknote size={30} className="text-white/10" />
+              <p className="text-secondary text-xs font-semibold">Sin cuentas por cobrar</p>
+            </div>
+          ) : (
+            cobranzas.map(c => {
+              const isExpanded = expandedId === c.id
+              const isVencida  = c.diasAtraso !== null && c.diasAtraso > 0 && c.estado !== 'pagada'
+              
+              return (
+                <div key={c.id} className={`flex flex-col gap-3 p-4 rounded-xl border ${isVencida ? 'border-red-400/30 bg-red-400/5' : 'border-white/10 bg-black/40'} shadow-lg`}>
+                  <div className="flex justify-between items-start gap-2 border-b border-white/5 pb-3">
+                    <div className="flex flex-col">
+                      <span className="text-white font-bold text-sm leading-tight">{c.empresaNombre || '—'}</span>
+                      <span className="text-secondary text-[10px] mt-1">{c.pedido.numeroPedido} · {c.zona}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${ESTADO_BADGES[c.estado] || ''} whitespace-nowrap`}>
+                      {c.estado.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-secondary uppercase font-black tracking-wider">Monto Adeudado</span>
+                      <span className={`font-black text-lg ${c.saldoPendiente > 0 ? (isVencida ? 'text-red-400' : 'text-yellow-400') : 'text-green-400'}`}>
+                        {fmt(c.saldoPendiente)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[9px] text-secondary uppercase font-black tracking-wider">Vencimiento</span>
+                      <span className="text-white font-semibold text-xs mt-1">
+                        {formatDate(c.fechaVencimiento)}
+                        {isVencida && c.diasAtraso && <span className="text-red-400 ml-1">({c.diasAtraso}d)</span>}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 gap-2 border-t border-white/5 mt-1">
+                    <button
+                      onClick={() => fetchDetallePedido(c.pedidoId)}
+                      className="p-2 rounded-lg bg-white/5 text-secondary hover:bg-white/10 transition-colors"
+                      title="Ver pedido"
+                    >
+                      <Eye size={16} />
+                    </button>
+
+                    <div className="flex gap-2">
+                      {c.estado !== 'pagada' && (
+                        <button
+                          onClick={() => setProrrogaModal(c)}
+                          className="p-2 rounded-lg bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 border border-blue-400/20 transition-all"
+                          title="Prorrogar"
+                        >
+                          <Calendar size={16} />
+                        </button>
+                      )}
+                      {c.estado !== 'pagada' && (
+                        <button
+                          onClick={() => handleDividirCuotas(c)}
+                          className="p-2 rounded-lg bg-purple-400/10 text-purple-400 hover:bg-purple-400/20 border border-purple-400/20 transition-all"
+                          title="Dividir en Cuotas"
+                        >
+                          <Calculator size={16} />
+                        </button>
+                      )}
+                      {c.estado !== 'pagada' && (
+                        <button
+                          onClick={() => openPagoModal(c)}
+                          className="p-2 rounded-lg bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 border border-yellow-400/20 transition-all font-black flex items-center gap-1"
+                          title="Cobrar"
+                        >
+                          <Banknote size={16} /> 
+                          <span className="text-xs">Cobrar</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
 
         {/* Footer totals */}
