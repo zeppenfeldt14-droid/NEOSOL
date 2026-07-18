@@ -3,7 +3,9 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Search, Plus, MapPin, Phone, Building2 } from 'lucide-react'
+import { Search, Plus, MapPin, Phone, Building2, Download } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 type Empresa = {
   id: number
@@ -30,6 +32,44 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
   const decodedZona = useMemo(() => {
     return decodeURIComponent(zonaName)
   }, [zonaName])
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF()
+    
+    // Title
+    doc.setFontSize(16)
+    doc.text(`Directorio de Empresas - Zona: ${decodedZona}`, 14, 15)
+    
+    // Subtitle / Filters Info
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    const filters = []
+    if (searchQuery) filters.push(`Búsqueda: "${searchQuery}"`)
+    if (estadoFilter !== 'todos') filters.push(`Estado: ${estadoFilter}`)
+    if (zonaFilter !== 'todas') filters.push(`Mini-zona: ${zonaFilter}`)
+    doc.text(filters.length > 0 ? `Filtros: ${filters.join(' | ')}` : 'Todos los registros', 14, 22)
+    
+    // Define Headers and Data
+    const headers = [['Código', 'Empresa', 'Ubicación', 'Contacto', 'Estado']]
+    const rows = filteredEmpresas.map(emp => [
+      emp.id.toString().padStart(6, '0'),
+      emp.nombre,
+      `${emp.direccion || ''} ${emp.barrio ? `(${emp.barrio})` : ''}`.trim() || '---',
+      emp.telefono || '---',
+      emp.estado.toUpperCase()
+    ])
+    
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      startY: 26,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 89, 152] }, // Neosol Blue (#3b5998)
+      styles: { fontSize: 8 }
+    })
+    
+    doc.save(`Empresas_${decodedZona.replace(/\s+/g, '_')}.pdf`)
+  }
 
   const handleAddSubZona = async () => {
     const name = prompt('Nombre de la nueva mini-zona / categoría (ej: CABA 4, OESTE 3):')
@@ -93,9 +133,19 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
           <h1 className="page-title">Directorio de Empresas</h1>
           <p className="page-subtitle">Gestiona todas las empresas, clientes, prospectos y descartadas.</p>
         </div>
-        <Link href={`/zonas/${zonaName}/empresas/nueva`} className="btn btn-primary">
-          <Plus size={18} /> Nueva Empresa
-        </Link>
+        <div className="flex gap-2 items-center">
+          <button 
+            onClick={handleExportPDF}
+            className="btn btn-secondary flex items-center justify-center"
+            style={{ padding: '0.5rem', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
+            title="Descargar PDF de Empresas"
+          >
+            <Download size={18} />
+          </button>
+          <Link href={`/zonas/${zonaName}/empresas/nueva`} className="btn btn-primary">
+            <Plus size={18} /> Nueva Empresa
+          </Link>
+        </div>
       </div>
 
       {/* Controles de Filtros Unificados (Estilo Dashboard / CSS Original) */}

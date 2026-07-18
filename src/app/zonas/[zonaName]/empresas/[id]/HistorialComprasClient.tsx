@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Eye, FileText, Upload, Save, Check } from 'lucide-react'
+import { Eye, FileText, Upload, Save, Check, Download } from 'lucide-react'
 
 interface HistorialComprasClientProps {
   empresaId: number
@@ -163,9 +163,11 @@ export function HistorialComprasClient({ empresaId, userNivel }: HistorialCompra
                               <a 
                                 href={factura.archivoBase64} 
                                 download={`Factura_${factura.numeroFactura}`}
-                                className="btn btn-secondary !py-1 !px-3 text-xs flex items-center gap-1 bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"
+                                className="btn btn-secondary !p-1.5 text-xs flex items-center justify-center bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"
+                                style={{ borderRadius: '6px' }}
+                                title="Ver / Descargar PDF"
                               >
-                                <Check size={14} /> Ver / Descargar PDF
+                                <Download size={14} />
                               </a>
                             )}
 

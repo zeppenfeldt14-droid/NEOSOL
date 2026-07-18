@@ -474,9 +474,10 @@ export function ProductosPageClient({ userNivel }: Props) {
 
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-secondary hover:text-white hover:border-white/30 text-xs font-bold transition-all"
+            className="flex items-center justify-center w-[38px] h-[38px] rounded-xl bg-white/5 border border-white/10 text-secondary hover:text-white hover:border-white/30 transition-all"
+            title="Descargar PDF"
           >
-            <Download size={14} /> Descargar PDF
+            <Download size={16} />
           </button>
         </div>
       </div>

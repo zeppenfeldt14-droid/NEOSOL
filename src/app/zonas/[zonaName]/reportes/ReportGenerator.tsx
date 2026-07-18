@@ -370,11 +370,11 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
               <button 
                 onClick={handleDownload} 
                 disabled={status !== 'idle' && status !== 'success' && status !== 'error'}
-                className="btn btn-secondary w-full justify-start border-white/5 text-secondary hover:text-white"
+                className="btn btn-secondary w-full flex items-center justify-center border-white/5 text-secondary hover:text-white"
                 style={{ padding: '0.75rem 1rem', borderRadius: '10px' }}
+                title="Descargar PDF"
               >
-                {status === 'generating' ? <Loader2 size={16} className="animate-spin mr-2" /> : <Download size={16} style={{ marginRight: '0.5rem' }} />}
-                Descargar PDF
+                {status === 'generating' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
               </button>
 
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.5rem', paddingTop: '1rem' }}>
@@ -496,11 +496,11 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
                 <button 
                   onClick={handleDownloadHistorical}
                   disabled={status === 'generating'}
-                  className="btn btn-primary"
-                  style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.5rem 1rem', borderRadius: '10px' }}
+                  className="btn btn-primary flex items-center justify-center"
+                  style={{ width: '38px', height: '38px', borderRadius: '10px' }}
+                  title="Descargar PDF"
                 >
-                  {status === 'generating' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
-                  Descargar PDF al Vuelo
+                  {status === 'generating' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                 </button>
               )}
             </div>

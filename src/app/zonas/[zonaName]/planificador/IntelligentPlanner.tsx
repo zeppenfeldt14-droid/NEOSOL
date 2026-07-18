@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2, MessageCircle, Mail, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2, MessageCircle, Mail, CheckCircle2, AlertCircle, Download } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import html2canvas from 'html2canvas'
@@ -415,7 +415,7 @@ export default function IntelligentPlanner({
                 className="btn btn-primary"
                 style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '38px', minHeight: '38px', borderRadius: '10px' }}
                 title="Descargar PDF de Ruta">
-                {isGeneratingPDF ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Printer size={16} />}
+                {isGeneratingPDF ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Download size={16} />}
               </button>
             </div>
           </div>
@@ -504,9 +504,11 @@ export default function IntelligentPlanner({
                     </h3>
                     {generatingPdfDate !== date && (
                       <button onClick={() => handleDownloadWeeklyPDF(date)} disabled={generatingPdfDate !== null}
-                        className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>
-                        <Printer size={14} style={{ marginRight: '0.25rem', display: 'inline' }} />
-                        {generatingPdfDate === date ? 'Generando...' : 'Descargar PDF'}
+                        className="btn btn-secondary flex items-center justify-center" 
+                        style={{ padding: '0.5rem', minWidth: '32px', minHeight: '32px', borderRadius: '8px' }}
+                        title="Descargar PDF de Ruta"
+                      >
+                        <Download size={14} />
                       </button>
                     )}
                   </div>

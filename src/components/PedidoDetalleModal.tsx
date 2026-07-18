@@ -55,10 +55,11 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrintPedido}
-              className="btn btn-secondary text-xs flex items-center gap-1.5 font-bold"
+              className="btn btn-secondary text-xs p-2 flex items-center justify-center font-bold"
+              style={{ minWidth: '32px', minHeight: '32px', borderRadius: '8px' }}
+              title="Descargar Pedido"
             >
               <Download size={14} />
-              Descargar
             </button>
             <button
               onClick={onClose}

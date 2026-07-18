@@ -873,12 +873,19 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                     win.document.write(html)
                     win.document.close()
                   }}
-                  className="btn btn-secondary text-xs px-4"
+                  className="btn btn-secondary text-xs p-2 flex items-center justify-center"
+                  style={{ minWidth: '34px', minHeight: '34px', borderRadius: '8px' }}
+                  title="Descargar PDF"
                 >
-                  <Download size={14} /> Descargar PDF
+                  <Download size={14} />
                 </button>
-                <button onClick={handleExportCSV} className="btn btn-secondary text-xs px-4">
-                  <Download size={14} /> Exportar CSV
+                <button 
+                  onClick={handleExportCSV} 
+                  className="btn btn-secondary text-xs p-2 flex items-center justify-center"
+                  style={{ minWidth: '34px', minHeight: '34px', borderRadius: '8px' }}
+                  title="Exportar CSV"
+                >
+                  <Download size={14} />
                 </button>
                 <button onClick={() => setShowLogsModal(null)} className="btn-action ml-2 w-10 h-10">
                   <X size={16} />
