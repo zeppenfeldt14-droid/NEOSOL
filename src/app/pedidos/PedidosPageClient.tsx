@@ -494,14 +494,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                               setMetodoPagoB((p.metodoPagoB as any) || '')
                             }}
                             disabled={actionId === p.id}
-                            className={`btn-action text-[10px] uppercase font-black tracking-wider ${
+                            className={`btn-action ${
                               (p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2
                                 ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                                 : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
                             }`}
                             title={(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
                           >
-                            <CheckCircle2 size={11} /> {(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Bloqueado' : 'Aprobar'}
+                            <CheckCircle2 size={12} />
                           </button>
                         )}
 
@@ -510,10 +510,10 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           <button
                             onClick={() => handleAction(p.id, 'enviar')}
                             disabled={actionId === p.id}
-                            className="btn-action text-[10px] uppercase font-black tracking-wider text-blue-400 border-blue-400/20 hover:bg-blue-400/10"
+                            className="btn-action text-blue-400 border-blue-400/20 hover:bg-blue-400/10"
                             title="Enviar al Supervisor"
                           >
-                            <Send size={11} /> Enviar
+                            <Send size={12} />
                           </button>
                         )}
 

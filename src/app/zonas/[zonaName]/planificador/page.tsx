@@ -242,8 +242,10 @@ export default async function PlanificadorPage(props: {
       diasDesde = Math.floor((currentMs - ultimaVisita.getTime()) / (1000 * 60 * 60 * 24))
     }
 
-    if (emp.cicloVentaDias && emp.estado === 'activo') {
-      if (diasDesde !== null && diasDesde >= emp.cicloVentaDias) {
+    if (emp.estado === 'activo') {
+      const ciclo = emp.cicloVentaDias || 30
+      const diasAlerta = ciclo - 7
+      if (diasDesde !== null && diasDesde >= diasAlerta) {
         sugerencias.push({
           id: emp.id,
           nombre: emp.nombre,
@@ -252,9 +254,9 @@ export default async function PlanificadorPage(props: {
           direccion: emp.direccion,
           telefono: emp.telefono,
           estado: emp.estado,
-          cicloVentaDias: emp.cicloVentaDias,
+          cicloVentaDias: ciclo,
           diasDesdeUltimaVisita: diasDesde,
-          motivo: `Ciclo de venta cumplido (${emp.cicloVentaDias} días). Última visita hace ${diasDesde} días.`
+          motivo: `Verificar pedido (Ciclo: ${ciclo} días, última visita hace ${diasDesde} días)`
         })
       }
     } else if (emp.estado === 'prospecto') {

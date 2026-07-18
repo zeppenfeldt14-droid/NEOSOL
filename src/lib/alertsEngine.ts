@@ -82,20 +82,24 @@ export async function getPredictiveAlerts(params: {
       })
     }
 
-    // B. Activa: Frecuencia semanal (ej. >3 al mes) y >= 14 días sin visita/pedido
-    if (emp.estado === 'activo' && (emp.frecuenciaCompra || 0) >= 4 && diasDesdeUltimaInteraccion >= 14) {
-      alertas.push({
-        id: `stock-${emp.id}`,
-        empresaId: emp.id,
-        empresaNombre: emp.nombre,
-        tipo: 'quiebre_stock',
-        nivelSeveridad: 'rojo',
-        mensaje: `Cliente frecuente inactivo hace ${diasDesdeUltimaInteraccion} días.`,
-        accionRecomendada: 'Visítalo urgentemente o llámalo. Riesgo de quiebre de stock.',
-        fechaGeneracion: hoy.toISOString(),
-        escaladaNivel2: diasDesdeUltimaInteraccion > 16,
-        escaladaNivel1: diasDesdeUltimaInteraccion > 18
-      })
+    // B. Activa: Regla basada en Ciclo de Venta (Días). Se activa 7 días antes. Default: 30 días.
+    if (emp.estado === 'activo') {
+      const ciclo = emp.cicloVentaDias || 30
+      const diasAlerta = ciclo - 7
+      if (diasDesdeUltimaInteraccion >= diasAlerta) {
+        alertas.push({
+          id: `ciclo-${emp.id}`,
+          empresaId: emp.id,
+          empresaNombre: emp.nombre,
+          tipo: 'quiebre_stock',
+          nivelSeveridad: diasDesdeUltimaInteraccion >= ciclo ? 'rojo' : 'amarillo',
+          mensaje: `Ciclo de venta de ${ciclo} días. Inactivo hace ${diasDesdeUltimaInteraccion} días.`,
+          accionRecomendada: 'Verificar pedido con el cliente.',
+          fechaGeneracion: hoy.toISOString(),
+          escaladaNivel2: diasDesdeUltimaInteraccion > (ciclo + 2),
+          escaladaNivel1: diasDesdeUltimaInteraccion > (ciclo + 4)
+        })
+      }
     }
 
     // C. Cobranza: Factura vence en < 48 horas (2 días)

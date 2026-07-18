@@ -56,13 +56,9 @@ export async function PATCH(request: Request, { params }: Params) {
     let aprobadoPor: Partial<typeof pedido> = {}
 
     if (accion === 'enviar') {
-      if (session.nivel > 2) {
-        if (pedido.estado !== 'borrador')
-          return NextResponse.json({ error: 'Solo se puede enviar un pedido en borrador.' }, { status: 400 })
-        nuevoEstado = 'pendiente_supervisor'
-      } else {
-        return NextResponse.json({ error: 'Solo el vendedor puede enviar un pedido.' }, { status: 403 })
-      }
+      if (pedido.estado !== 'borrador')
+        return NextResponse.json({ error: 'Solo se puede enviar un pedido en borrador.' }, { status: 400 })
+      nuevoEstado = 'pendiente_supervisor'
     } else if (accion === 'aprobar') {
       if (session.nivel > 2)
         return NextResponse.json({ error: 'Sin permisos para aprobar.' }, { status: 403 })

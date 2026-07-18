@@ -104,10 +104,10 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
           <button 
             onClick={handleDescartar}
             disabled={isUpdating}
-            className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
+            className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-2 py-2"
+            title={isUpdating ? 'Actualizando...' : 'Descartar oportunidad'}
           >
-            <Ban size={16} /> 
-            {isUpdating ? 'Actualizando...' : 'Descartar'}
+            <Ban size={16} />
           </button>
         </>
       )}
@@ -138,10 +138,10 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
         <button 
           onClick={handleDarDeBaja}
           disabled={isUpdating}
-          className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
+          className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-2 py-2"
+          title={isUpdating ? 'Actualizando...' : 'Dar de Baja cliente'}
         >
-          <Ban size={16} /> 
-          {isUpdating ? 'Actualizando...' : 'Dar de Baja'}
+          <Ban size={16} />
         </button>
       )}
 
@@ -159,10 +159,10 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
       <button 
         onClick={handleDownloadPdf}
         disabled={isGeneratingPdf || isUpdating}
-        className="btn btn-secondary text-xs px-3 flex items-center gap-1.5"
+        className="btn btn-secondary px-2 py-2 flex items-center justify-center"
+        title={isGeneratingPdf ? 'Generando PDF...' : 'Ficha Alta PDF'}
       >
         {isGeneratingPdf ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-        {isGeneratingPdf ? 'Generando PDF...' : 'Ficha Alta PDF'}
       </button>
 
       {hasPendingDeleteRequest && (
@@ -191,10 +191,10 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
             }
           }}
           disabled={isUpdating}
-          className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
+          className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-2 py-2"
           title={userNivel === 1 ? "Eliminar empresa permanentemente" : "Solicitar eliminación al Administrador"}
         >
-          <Trash2 size={16} /> {userNivel === 1 ? 'Eliminar' : 'Solicitar Eliminar'}
+          <Trash2 size={16} />
         </button>
       )}
 

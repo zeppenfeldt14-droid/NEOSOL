@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Banknote, Globe, AlertTriangle, CheckCircle2, Clock,
   DollarSign, X, RefreshCw, CreditCard, Wallet, Building2,
-  FileText, ChevronDown, ChevronUp, History, Eye, Calendar
+  FileText, ChevronDown, ChevronUp, History, Eye, Calendar, Calculator
 } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 import { formatDate } from '@/lib/date'
@@ -73,6 +73,8 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
   const [cobranzas, setCobranzas] = useState<Cobranza[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [aprobaciones, setAprobaciones] = useState<any[]>([])
+  const [fetchingAprobaciones, setFetchingAprobaciones] = useState(false)
 
   const [selectedPedidoDetalle, setSelectedPedidoDetalle] = useState<any | null>(null)
   const [isFetchingPedido, setIsFetchingPedido] = useState<number | null>(null)
@@ -131,7 +133,47 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
     setLoading(false)
   }, [selectedZone, selectedEstado])
 
-  useEffect(() => { fetchCobranzas() }, [fetchCobranzas])
+  const fetchAprobaciones = useCallback(async () => {
+    if (userNivel > 2) return
+    setFetchingAprobaciones(true)
+    try {
+      const res = await fetch('/api/cobranzas/aprobaciones')
+      if (res.ok) {
+        const data = await res.json()
+        setAprobaciones(data)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setFetchingAprobaciones(false)
+    }
+  }, [userNivel])
+
+  const handleProcesarAprobacion = async (solId: number, decision: 'aprobar' | 'rechazar') => {
+    if (!confirm(`¿Estás seguro de que deseas ${decision === 'aprobar' ? 'APROBAR' : 'RECHAZAR'} esta solicitud?`)) return
+    try {
+      const res = await fetch(`/api/cobranzas/aprobaciones/${solId}/procesar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision })
+      })
+      if (res.ok) {
+        alert(`Solicitud ${decision === 'aprobar' ? 'aprobada' : 'rechazada'} con éxito.`)
+        await fetchAprobaciones()
+        await fetchCobranzas()
+      } else {
+        const d = await res.json()
+        alert(d.error || 'Error al procesar')
+      }
+    } catch {
+      alert('Error de conexión')
+    }
+  }
+
+  useEffect(() => {
+    fetchCobranzas()
+    fetchAprobaciones()
+  }, [fetchCobranzas, fetchAprobaciones])
 
   // ─── KPIs ────────────────────────────────────────────────────────────────
   const deudaTotal    = cobranzas.reduce((s, c) => s + c.saldoPendiente, 0)
@@ -166,6 +208,39 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
     if (isNaN(monto) || monto <= 0) { setPagoError('Ingresá un monto válido'); return }
     if (monto > pagoModal.saldoPendiente + 0.01) {
       setPagoError(`El monto no puede superar el saldo ($${pagoModal.saldoPendiente.toFixed(2)})`)
+      return
+    }
+
+    if (userNivel === 3 && monto < pagoModal.saldoPendiente - 0.01) {
+      const justificativo = prompt('Por favor, indica y justifica el motivo de este pago parcial:')
+      if (!justificativo) return
+      setPagoLoading(true)
+      setPagoError('')
+      try {
+        const res = await fetch('/api/cobranzas/solicitar-aprobacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cobranzaId: pagoModal.id,
+            tipo: 'PAGO_COBRANZA',
+            valor: JSON.stringify({ monto, metodoPago: pagoMetodo, referencia: pagoRef, notas: pagoNotas }),
+            justificativo
+          })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+
+        setPagoSuccess('Solicitud de pago parcial enviada correctamente para aprobación.')
+        await fetchCobranzas()
+        setTimeout(() => {
+          setPagoModal(null)
+          setPagoSuccess('')
+        }, 2500)
+      } catch (e: any) {
+        setPagoError(e.message || 'Error al enviar solicitud de pago parcial')
+      } finally {
+        setPagoLoading(false)
+      }
       return
     }
 
@@ -210,6 +285,39 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
 
   const handleProrrogar = async () => {
     if (!prorrogaModal || !nuevaFecha) return
+
+    if (userNivel === 3) {
+      const justificativo = prompt('Por favor, indica y justifica el motivo del cambio de fecha de vencimiento (Prórroga):')
+      if (!justificativo) return
+      setProrrogaLoading(true)
+      try {
+        const res = await fetch('/api/cobranzas/solicitar-aprobacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cobranzaId: prorrogaModal.id,
+            tipo: 'VENCIMIENTO_COBRANZA',
+            valor: new Date(nuevaFecha).toISOString(),
+            justificativo
+          })
+        })
+        if (res.ok) {
+          alert('Solicitud de prórroga enviada correctamente para aprobación del supervisor.')
+          setProrrogaModal(null)
+          setNuevaFecha('')
+          fetchCobranzas()
+        } else {
+          const d = await res.json()
+          alert(d.error || 'Error al solicitar prórroga')
+        }
+      } catch (e) {
+        alert('Error de conexión')
+      } finally {
+        setProrrogaLoading(false)
+      }
+      return
+    }
+
     setProrrogaLoading(true)
     try {
       const res = await fetch(`/api/cobranzas/${prorrogaModal.id}/prorroga`, {
@@ -228,6 +336,77 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
       console.error(e)
     } finally {
       setProrrogaLoading(false)
+    }
+  }
+
+  const handleDividirCuotas = async (c: Cobranza) => {
+    const cantStr = prompt('¿En cuántas cuotas deseas dividir el saldo restante de esta deuda? (Ingresa un número entre 2 y 12):')
+    if (!cantStr) return
+    const cant = parseInt(cantStr)
+    if (isNaN(cant) || cant < 2 || cant > 12) {
+      alert('Por favor ingresa un número de cuotas válido (entre 2 y 12).')
+      return
+    }
+
+    const justificativo = prompt('Indica el motivo o justificación de este fraccionamiento en cuotas:')
+    if (!justificativo) return
+
+    if (userNivel === 3) {
+      try {
+        const res = await fetch('/api/cobranzas/solicitar-aprobacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cobranzaId: c.id,
+            tipo: 'CUOTAS_COBRANZA',
+            valor: String(cant),
+            justificativo
+          })
+        })
+        if (res.ok) {
+          alert('Solicitud de división en cuotas enviada correctamente para aprobación del supervisor.')
+          fetchCobranzas()
+        } else {
+          const d = await res.json()
+          alert(d.error || 'Error al solicitar división')
+        }
+      } catch (e) {
+        alert('Error de conexión')
+      }
+    } else {
+      if (confirm(`¿Estás seguro de dividir la deuda de $${c.saldoPendiente} en ${cant} cuotas?`)) {
+        try {
+          const resSol = await fetch('/api/cobranzas/solicitar-aprobacion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cobranzaId: c.id,
+              tipo: 'CUOTAS_COBRANZA',
+              valor: String(cant),
+              justificativo: 'División directa por Supervisor/Admin: ' + justificativo
+            })
+          })
+          if (resSol.ok) {
+            const dataSol = await resSol.json()
+            const solId = dataSol.solicitud.id
+            const resProc = await fetch(`/api/cobranzas/aprobaciones/${solId}/procesar`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ decision: 'aprobar' })
+            })
+            if (resProc.ok) {
+              alert(`La deuda ha sido dividida exitosamente en ${cant} cuotas.`)
+              fetchCobranzas()
+            } else {
+              alert('Error al aplicar la división')
+            }
+          } else {
+            alert('Error al iniciar la división')
+          }
+        } catch {
+          alert('Error de red')
+        }
+      }
     }
   }
 
@@ -338,6 +517,64 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
         </div>
       )}
 
+      {/* Solicitudes de Aprobación de Cobros/Plazos */}
+      {userNivel < 3 && aprobaciones.length > 0 && (
+        <div className="glass-panel card p-4 border border-yellow-400/20 bg-yellow-400/[0.02] flex flex-col gap-4">
+          <div className="flex justify-between items-center border-b border-white/5 pb-2">
+            <h3 className="text-yellow-400 font-black text-sm flex items-center gap-2">
+              <AlertTriangle size={16} /> Solicitudes de Cobros/Plazos por Aprobar
+            </h3>
+            {fetchingAprobaciones && <span className="text-[10px] text-secondary">Cargando...</span>}
+          </div>
+          <div className="flex flex-col gap-3">
+            {aprobaciones.map(sol => {
+              let details = ''
+              if (sol.tipo === 'VENCIMIENTO_COBRANZA') {
+                details = `Nueva fecha de vencimiento: ${new Date(sol.nombreTarget).toLocaleDateString('es-AR')}`
+              } else if (sol.tipo === 'PAGO_COBRANZA') {
+                try {
+                  const p = JSON.parse(sol.nombreTarget)
+                  details = `Pago parcial de $${p.monto.toFixed(2)} (${p.metodoPago})${p.referencia ? ' - Ref: ' + p.referencia : ''}`
+                } catch {
+                  details = `Pago parcial: ${sol.nombreTarget}`
+                }
+              } else if (sol.tipo === 'CUOTAS_COBRANZA') {
+                details = `Dividir deuda en ${sol.nombreTarget} cuotas mensuales`
+              }
+
+              return (
+                <div key={sol.id} className="flex justify-between items-center p-3 bg-black/30 rounded-lg border border-white/5 hover:border-white/10 transition-all">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/25 font-bold uppercase text-[9px]">{sol.tipo.replace('_COBRANZA', '')}</span>
+                      <span className="text-xs text-white font-bold">Solicitado por: {sol.solicitadoPor}</span>
+                    </div>
+                    <p className="text-xs text-secondary mt-1"><strong>Detalles:</strong> {details}</p>
+                    <p className="text-xs text-secondary"><strong>Justificación:</strong> "{sol.motivo}"</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleProcesarAprobacion(sol.id, 'aprobar')}
+                      className="p-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-all flex items-center justify-center"
+                      title="Aprobar Solicitud"
+                    >
+                      <CheckCircle2 size={14} />
+                    </button>
+                    <button 
+                      onClick={() => handleProcesarAprobacion(sol.id, 'rechazar')}
+                      className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all flex items-center justify-center"
+                      title="Rechazar Solicitud"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Cobranzas Table */}
       <div className="glass-panel card border border-white/5 overflow-hidden">
         <div className="p-4 border-b border-white/5 flex items-center justify-between">
@@ -445,13 +682,22 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                               <Banknote size={11} /> Cobrar
                             </button>
                           )}
-                          {userNivel === 1 && c.estado !== 'pagada' && (
+                          {c.estado !== 'pagada' && (
                             <button
                               onClick={() => setProrrogaModal(c)}
                               className="px-3 py-1.5 rounded-lg bg-blue-400/10 text-blue-400 hover:bg-blue-400/20 text-[10px] font-black border border-blue-400/20 transition-all flex items-center gap-1 whitespace-nowrap"
                               title="Prorrogar / Cambiar Fecha de Vencimiento"
                             >
                               <Calendar size={11} /> Prorrogar
+                            </button>
+                          )}
+                          {c.estado !== 'pagada' && (
+                            <button
+                              onClick={() => handleDividirCuotas(c)}
+                              className="px-3 py-1.5 rounded-lg bg-purple-400/10 text-purple-400 hover:bg-purple-400/20 text-[10px] font-black border border-purple-400/20 transition-all flex items-center gap-1 whitespace-nowrap"
+                              title="Dividir saldo en cuotas mensuales"
+                            >
+                              <Calculator size={11} /> Cuotas
                             </button>
                           )}
                         </td>
