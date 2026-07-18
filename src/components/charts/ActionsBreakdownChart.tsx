@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useState, useEffect } from 'react'
 import {
   BarChart,
   Bar,
@@ -29,10 +30,21 @@ const COLORS = {
 }
 
 export function ActionsBreakdownChart({ data }: Props) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const displayData = isMobile ? data.slice(-3) : data
+
   return (
     <div style={{ width: '100%', height: '300px' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
+        <BarChart data={displayData} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
           
           <YAxis

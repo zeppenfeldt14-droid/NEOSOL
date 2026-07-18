@@ -154,12 +154,12 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
           />
 
           <button onClick={fetchFacturas} className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10">
-            <RefreshCw size={13} /> Actualizar
+            <RefreshCw size={13} /> <span className="hidden md:inline">Actualizar</span>
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-white/10 pb-4">
+      <div className="flex gap-2 border-b border-white/10 pb-4 overflow-x-auto no-scrollbar whitespace-nowrap">
         <button
           onClick={() => setActiveTab('facturacion')}
           className={`btn-toggle ${activeTab === 'facturacion' ? 'active' : ''}`}
@@ -183,7 +183,7 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
       {activeTab === 'facturacion' && (
         <>
           {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {[
           { label: 'Total Facturado',    value: fmt(totalFacturado), icon: DollarSign, color: 'text-green-400',  bg: 'bg-green-400/10' },
           { label: 'Factura A (c/IVA)', value: fmt(totalA),         icon: FileText,   color: 'text-blue-400',   bg: 'bg-blue-400/10' },
@@ -215,7 +215,7 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
         </div>
 
         <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[1000px]">
             <thead>
               <tr className="border-b border-white/5 text-left">
                 {['Nº Factura', 'Tipo', 'Cliente', 'Vendedor', 'Pedido', 'Base s/IVA', 'IVA 21%', 'Recargo Fin.', 'Total', 'Fecha', 'Detalle'].map(col => (

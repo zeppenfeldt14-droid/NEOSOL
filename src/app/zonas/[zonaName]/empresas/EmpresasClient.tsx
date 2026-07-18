@@ -262,7 +262,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Estado</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
               {[
                 { id: 'todos', label: 'Todas' },
                 { id: 'prospecto', label: 'Prospectos' },

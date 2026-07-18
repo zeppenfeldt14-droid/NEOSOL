@@ -645,116 +645,150 @@ export function ProductosPageClient({ userNivel }: Props) {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm table-fixed">
-                <colgroup>
-                  {userNivel === 1 ? (
-                    <>
-                      <col style={{ width: '10%' }} />
-                      <col style={{ width: '32%' }} />
-                      <col style={{ width: '10%' }} />
-                      <col style={{ width: '12%' }} />
-                      <col style={{ width: '12%' }} />
-                      <col style={{ width: '12%' }} />
-                      <col style={{ width: '6%' }} />
-                      <col style={{ width: '6%' }} />
-                    </>
-                  ) : (
-                    <>
-                      <col style={{ width: '10%' }} />
-                      <col style={{ width: '44%' }} />
-                      <col style={{ width: '10%' }} />
-                      <col style={{ width: '12%' }} />
-                      <col style={{ width: '12%' }} />
-                      <col style={{ width: '12%' }} />
-                    </>
-                  )}
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-white/5">
-                    {[
-                      { label: 'Código', align: 'text-left' },
-                      { label: 'Descripción', align: 'text-left' },
-                      { label: 'Paq/Caja', align: 'text-center' },
-                      { label: 'Precio Paquete', align: 'text-right' },
-                      { label: 'Precio Caja', align: 'text-right' },
-                      { label: 'Total c/IVA 21%', align: 'text-right' },
-                      ...(userNivel === 1 ? [
-                        { label: 'Estado', align: 'text-left' },
-                        { label: 'Acciones', align: 'text-center' }
-                      ] : [])
-                    ].map(col => (
-                      <th key={col.label} className={`px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider whitespace-nowrap ${col.align}`}>
-                        {col.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {prods.map(p => (
-                    <tr
-                      key={p.id}
-                      className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${!p.activo ? 'opacity-40' : ''}`}
-                    >
-                      <td className="px-4 py-3 text-primary font-black text-xs text-left">{p.codigoInterno}</td>
-                      <td className="px-4 py-3 text-white font-semibold text-xs text-left">{p.nombre}</td>
-                      <td className="px-4 py-3 text-secondary text-xs text-center">{p.paqPorCaja}</td>
-                      {(() => {
-                        const { precioPaquete, precioCaja } = getProductPrices(p)
-                        return (
-                          <>
-                            <td className="px-4 py-3 text-white text-xs text-right">{fmt(precioPaquete)}</td>
-                            <td className="px-4 py-3 text-white font-bold text-xs text-right">{fmt(precioCaja)}</td>
-                            <td className="px-4 py-3 text-primary font-black text-xs text-right">{fmt(precioCaja * (1 + IVA))}</td>
-                          </>
-                        )
-                      })()}
+            <div className="px-4 pb-4">
+              {/* Mobile View (Cards) */}
+              <div className="block md:hidden space-y-3 mt-3">
+                {prods.map(p => {
+                  const { precioPaquete, precioCaja } = getProductPrices(p)
+                  return (
+                    <div key={p.id} className={`p-4 rounded-xl border border-white/10 bg-black/20 ${!p.activo ? 'opacity-50' : ''}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="text-primary font-black text-xs mb-0.5">{p.codigoInterno}</div>
+                          <div className="text-white font-bold text-sm leading-tight">{p.nombre}</div>
+                        </div>
+                        {userNivel === 1 && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border whitespace-nowrap ml-2 ${
+                            p.activo
+                              ? 'bg-green-400/10 text-green-400 border-green-400/20'
+                              : 'bg-red-400/10 text-red-400 border-red-400/20'
+                          }`}>
+                            {p.activo ? 'Activo' : 'Inactivo'}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-white/5 rounded-lg p-2 flex flex-col justify-center items-center">
+                          <div className="text-[10px] text-secondary uppercase font-bold tracking-wider mb-1">Paq/Caja</div>
+                          <div className="text-white font-semibold text-xs">{p.paqPorCaja}</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-2 flex flex-col justify-center items-center">
+                          <div className="text-[10px] text-secondary uppercase font-bold tracking-wider mb-1">Precio Paq</div>
+                          <div className="text-white font-semibold text-xs">{fmt(precioPaquete)}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex flex-col justify-center items-center">
+                        <div className="text-[10px] text-primary uppercase font-black tracking-wider mb-1">Total Caja c/IVA</div>
+                        <div className="text-white font-black text-lg leading-none">{fmt(precioCaja)}</div>
+                      </div>
+
+                      {userNivel === 1 && (
+                        <div className="flex gap-2 pt-3 mt-3 border-t border-white/5">
+                          <button
+                            onClick={() => openEditar(p)}
+                            className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white font-semibold text-xs flex items-center justify-center gap-2"
+                          >
+                            <Pencil size={12} /> Editar
+                          </button>
+                          <button
+                            onClick={() => toggleActivo(p)}
+                            className={`flex-1 py-2 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 ${
+                              p.activo
+                                ? 'bg-red-400/10 text-red-400 hover:bg-red-400/20'
+                                : 'bg-green-400/10 text-green-400 hover:bg-green-400/20'
+                            }`}
+                          >
+                            {p.activo ? (
+                              <><Trash2 size={12} /> Desactivar</>
+                            ) : (
+                              <><CheckCircle2 size={12} /> Activar</>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto mt-3">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5 text-left">
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider whitespace-nowrap">Cód. Interno</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider">Descripción</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider text-center">Paq / Caja</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider text-right">Precio Paq</th>
+                      <th className="px-4 py-3 text-[10px] font-black uppercase text-primary tracking-wider text-right bg-primary/5">Total Caja c/IVA</th>
                       {userNivel === 1 && (
                         <>
-                          <td className="px-4 py-3 text-left">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
-                              p.activo
-                                ? 'bg-green-400/10 text-green-400 border-green-400/20'
-                                : 'bg-red-400/10 text-red-400 border-red-400/20'
-                            }`}>
-                              {p.activo ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                onClick={() => openEditar(p)}
-                                title="Editar"
-                                className="btn-action hover:text-primary"
-                              >
-                                <Pencil size={12} />
-                              </button>
-                              <button
-                                onClick={() => toggleActivo(p)}
-                                title={p.activo ? 'Desactivar' : 'Reactivar'}
-                                className={`btn-action ${
-                                  p.activo
-                                    ? 'hover:text-red-400 hover:border-red-400/20'
-                                    : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
-                                }`}
-                              >
-                                {p.activo ? <Trash2 size={12} /> : <CheckCircle2 size={12} />}
-                              </button>
-                            </div>
-                          </td>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider text-center">Estado</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase text-secondary tracking-wider text-center">Acciones</th>
                         </>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-white/10 bg-white/[0.01]">
-                    <td colSpan={userNivel === 1 ? 8 : 6} className="px-4 py-2 text-[10px] text-secondary text-right">
-                      IVA: 21% sobre precio de caja · Precios en ARS
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {prods.map(p => {
+                      const { precioPaquete, precioCaja } = getProductPrices(p)
+                      return (
+                        <tr key={p.id} className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${!p.activo ? 'opacity-50' : ''}`}>
+                          <td className="px-4 py-3 text-primary font-bold text-xs whitespace-nowrap">{p.codigoInterno}</td>
+                          <td className="px-4 py-3 text-white font-semibold text-xs truncate max-w-[250px]" title={p.nombre}>{p.nombre}</td>
+                          <td className="px-4 py-3 text-secondary text-xs text-center">{p.paqPorCaja}</td>
+                          <td className="px-4 py-3 text-secondary text-xs text-right tabular-nums font-semibold">{fmt(precioPaquete)}</td>
+                          <td className="px-4 py-3 text-white font-black text-sm text-right tabular-nums bg-primary/5">
+                            {fmt(precioCaja)}
+                          </td>
+                          {userNivel === 1 && (
+                            <>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`px-2 py-1 rounded-full text-[10px] font-black border ${
+                                  p.activo
+                                    ? 'bg-green-400/10 text-green-400 border-green-400/20'
+                                    : 'bg-red-400/10 text-red-400 border-red-400/20'
+                                }`}>
+                                  {p.activo ? 'ACTIVO' : 'INACTIVO'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => openEditar(p)}
+                                    className="btn-action text-secondary hover:text-white"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => toggleActivo(p)}
+                                    className={`btn-action ${
+                                      p.activo
+                                        ? 'hover:text-red-400 hover:border-red-400/20'
+                                        : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
+                                    }`}
+                                  >
+                                    {p.activo ? <Trash2 size={14} /> : <CheckCircle2 size={14} />}
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-white/10 bg-white/[0.01]">
+                      <td colSpan={userNivel === 1 ? 7 : 5} className="px-4 py-2 text-[10px] text-secondary text-right">
+                        IVA: 21% sobre precio de caja · Precios en ARS
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
           </div>
         ))

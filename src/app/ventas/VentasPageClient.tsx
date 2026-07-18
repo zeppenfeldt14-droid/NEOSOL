@@ -144,7 +144,7 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
 
         <div className="flex items-center gap-3">
           <button onClick={fetchFacturas} className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10">
-            <RefreshCw size={13} /> Actualizar
+            <RefreshCw size={13} /> <span className="hidden md:inline">Actualizar</span>
           </button>
           {/* Period Selector */}
           <SharedPeriodFilter 
@@ -186,7 +186,7 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {[
           { label: 'Total Facturado',    value: fmt(totalFacturado), icon: DollarSign, color: 'text-green-400',  bg: 'bg-green-400/10' },
           { label: 'Factura A (c/IVA)', value: fmt(totalA),         icon: FileText,   color: 'text-blue-400',   bg: 'bg-blue-400/10' },
@@ -207,7 +207,7 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
 
       {/* Resumen fiscal */}
       {facturas.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="glass-panel card p-4 border border-white/5">
             <p className="text-[10px] uppercase font-black text-secondary mb-2">Desglose Fiscal</p>
             <div className="flex flex-col gap-2">
@@ -281,7 +281,7 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[1000px]">
             <thead>
               <tr className="border-b border-white/5 text-left">
                 {['Nº Factura', 'Tipo', 'Cliente', 'Zona', 'Vendedor', 'Pedido', 'Base s/IVA', 'IVA 21%', 'Recargo Fin.', 'Total', 'Estado', 'Fecha', ''].map(col => (
