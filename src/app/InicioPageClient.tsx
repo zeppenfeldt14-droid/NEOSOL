@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import SharedPeriodFilter from '@/components/SharedPeriodFilter'
 import { 
   PieChart, 
   Pie, 
@@ -33,11 +34,6 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts'
-
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-]
 
 // Colors for Recharts
 const COLORS_PIE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
@@ -76,9 +72,6 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
   // Handle clicking outside filter dropdowns to close them
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpenFilter(false)
-      }
       if (zoneDropdownRef.current && !zoneDropdownRef.current.contains(event.target as Node)) {
         setIsOpenZoneFilter(false)
       }
@@ -95,27 +88,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
     }).format(val)
   }
 
-  // Handle period navigation
-  const handleSelectSimplePeriod = (period: 'hoy' | 'semana' | 'todo') => {
+  const handlePeriodChange = (newPeriod: string) => {
     const params = new URLSearchParams()
-    params.set('period', period)
-    if (currentZonaParam) params.set('zona', currentZonaParam)
-    router.push(`/?${params.toString()}`)
-    setIsOpenFilter(false)
-  }
-
-  const handleToggleMonth = (monthIndex: number) => {
-    let newMonths = [...selectedMonths]
-    if (newMonths.includes(monthIndex)) {
-      // Don't allow empty selection, fallback to current month if all deselected
-      if (newMonths.length > 1) {
-        newMonths = newMonths.filter(m => m !== monthIndex)
-      }
-    } else {
-      newMonths.push(monthIndex)
-    }
-    const params = new URLSearchParams()
-    params.set('period', newMonths.sort((a, b) => a - b).join(','))
+    params.set('period', newPeriod)
     if (currentZonaParam) params.set('zona', currentZonaParam)
     router.push(`/?${params.toString()}`)
   }
@@ -148,22 +123,6 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
     params.set('zona', 'todas')
     router.push(`/?${params.toString()}`)
     setIsOpenZoneFilter(false)
-  }
-
-  // Label for the period button
-  const getFilterLabel = () => {
-    if (currentPeriodParam === 'hoy') return 'Hoy'
-    if (currentPeriodParam === 'semana') return 'Últimos 7 días'
-    if (currentPeriodParam === 'todo') return 'Historial completo'
-    if (currentPeriodParam === 'mes') return `Mes: ${MONTH_NAMES[new Date().getMonth()]}`
-    
-    if (selectedMonths.length === 1) {
-      return `Mes: ${MONTH_NAMES[selectedMonths[0]]}`
-    }
-    if (selectedMonths.length === 3) {
-      return `${selectedMonths.map(m => MONTH_NAMES[m].substring(0, 3)).join(' + ')}`
-    }
-    return `${selectedMonths.length} Meses`
   }
 
   // Label for the zones button
@@ -250,86 +209,10 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
             </div>
           )}
 
-          {/* Dropdown de Filtro Multiselección Tiempo */}
-          <div className="relative" ref={dropdownRef}>
-            <button 
-              onClick={() => setIsOpenFilter(!isOpenFilter)}
-              className="px-4 py-2.5 text-xs font-bold bg-[#141E3C] border border-white/5 hover:border-primary/40 text-white rounded-xl shadow-xl flex items-center gap-2.5 transition-all duration-300"
-            >
-              <Calendar size={14} className="text-primary" />
-              <span>{getFilterLabel()}</span>
-              <ChevronDown size={12} className="text-secondary/70 transition-transform duration-300" style={{ transform: isOpenFilter ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-            </button>
-
-            {isOpenFilter && (
-              <div className="absolute right-0 mt-3 w-80 backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in">
-                <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-2.5">Períodos Predefinidos</div>
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  <button 
-                    onClick={() => handleSelectSimplePeriod('hoy')}
-                    className={`text-center text-xs py-2 rounded-xl font-bold transition-all ${currentPeriodParam === 'hoy' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary bg-black/20 hover:bg-white/5 hover:text-white'}`}
-                  >
-                    Hoy
-                  </button>
-                  <button 
-                    onClick={() => handleSelectSimplePeriod('semana')}
-                    className={`text-center text-xs py-2 rounded-xl font-bold transition-all ${currentPeriodParam === 'semana' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary bg-black/20 hover:bg-white/5 hover:text-white'}`}
-                  >
-                    7 Días
-                  </button>
-                  <button 
-                    onClick={() => handleSelectSimplePeriod('todo')}
-                    className={`text-center text-xs py-2 rounded-xl font-bold transition-all ${currentPeriodParam === 'todo' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-secondary bg-black/20 hover:bg-white/5 hover:text-white'}`}
-                  >
-                    Todo
-                  </button>
-                </div>
-
-                <div className="border-t border-white/5 my-3 pt-3">
-                  <div className="flex justify-between items-center mb-2.5">
-                    <span className="text-[10px] font-black text-primary uppercase tracking-wider">Meses (Selección Múltiple)</span>
-                    {selectedMonths.length > 1 && (
-                      <button 
-                        onClick={() => router.push('/?period=mes')}
-                        className="text-[9px] font-bold text-red-400 hover:text-red-300 hover:underline"
-                      >
-                        Reestablecer
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Grid de Meses con Checkboxes Customizados */}
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                    {MONTH_NAMES.map((name, index) => {
-                      const isChecked = selectedMonths.includes(index)
-                      return (
-                        <div 
-                          key={index} 
-                          onClick={() => handleToggleMonth(index)}
-                          className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
-                            isChecked 
-                              ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
-                              : 'border-white/5 bg-black/20 text-secondary hover:border-white/20 hover:text-white'
-                          }`}
-                        >
-                          <span>{name}</span>
-                          <div className={`w-4 h-4 rounded flex items-center justify-center transition-all ${
-                            isChecked ? 'bg-primary text-white' : 'border border-white/20 bg-black/40'
-                          }`}>
-                            {isChecked && (
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                              </svg>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <SharedPeriodFilter 
+            currentPeriod={currentPeriodParam} 
+            onPeriodChange={handlePeriodChange} 
+          />
         </div>
       </div>
 

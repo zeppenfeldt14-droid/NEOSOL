@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, Globe, BarChart3, FileText, DollarSign, RefreshCw, Eye } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+import SharedPeriodFilter from '@/components/SharedPeriodFilter'
 import { formatDate } from '@/lib/date'
 
 interface Props {
@@ -46,7 +47,7 @@ const ESTADO_FAC: Record<string, string> = {
 
 export function VentasPageClient({ userNivel, userAlias, userZona, availableZones }: Props) {
   const [selectedZone, setSelectedZone] = useState<string>(userNivel === 3 ? (userZona || '') : 'todas')
-  const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'todo'>('mes')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('mes')
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [loading, setLoading]   = useState(true)
 
@@ -86,13 +87,27 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
     const now = new Date()
     const filtered = all.filter(f => {
       const d = new Date(f.creadoEn)
+      if (selectedPeriod === 'todo') return true
       if (selectedPeriod === 'hoy') {
         return d.toDateString() === now.toDateString()
-      } else if (selectedPeriod === 'semana') {
-        const semana = new Date(now); semana.setDate(now.getDate() - 7)
-        return d >= semana
-      } else if (selectedPeriod === 'mes') {
+      }
+      if (selectedPeriod === 'semana') {
+        const weekAgo = new Date(now)
+        weekAgo.setDate(now.getDate() - 7)
+        return d >= weekAgo
+      }
+      if (selectedPeriod === 'mes') {
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }
+      if (selectedPeriod.startsWith('Q')) {
+        const month = d.getMonth()
+        if (selectedPeriod === 'Q1') return month >= 0 && month <= 2
+        if (selectedPeriod === 'Q2') return month >= 3 && month <= 5
+        if (selectedPeriod === 'Q3') return month >= 6 && month <= 8
+        if (selectedPeriod === 'Q4') return month >= 9 && month <= 11
+      } else {
+        const selectedMonths = selectedPeriod.split(',').map(Number)
+        return selectedMonths.includes(d.getMonth())
       }
       return true
     })
@@ -132,16 +147,10 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
             <RefreshCw size={13} /> Actualizar
           </button>
           {/* Period Selector */}
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as any)}
-            className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
-          >
-            <option value="hoy">Hoy</option>
-            <option value="semana">Semana</option>
-            <option value="mes">Mes en curso</option>
-            <option value="todo">Historial completo</option>
-          </select>
+          <SharedPeriodFilter 
+            currentPeriod={selectedPeriod} 
+            onPeriodChange={setSelectedPeriod} 
+          />
         </div>
       </div>
 

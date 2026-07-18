@@ -103,6 +103,18 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     dateFilters = [{ gte: start, lte: now }]
   } else if (periodValue === 'todo') {
     isPeriodFiltered = false
+  } else if (periodValue === 'Q1' || periodValue === 'Q2' || periodValue === 'Q3' || periodValue === 'Q4') {
+    let selectedMonths: number[] = []
+    if (periodValue === 'Q1') selectedMonths = [0, 1, 2]
+    if (periodValue === 'Q2') selectedMonths = [3, 4, 5]
+    if (periodValue === 'Q3') selectedMonths = [6, 7, 8]
+    if (periodValue === 'Q4') selectedMonths = [9, 10, 11]
+    
+    dateFilters = selectedMonths.map(m => {
+      const start = new Date(now.getFullYear(), m, 1, 0, 0, 0)
+      const end = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59)
+      return { gte: start, lte: end }
+    })
   } else {
     let selectedMonths: number[] = []
     if (periodValue === 'mes') {
@@ -111,11 +123,15 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       selectedMonths = periodValue.split(',').map(Number).filter(n => !isNaN(n))
     }
 
-    dateFilters = selectedMonths.map(m => {
-      const start = new Date(now.getFullYear(), m, 1, 0, 0, 0)
-      const end = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59)
-      return { gte: start, lte: end }
-    })
+    if (selectedMonths.length === 0) {
+      isPeriodFiltered = false // Fallback if no valid months
+    } else {
+      dateFilters = selectedMonths.map(m => {
+        const start = new Date(now.getFullYear(), m, 1, 0, 0, 0)
+        const end = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59)
+        return { gte: start, lte: end }
+      })
+    }
   }
 
   // Queries

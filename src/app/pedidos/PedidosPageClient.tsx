@@ -11,27 +11,7 @@ import {
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 import { formatDate } from '@/lib/date'
 
-const MESES = [
-  { value: 0, label: 'Enero' },
-  { value: 1, label: 'Febrero' },
-  { value: 2, label: 'Marzo' },
-  { value: 3, label: 'Abril' },
-  { value: 4, label: 'Mayo' },
-  { value: 5, label: 'Junio' },
-  { value: 6, label: 'Julio' },
-  { value: 7, label: 'Agosto' },
-  { value: 8, label: 'Septiembre' },
-  { value: 9, label: 'Octubre' },
-  { value: 10, label: 'Noviembre' },
-  { value: 11, label: 'Diciembre' },
-]
-
-const TRIMESTRES = [
-  { value: 'Q1', label: '1er Trimestre (Ene-Mar)' },
-  { value: 'Q2', label: '2do Trimestre (Abr-Jun)' },
-  { value: 'Q3', label: '3er Trimestre (Jul-Sep)' },
-  { value: 'Q4', label: '4to Trimestre (Oct-Dic)' },
-]
+import SharedPeriodFilter from '@/components/SharedPeriodFilter'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -113,7 +93,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     userNivel === 3 ? (userZona || '') : 'todas'
   )
   const [selectedEstado, setSelectedEstado] = useState('todos')
-  const [selectedPeriod, setSelectedPeriod] = useState<string>(new Date().getMonth().toString())
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('mes')
   const [pedidos, setPedidos]   = useState<Pedido[]>([])
   const [loading, setLoading]   = useState(true)
   const [actionId, setActionId] = useState<number | null>(null)
@@ -135,22 +115,30 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     const all: Pedido[] = Array.isArray(data) ? data : []
 
     const now = new Date()
-    const currentYear = now.getFullYear()
 
     const filtered = all.filter(p => {
       const d = new Date(p.creadoEn)
-      if (d.getFullYear() !== currentYear) return false
 
+      if (selectedPeriod === 'todo') return true
+      if (selectedPeriod === 'hoy') {
+        return d.toDateString() === now.toDateString()
+      }
+      if (selectedPeriod === 'semana') {
+        const weekAgo = new Date()
+        weekAgo.setDate(now.getDate() - 7)
+        return d >= weekAgo
+      }
+      if (selectedPeriod === 'mes') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }
       if (selectedPeriod.startsWith('Q')) {
         const month = d.getMonth()
         if (selectedPeriod === 'Q1') return month >= 0 && month <= 2
         if (selectedPeriod === 'Q2') return month >= 3 && month <= 5
         if (selectedPeriod === 'Q3') return month >= 6 && month <= 8
         if (selectedPeriod === 'Q4') return month >= 9 && month <= 11
-      } else {
-        return d.getMonth() === parseInt(selectedPeriod, 10)
       }
-      return false
+      return true
     })
     
     setPedidos(filtered)
@@ -284,22 +272,10 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
         </div>
         <div className="flex items-center gap-3">
           {/* Period Selector */}
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
-          >
-            <optgroup label="Meses">
-              {MESES.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Trimestres">
-              {TRIMESTRES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </optgroup>
-          </select>
+          <SharedPeriodFilter 
+            currentPeriod={selectedPeriod} 
+            onPeriodChange={setSelectedPeriod} 
+          />
 
           <button
             onClick={() => router.push('/pedidos/nuevo')}
