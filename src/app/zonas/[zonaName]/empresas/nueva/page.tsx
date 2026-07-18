@@ -38,6 +38,31 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
     orderBy: { nombre: 'asc' }
   })
 
+  const getRubroDisplayName = (name: string) => {
+    const match = name.match(/^CATEGORIA\s+(\d+)$/i);
+    if (match) {
+      return `Categoría ${match[1]}`;
+    }
+    return name;
+  };
+
+  const getRubroEmoji = (name: string) => {
+    const mapping: Record<string, string> = {
+      'CATEGORIA 1': '🍬',
+      'CATEGORIA 2': '🍽️',
+      'CATEGORIA 3': '🛒',
+      'CATEGORIA 4': '🧀',
+      'CATEGORIA 5': '🌱',
+      'CATEGORIA 6': '🏪',
+      'CATEGORIA 7': '🚚',
+      'CATEGORIA 8': '🎉',
+      'CATEGORIA 9': '❌',
+      'CATEGORIA 10': '📦',
+      'CATEGORIA 11': '🏥'
+    };
+    return mapping[name.toUpperCase()] || '🏷️';
+  };
+
   return (
     <div className="animate-fade-in max-w-4xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
@@ -103,7 +128,9 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
                 <label className="form-label">Rubro Comercial</label>
                 <select name="rubro" defaultValue="CATEGORIA 1" className="form-input bg-dark">
                   {rubros.map(r => (
-                    <option key={r.id} value={r.nombre}>{r.nombre}</option>
+                    <option key={r.id} value={r.nombre}>
+                      {getRubroEmoji(r.nombre)} {getRubroDisplayName(r.nombre)}
+                    </option>
                   ))}
                 </select>
               </div>

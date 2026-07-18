@@ -11,6 +11,33 @@ import { RespuestaObtenidaButton } from './RespuestaObtenidaButton'
 
 export const dynamic = 'force-dynamic'
 
+const getRubroDisplayName = (name: string) => {
+  if (!name) return 'No asignado';
+  const match = name.match(/^CATEGORIA\s+(\d+)$/i);
+  if (match) {
+    return `Categoría ${match[1]}`;
+  }
+  return name;
+};
+
+const getRubroEmoji = (name: string) => {
+  if (!name) return '🏷️';
+  const mapping: Record<string, string> = {
+    'CATEGORIA 1': '🍬',
+    'CATEGORIA 2': '🍽️',
+    'CATEGORIA 3': '🛒',
+    'CATEGORIA 4': '🧀',
+    'CATEGORIA 5': '🌱',
+    'CATEGORIA 6': '🏪',
+    'CATEGORIA 7': '🚚',
+    'CATEGORIA 8': '🎉',
+    'CATEGORIA 9': '❌',
+    'CATEGORIA 10': '📦',
+    'CATEGORIA 11': '🏥'
+  };
+  return mapping[name.toUpperCase()] || '🏷️';
+};
+
 export default async function EmpresaPage({ params }: { params: Promise<{ id: string; zonaName: string }> }) {
   const user = await getSessionUser()
   if (!user) {
@@ -106,7 +133,10 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
             <Tag size={16} className="text-secondary" />
             <div>
               <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Rubro Comercial</div>
-              <div style={{ fontWeight: 500 }}>{empresa.rubro || 'No asignado'}</div>
+              <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span>{getRubroEmoji(empresa.rubro || '')}</span>
+                <span>{getRubroDisplayName(empresa.rubro || '')}</span>
+              </div>
             </div>
           </div>
 
