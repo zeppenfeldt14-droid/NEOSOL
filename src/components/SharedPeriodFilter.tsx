@@ -11,9 +11,10 @@ export const MONTH_NAMES = [
 interface SharedPeriodFilterProps {
   currentPeriod: string
   onPeriodChange: (newPeriod: string) => void
+  align?: 'left' | 'right'
 }
 
-export default function SharedPeriodFilter({ currentPeriod, onPeriodChange }: SharedPeriodFilterProps) {
+export default function SharedPeriodFilter({ currentPeriod, onPeriodChange, align = 'right' }: SharedPeriodFilterProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -87,7 +88,7 @@ export default function SharedPeriodFilter({ currentPeriod, onPeriodChange }: Sh
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 lg:left-auto lg:right-0 mt-3 w-80 max-w-[90vw] backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in">
+        <div className={`absolute ${align === 'left' ? 'left-0 md:right-0 md:left-auto' : 'right-0'} mt-3 w-[290px] sm:w-80 max-w-[calc(100vw-2rem)] backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in`}>
           <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-2.5">Períodos Predefinidos</div>
           
           <div className="grid grid-cols-3 gap-2 mb-2">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, BarChart3, FileText, DollarSign, RefreshCw, Eye, Calendar } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
+import SharedPeriodFilter from '@/components/SharedPeriodFilter'
 import { ClientesActivosList } from './ClientesActivosList'
 import { ComisionesList } from './ComisionesList'
 
@@ -51,8 +52,7 @@ const TRIMESTRES = [
 
 export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
   const [activeTab, setActiveTab] = useState<'facturacion' | 'clientes' | 'comisiones'>('facturacion')
-  const currentMonthStr = new Date().getMonth().toString()
-  const [selectedPeriod, setSelectedPeriod] = useState<string>(currentMonthStr)
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('mes')
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -95,7 +95,18 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
     const filtered = all.filter(f => {
       const d = new Date(f.creadoEn)
       if (d.getFullYear() !== currentYear) return false
-
+      if (selectedPeriod === 'todo') return true
+      if (selectedPeriod === 'hoy') {
+        return d.toDateString() === now.toDateString()
+      }
+      if (selectedPeriod === 'semana') {
+        const weekAgo = new Date(now)
+        weekAgo.setDate(now.getDate() - 7)
+        return d >= weekAgo
+      }
+      if (selectedPeriod === 'mes') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      }
       if (selectedPeriod.startsWith('Q')) {
         const month = d.getMonth()
         if (selectedPeriod === 'Q1') return month >= 0 && month <= 2
@@ -103,7 +114,8 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
         if (selectedPeriod === 'Q3') return month >= 6 && month <= 8
         if (selectedPeriod === 'Q4') return month >= 9 && month <= 11
       } else {
-        return d.getMonth() === parseInt(selectedPeriod, 10)
+        const selectedMonths = selectedPeriod.split(',').map(Number)
+        return selectedMonths.includes(d.getMonth())
       }
       return false
     })
@@ -136,26 +148,10 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="bg-[#1a1f2e] text-white text-xs border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-green-500 transition-colors cursor-pointer"
-          >
-            <optgroup label="Meses">
-              {MESES.filter(m => m.value <= new Date().getMonth()).map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Trimestres">
-              {TRIMESTRES.map(t => {
-                const currMonth = new Date().getMonth()
-                if (t.value === 'Q2' && currMonth < 3) return null
-                if (t.value === 'Q3' && currMonth < 6) return null
-                if (t.value === 'Q4' && currMonth < 9) return null
-                return <option key={t.value} value={t.value}>{t.label}</option>
-              })}
-            </optgroup>
-          </select>
+          <SharedPeriodFilter 
+            currentPeriod={selectedPeriod}
+            onPeriodChange={setSelectedPeriod}
+          />
 
           <button onClick={fetchFacturas} className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10">
             <RefreshCw size={13} /> Actualizar

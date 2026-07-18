@@ -163,7 +163,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
               </button>
 
               {isOpenZoneFilter && (
-                <div className="absolute right-0 mt-3 w-72 backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in">
+                <div className="absolute left-0 md:left-auto md:right-0 mt-3 w-[290px] sm:w-72 backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in origin-top-left md:origin-top-right">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-[10px] font-black text-primary uppercase tracking-wider">Filtrar por Zonas</span>
                     {selectedZones.length < availableZones.length && (
@@ -212,6 +212,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           <SharedPeriodFilter 
             currentPeriod={currentPeriodParam} 
             onPeriodChange={handlePeriodChange} 
+            align="left"
           />
         </div>
       </div>
