@@ -152,10 +152,6 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
             currentPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}
           />
-
-          <button onClick={fetchFacturas} className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10">
-            <RefreshCw size={13} /> <span className="hidden md:inline">Actualizar</span>
-          </button>
         </div>
       </div>
 

@@ -359,7 +359,7 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
 
       {/* Tab Generador */}
       {activeTab === 'generador' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
           
           {/* Controles */}
           <div className="glass-panel card" style={{ padding: '1.5rem' }}>
@@ -414,8 +414,8 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
           {/* Vista Previa Novedosa y Escalable */}
           <div className="glass-panel" style={{ padding: '1.5rem', overflowX: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 className="card-title text-white mb-4">Vista Previa del Documento</h3>
-            <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
-              <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-40mm' }}>
+            <div className="overflow-x-auto w-full flex lg:justify-center justify-start">
+              <div style={{ transform: 'scale(0.85)', transformOrigin: 'top left', marginBottom: '-40mm', minWidth: '210mm' }}>
                 <ReportContent data={data} containerRef={reportRef} />
               </div>
             </div>
@@ -426,7 +426,7 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
 
       {/* Tab Historial */}
       {activeTab === 'historial' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
           
           {/* Lista de Reportes de la DB */}
           <div className="glass-panel card" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
@@ -507,8 +507,8 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
             
             <div style={{ flex: 1, borderRadius: '12px', overflow: 'hidden', minHeight: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)' }}>
               {selectedReportData ? (
-                <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center', padding: '1.5rem 0' }}>
-                  <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-40mm' }}>
+                <div className="overflow-x-auto w-full flex lg:justify-center justify-start py-6">
+                  <div style={{ transform: 'scale(0.85)', transformOrigin: 'top left', marginBottom: '-40mm', minWidth: '210mm' }}>
                     <ReportContent data={selectedReportData} containerRef={previewReportRef} />
                   </div>
                 </div>

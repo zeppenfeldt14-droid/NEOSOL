@@ -426,12 +426,6 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
               : 'Cartera de cobranzas consolidada por zona'}
           </p>
         </div>
-        <button
-          onClick={fetchCobranzas}
-          className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10"
-        >
-          <RefreshCw size={13} /> Actualizar
-        </button>
       </div>
 
       {/* Zone & Status Filters (50/50 Layout) */}

@@ -39,7 +39,8 @@ export function ActionsBreakdownChart({ data }: Props) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  const displayData = isMobile ? data.slice(-3) : data
+  const currentMonthIndex = new Date().getMonth()
+  const displayData = isMobile ? data.slice(Math.max(0, currentMonthIndex - 2), currentMonthIndex + 1) : data
 
   return (
     <div style={{ width: '100%', height: '300px' }}>

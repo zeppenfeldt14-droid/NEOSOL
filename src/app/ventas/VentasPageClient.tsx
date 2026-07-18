@@ -143,9 +143,6 @@ export function VentasPageClient({ userNivel, userAlias, userZona, availableZone
         </div>
 
         <div className="flex items-center gap-3">
-          <button onClick={fetchFacturas} className="btn btn-secondary text-xs flex items-center gap-2 border border-white/10">
-            <RefreshCw size={13} /> <span className="hidden md:inline">Actualizar</span>
-          </button>
           {/* Period Selector */}
           <SharedPeriodFilter 
             currentPeriod={selectedPeriod} 
