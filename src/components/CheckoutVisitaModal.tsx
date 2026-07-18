@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import {
   X, Check, MessageCircle, Mail, Phone, CalendarPlus,
-  User, Briefcase, ClipboardList, Star, Eye
+  User, Briefcase, ClipboardList, Star, Eye, ThumbsUp
 } from 'lucide-react'
 import { completarVisitaConRegistro } from '@/app/zonas/[zonaName]/planificador/actions'
 
@@ -379,7 +379,7 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
                   Guardando...
                 </>
               ) : (
-                <><Check size={16} /> Guardar Check-out</>
+                <><ThumbsUp size={16} /> Guardar Check-out</>
               )}
             </button>
           </div>

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ShoppingCart, Filter, Plus, Clock, CheckCircle2,
-  XCircle, Globe, Send, AlertCircle, Eye, Edit3, Calendar,
+  ShoppingCart, Filter, Plus, Clock, ThumbsUp,
+  ThumbsDown, Globe, Send, AlertCircle, Eye, Edit3, Calendar,
   Info, FileText, Check, DollarSign, Gift, User, Package, Calculator,
   Trash2, Download
 } from 'lucide-react'
@@ -343,7 +343,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
         {/* Status Filter */}
         <div className="glass-panel card p-4 flex flex-col gap-3 border border-white/5">
           <div className="flex items-center gap-2 text-secondary text-sm font-semibold">
-            <CheckCircle2 size={15} />
+            <ThumbsUp size={15} />
             <span>Estado:</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -370,8 +370,8 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
         {[
           { label: 'Total Pedidos',    value: counts.todos,                icon: ShoppingCart, color: 'text-primary',   bg: 'bg-primary/10' },
           { label: 'Pend. Aprobación', value: counts.pendiente_supervisor, icon: Clock,        color: 'text-blue-400',  bg: 'bg-blue-400/10' },
-          { label: 'Aprobados',        value: counts.aprobado,             icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
-          { label: 'Cancelados',       value: counts.cancelado,            icon: XCircle,      color: 'text-red-400',   bg: 'bg-red-400/10' },
+          { label: 'Aprobados',        value: counts.aprobado,             icon: ThumbsUp, color: 'text-green-400', bg: 'bg-green-400/10' },
+          { label: 'Cancelados',       value: counts.cancelado,            icon: ThumbsDown,      color: 'text-red-400',   bg: 'bg-red-400/10' },
         ].map(kpi => (
           <div key={kpi.label} className="glass-panel card p-4 flex items-center gap-4 border border-white/5">
             <div className={`${kpi.bg} p-3 rounded-xl`}>
@@ -501,7 +501,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                             }`}
                             title={(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
                           >
-                            <CheckCircle2 size={12} />
+                            <ThumbsUp size={12} />
                           </button>
                         )}
 
@@ -525,7 +525,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                             className="btn-action text-orange-400 border-orange-400/20 hover:bg-orange-400/10"
                             title="Cancelar pedido"
                           >
-                            <XCircle size={12} />
+                            <ThumbsDown size={12} />
                           </button>
                         )}
 

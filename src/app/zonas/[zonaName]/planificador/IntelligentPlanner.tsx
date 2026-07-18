@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2, MessageCircle, Mail, CheckCircle2, AlertCircle, Download } from 'lucide-react'
+import { Map as MapIcon, Printer, Navigation, Building2, Phone, MapPin, Trash2, Check, Link2, MessageCircle, Mail, AlertCircle, Download, ThumbsUp, ThumbsDown } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import html2canvas from 'html2canvas'
@@ -420,7 +420,7 @@ export default function IntelligentPlanner({
               <button onClick={() => handleMarcarVisitada(accion.id)} disabled={isMarking}
                 style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: isMarking ? 'not-allowed' : 'pointer', backgroundColor: isMarking ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.2)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title="Completar para Registrar Resultado">
-                {isMarking ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle2 size={16} />}
+                {isMarking ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(52,211,153,0.3)', borderTopColor: '#34d399', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <ThumbsUp size={16} />}
               </button>
               <input type="date" title="Re-agendar"
                 defaultValue={accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toISOString().split('T')[0] : ''}
@@ -521,6 +521,7 @@ export default function IntelligentPlanner({
                               style={{ padding: '0.25rem 0.5rem', height: '32px', fontSize: '0.75rem' }}
                               title="Completar tarea"
                             >
+                              <ThumbsUp size={14} style={{ marginRight: '4px', display: 'inline' }} />
                               Completar
                             </button>
                             {(!pendingActionDeleteIds.includes(accion.id) || userNivel === 1) ? (
@@ -940,11 +941,11 @@ export default function IntelligentPlanner({
                     <td style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}>"{sol.motivo}"</td>
                     <td style={{ textAlign: 'right' }}>
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => handleResolverSolicitud(sol.id, true)} className="btn btn-success text-xs px-3 py-1">
-                          Aprobar y Eliminar
+                        <button onClick={() => handleResolverSolicitud(sol.id, true)} className="btn btn-success text-xs px-3 py-1 flex items-center gap-1">
+                          <ThumbsUp size={14} /> Aprobar y Eliminar
                         </button>
-                        <button onClick={() => handleResolverSolicitud(sol.id, false)} className="btn btn-secondary text-xs px-3 py-1">
-                          Rechazar
+                        <button onClick={() => handleResolverSolicitud(sol.id, false)} className="btn btn-secondary text-xs px-3 py-1 flex items-center gap-1">
+                          <ThumbsDown size={14} /> Rechazar
                         </button>
                       </div>
                     </td>

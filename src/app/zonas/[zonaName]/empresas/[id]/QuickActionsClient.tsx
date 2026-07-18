@@ -1,7 +1,7 @@
 'use client'
 
 import { setEmpresaEstado, descartarEmpresa, eliminarEmpresaDefinitivamente, darDeBajaEmpresa, reactivarCliente, solicitarEliminacion } from './quick-actions'
-import { CheckCircle2, UserCheck, Printer, Ban, Trash2, ArrowUpCircle, Loader2 } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Handshake, Hand, Printer, Trash2, Loader2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import html2canvas from 'html2canvas'
@@ -98,7 +98,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
             disabled={isUpdating}
             className="btn btn-primary text-xs px-3"
           >
-            <CheckCircle2 size={16} /> 
+            <ThumbsUp size={16} /> 
             {isUpdating ? 'Actualizando...' : 'Convertir a Cliente'}
           </button>
           <button 
@@ -107,7 +107,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
             className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-2 py-2"
             title={isUpdating ? 'Actualizando...' : 'Descartar oportunidad'}
           >
-            <Trash2 size={16} />
+            <ThumbsDown size={16} />
           </button>
         </>
       )}
@@ -118,7 +118,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
           disabled={isUpdating}
           className="btn btn-secondary text-xs px-3"
         >
-          <UserCheck size={16} /> 
+          <Handshake size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Volver a Prospecto'}
         </button>
       )}
@@ -129,7 +129,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
           disabled={isUpdating}
           className="btn btn-secondary text-xs px-3"
         >
-          <UserCheck size={16} /> 
+          <Handshake size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Recuperar Prospecto'}
         </button>
       )}
@@ -141,7 +141,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
           className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-2 py-2"
           title={isUpdating ? 'Actualizando...' : 'Dar de Baja cliente'}
         >
-          <Ban size={16} />
+          <Hand size={16} />
         </button>
       )}
 
@@ -151,7 +151,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
           disabled={isUpdating}
           className="btn btn-primary text-xs px-3"
         >
-          <ArrowUpCircle size={16} /> 
+          <ThumbsUp size={16} /> 
           {isUpdating ? 'Actualizando...' : 'Reactivar Cliente'}
         </button>
       )}

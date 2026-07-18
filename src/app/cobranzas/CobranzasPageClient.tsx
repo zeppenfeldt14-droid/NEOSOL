@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Banknote, Globe, AlertTriangle, CheckCircle2, Clock,
   DollarSign, X, RefreshCw, CreditCard, Wallet, Building2,
-  FileText, ChevronDown, ChevronUp, History, Eye, Calendar, Calculator
+  FileText, ChevronDown, ChevronUp, History, Eye, Calendar, Calculator,
+  ThumbsUp, ThumbsDown
 } from 'lucide-react'
 import { PedidoDetalleModal } from '@/components/PedidoDetalleModal'
 import { formatDate } from '@/lib/date'
@@ -558,14 +559,14 @@ export function CobranzasPageClient({ userNivel, userAlias, userZona, availableZ
                       className="p-2 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-all flex items-center justify-center"
                       title="Aprobar Solicitud"
                     >
-                      <CheckCircle2 size={14} />
+                      <ThumbsUp size={14} />
                     </button>
                     <button 
                       onClick={() => handleProcesarAprobacion(sol.id, 'rechazar')}
                       className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all flex items-center justify-center"
                       title="Rechazar Solicitud"
                     >
-                      <X size={14} />
+                      <ThumbsDown size={14} />
                     </button>
                   </div>
                 </div>

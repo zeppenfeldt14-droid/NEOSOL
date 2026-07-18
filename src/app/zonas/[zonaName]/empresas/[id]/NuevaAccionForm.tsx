@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { ThumbsUp } from 'lucide-react'
 
 interface NuevaAccionFormProps {
   empresaId: number
@@ -108,7 +108,7 @@ export function NuevaAccionForm({ empresaId, addAccionAction }: NuevaAccionFormP
         className="btn btn-primary flex items-center justify-center" 
         style={{ padding: '0.5rem', height: '36px', width: '36px' }}
       >
-        {isSubmitting ? '...' : <Plus size={16} />}
+        {isSubmitting ? '...' : <ThumbsUp size={16} />}
       </button>
     </form>
   )
