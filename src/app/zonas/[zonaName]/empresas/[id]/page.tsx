@@ -94,11 +94,11 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <div>
+        <div className="w-full">
           <Link href={`/zonas/${zonaName}/empresas`} className="flex items-center gap-2" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
             <ArrowLeft size={16} /> Volver a empresas
           </Link>
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start md:items-center mb-6 w-full flex-col md:flex-row gap-4">
             <div>
               <h1 className="page-title !mb-0 flex items-center gap-2">
                 <Building2 className="text-primary" /> {empresa.nombre}

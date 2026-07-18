@@ -107,7 +107,7 @@ export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, u
             className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-2 py-2"
             title={isUpdating ? 'Actualizando...' : 'Descartar oportunidad'}
           >
-            <Ban size={16} />
+            <Trash2 size={16} />
           </button>
         </>
       )}

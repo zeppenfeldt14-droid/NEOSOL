@@ -605,7 +605,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
       {/* Monthly Chart */}
       <div className="glass-panel card delay-400" style={{ marginTop: '1.5rem' }}>
         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <BarChart2 size={18} /> Visitas por Mes
+          <BarChart2 size={18} /> GESTION Mensual
         </h3>
         <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Rendimiento anual del {today.getFullYear()}</p>
         <MonthlyVisitsChart data={monthlyData} />

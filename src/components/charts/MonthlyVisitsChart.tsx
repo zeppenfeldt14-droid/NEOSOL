@@ -74,7 +74,7 @@ export function MonthlyVisitsChart({ data }: Props) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, name: any) => {
               const labels: Record<string, string> = {
-                visitas: '🟠 Visitas',
+                visitas: '🟠 Gestion Global',
                 nuevos:  '🔵 Nuevos Clientes',
                 activos: '🟢 Clientes Activos',
                 bajas:   '🔴 Bajas',
@@ -86,7 +86,7 @@ export function MonthlyVisitsChart({ data }: Props) {
           <Legend
             formatter={(value) => {
               const labels: Record<string, string> = {
-                visitas: 'Visitas',
+                visitas: 'Gestion Global',
                 nuevos:  'Nuevos',
                 activos: 'Activos',
                 bajas:   'Bajas',
