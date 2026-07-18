@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package, Home } from 'lucide-react'
+import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package, Home, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -29,6 +29,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
   const [modules, setModules] = useState<Record<string, boolean>>(user.modulos || {})
   const [userName, setUserName] = useState(user.nombre)
   const [userRol, setUserRol] = useState(user.rol)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Zones UI States
   const [isZonesExpanded, setIsZonesExpanded] = useState(true)
@@ -78,8 +79,9 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
     if (localRol) setUserRol(localRol)
   }, [])
 
-  // Auto-expand active zone from pathname
+  // Auto-expand active zone from pathname and auto-close mobile menu
   useEffect(() => {
+    setIsMobileMenuOpen(false)
     const match = pathname.match(/\/zonas\/([^/]+)/)
     if (match) {
       const activeZone = decodeURIComponent(match[1])
@@ -149,8 +151,14 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
 
   return (
     <div className="app-container">
+      {/* Mobile Sidebar Overlay */}
+      <div 
+        className={`sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isMobileMenuOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header" style={{ padding: logo ? '1.5rem 1rem' : '1.5rem' }}>
           {logo ? (
             <img src={logo} alt="Logo" style={{ maxHeight: '55px', maxWidth: '100%', objectFit: 'contain', margin: '0 auto' }} />
@@ -376,6 +384,12 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
       <main className="main-content">
         <header className="topbar">
           <div className="flex items-center gap-4">
+            <button 
+              className="mobile-menu-btn"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 500 }} className="text-white font-bold">NEOSOL CRM</h2>
           </div>
           <div className="flex items-center gap-4">
