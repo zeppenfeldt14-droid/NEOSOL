@@ -317,19 +317,33 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
             <button
               onClick={() => setRubroFilter('todos')}
               className={`btn-toggle ${rubroFilter === 'todos' ? 'active' : ''}`}
+              style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
             >
               Todos
             </button>
-            {rubros.map(r => (
-              <button
-                key={r}
-                onClick={() => setRubroFilter(r)}
-                className={`btn-toggle ${rubroFilter === r ? 'active' : ''}`}
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
-              >
-                {getRubroDisplayName(r)}
-              </button>
-            ))}
+            {rubros.map(r => {
+              const info = RUBRO_LEGENDS[r.toUpperCase()] || { icon: '🏷️', title: getRubroDisplayName(r) };
+              return (
+                <button
+                  key={r}
+                  onClick={() => setRubroFilter(r)}
+                  className={`btn-toggle ${rubroFilter === r ? 'active' : ''}`}
+                  style={{
+                    fontSize: '1.2rem',
+                    padding: '0.4rem',
+                    minWidth: '38px',
+                    minHeight: '38px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '10px'
+                  }}
+                  title={`${getRubroDisplayName(r)}: ${info.title}`}
+                >
+                  {info.icon}
+                </button>
+              )
+            })}
             <button
               onClick={handleAddRubro}
               className="btn-toggle border-dashed hover:border-primary/50 hover:text-primary"
