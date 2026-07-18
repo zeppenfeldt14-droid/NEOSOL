@@ -398,7 +398,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/5 text-left">
@@ -548,6 +548,129 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* ── MOBILE VIEW (CARDS) ────────────────────────────────────────── */}
+      <div className="md:hidden flex flex-col gap-4 p-4 bg-black/20 border-t border-white/5">
+        {loading ? (
+          <div className="py-10 flex flex-col items-center justify-center gap-2">
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-secondary text-xs">Cargando...</span>
+          </div>
+        ) : pedidos.length === 0 ? (
+          <div className="py-10 flex flex-col items-center text-center gap-2">
+            <ShoppingCart size={30} className="text-white/10" />
+            <p className="text-secondary text-xs font-semibold">No hay pedidos</p>
+          </div>
+        ) : (
+          pedidos.map(p => (
+            <div key={p.id} className="flex flex-col gap-3 p-4 rounded-xl bg-black/40 border border-white/10 shadow-lg">
+              <div className="flex justify-between items-start gap-2 border-b border-white/5 pb-3">
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-sm leading-tight flex items-center gap-2">
+                    {p.empresa.nombre}
+                  </span>
+                  <span className="text-primary font-black text-xs mt-1">
+                    {p.numeroPedido}
+                    {p.tienePrecioNegociado && <span className="text-yellow-400 ml-1" title="Precio Negociado">⚠️</span>}
+                  </span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${ESTADO_BADGES[p.estado] || ''} whitespace-nowrap`}>
+                  {ESTADO_LABELS[p.estado] || p.estado}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-secondary uppercase font-black tracking-wider">Total</span>
+                  <span className="font-black text-lg text-white">
+                    {fmt(p.totalGeneral)}
+                  </span>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] text-secondary uppercase font-black tracking-wider">Fecha / Cond.</span>
+                  <span className="text-white font-semibold text-xs mt-1">
+                    {formatDate(p.creadoEn)}
+                  </span>
+                  <span className="text-secondary text-[10px]">{p.condicionPago || '—'}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 gap-2 border-t border-white/5 mt-1">
+                <button
+                  onClick={() => setSelectedPedido(p)}
+                  className="p-2 rounded-lg bg-white/5 text-secondary hover:bg-white/10 transition-colors flex items-center gap-1"
+                  title="Ver pedido"
+                >
+                  <Eye size={16} /> <span className="text-[10px] font-semibold">Ver</span>
+                </button>
+
+                <div className="flex gap-2">
+                  {p.estado === 'borrador' && (
+                    <>
+                      <button
+                        onClick={() => router.push(`/pedidos/nuevo?edit=${p.id}`)}
+                        className="p-2 rounded-lg bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleAction(p.id, 'enviar')}
+                        disabled={actionId === p.id}
+                        className="p-2 rounded-lg bg-blue-400/10 text-blue-400 border border-blue-400/20"
+                      >
+                        <Send size={16} />
+                      </button>
+                    </>
+                  )}
+
+                  {userNivel < 3 && p.estado === 'pendiente_supervisor' && (
+                    <button
+                      onClick={() => {
+                        const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)
+                        if (requiresNivel1 && userNivel === 2) {
+                          alert('Este pedido contiene precios/tarifas negociadas o pago Parte B, y requiere aprobación de Gerencia (Nivel 1).');
+                          return;
+                        }
+                        setPedidoAprobar(p)
+                        setFechaEntrega('')
+                        setMetodoPagoB((p.metodoPagoB as any) || '')
+                      }}
+                      disabled={actionId === p.id}
+                      className={`p-2 rounded-lg border ${
+                        (p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2
+                          ? 'bg-white/5 text-white/20 border-white/5'
+                          : 'bg-green-400/10 text-green-400 border-green-400/20'
+                      }`}
+                    >
+                      <ThumbsUp size={16} />
+                    </button>
+                  )}
+
+                  {(p.estado === 'borrador' || (p.estado === 'pendiente_supervisor' && userNivel < 3)) && (
+                    <button
+                      onClick={() => { if (confirm('¿Cancelar este pedido?')) handleAction(p.id, 'cancelar') }}
+                      disabled={actionId === p.id}
+                      className="p-2 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/20"
+                    >
+                      <ThumbsDown size={16} />
+                    </button>
+                  )}
+                  
+                  {((p.estado === 'borrador' || p.estado === 'cancelado') || userNivel < 3) && (
+                    <button
+                      onClick={() => { if (confirm('¿ELIMINAR DEFINITIVAMENTE este pedido del sistema? Esta acción no se puede deshacer.')) handleDelete(p.id) }}
+                      disabled={actionId === p.id}
+                      className="p-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* ── Modal: Detalle de Pedido ───────────────────────────────── */}

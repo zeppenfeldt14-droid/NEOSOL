@@ -218,7 +218,7 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/5 text-left">
@@ -291,6 +291,71 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile view for Facturas */}
+      <div className="block md:hidden flex flex-col gap-3 p-4 bg-black/20">
+        {loading ? (
+          <div className="flex items-center justify-center gap-3 py-8">
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-secondary text-sm">Cargando...</span>
+          </div>
+        ) : facturas.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <FileText size={36} className="text-white/10" />
+            <p className="text-secondary text-sm font-semibold">Sin facturas</p>
+          </div>
+        ) : (
+          facturas.map(f => (
+            <div key={f.id} className="glass-panel p-4 rounded-xl border border-white/5 flex flex-col gap-3">
+              <div className="flex justify-between items-start border-b border-white/5 pb-2">
+                <div>
+                  <div className="text-white font-bold text-sm mb-1">{f.empresaNombre || '—'}</div>
+                  <div className="text-xs text-secondary flex gap-2 items-center">
+                    <span className="font-mono bg-white/5 px-1.5 py-0.5 rounded text-white/70">#{f.numeroFactura}</span>
+                    <span>{new Date(f.creadoEn).toLocaleDateString('es-AR')}</span>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                  f.tipo === 'A' ? 'bg-blue-400/10 text-blue-400 border-blue-400/20' : 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
+                }`}>
+                  {f.tipo === 'A' ? 'A' : 'B/R'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <div className="text-secondary mb-0.5">Vendedor</div>
+                  <div className="text-white truncate">{f.vendedorAlias}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-secondary mb-0.5">Pedido Ref</div>
+                  <div className="text-primary font-bold">#{f.pedidoId}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-[10px] uppercase font-bold text-secondary pt-2 border-t border-white/5">
+                <div>Base: <span className="text-white block mt-0.5 normal-case font-normal text-xs">{fmt(f.subtotal)}</span></div>
+                <div className="text-center">IVA/Rec: <span className="text-white block mt-0.5 normal-case font-normal text-xs">{fmt(f.iva + f.recargo)}</span></div>
+                <div className="text-right">Total: <span className="text-primary block mt-0.5 normal-case text-sm font-black">{fmt(f.total)}</span></div>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-white/5 mt-1">
+                <button
+                  onClick={() => fetchDetallePedido(f.pedidoId)}
+                  disabled={isFetchingPedido === f.pedidoId}
+                  className="btn btn-secondary text-xs flex items-center justify-center gap-2 flex-1"
+                >
+                  {isFetchingPedido === f.pedidoId ? (
+                    <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <><Eye size={14} /> Ver Pedido</>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
         </>
       )}

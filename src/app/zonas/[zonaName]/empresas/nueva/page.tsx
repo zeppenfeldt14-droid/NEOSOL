@@ -1,5 +1,5 @@
 import { createEmpresa } from './actions'
-import { ArrowLeft, Building2, Save } from 'lucide-react'
+import { ArrowLeft, Building2, Save, X } from 'lucide-react'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
@@ -269,12 +269,12 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
           </div>
 
           {/* Botones de acción */}
-          <div className="col-span-1 md:col-span-2 flex justify-end gap-4 mt-4 pt-4 border-t border-white/10">
-            <Link href={`/zonas/${zonaName}/empresas`} className="btn btn-secondary">
-              Cancelar
+          <div className="col-span-1 md:col-span-2 flex flex-col md:flex-row justify-end gap-3 mt-4 pt-4 border-t border-white/10">
+            <Link href={`/zonas/${zonaName}/empresas`} className="btn btn-secondary w-full md:w-auto justify-center">
+              <X size={16} className="md:hidden mr-2" /> Cancelar
             </Link>
-            <button type="submit" className="btn btn-primary">
-              <Save size={16} /> Guardar Ficha de Alta
+            <button type="submit" className="btn btn-primary w-full md:w-auto justify-center">
+              <Save size={16} /> <span className="hidden md:inline ml-1">Guardar Ficha de Alta</span><span className="md:hidden ml-1">Guardar</span>
             </button>
           </div>
         </form>

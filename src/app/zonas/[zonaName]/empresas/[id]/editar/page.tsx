@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2, Save } from 'lucide-react'
+import { ArrowLeft, Building2, Save, X } from 'lucide-react'
 import { updateEmpresa } from '../actions'
 import { getSessionUser } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
@@ -328,12 +328,12 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
           </div>
 
           {/* Botones de acción */}
-          <div className="col-span-1 md:col-span-2 flex justify-end gap-4 mt-4 pt-4 border-t border-white/10">
-            <Link href={`/empresas/${empresaId}`} className="btn btn-secondary">
-              Cancelar
+          <div className="col-span-1 md:col-span-2 flex flex-col md:flex-row justify-end gap-3 mt-4 pt-4 border-t border-white/10">
+            <Link href={`/empresas/${empresaId}`} className="btn btn-secondary w-full md:w-auto justify-center">
+              <X size={16} className="md:hidden mr-2" /> Cancelar
             </Link>
-            <button type="submit" className="btn btn-primary">
-              <Save size={16} /> Guardar Cambios
+            <button type="submit" className="btn btn-primary w-full md:w-auto justify-center">
+              <Save size={16} /> <span className="hidden md:inline ml-1">Guardar Cambios</span><span className="md:hidden ml-1">Guardar</span>
             </button>
           </div>
         </form>

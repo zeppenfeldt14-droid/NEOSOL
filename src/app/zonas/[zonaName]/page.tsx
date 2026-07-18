@@ -385,16 +385,16 @@ export default async function DashboardPage({ params, searchParams }: { params: 
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Resumen de actividad y métricas clave.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4 mt-4 sm:mt-0">
           <PeriodFilter />
-          <Link href="/empresas/nueva" className="btn btn-primary">
+          <Link href="/empresas/nueva" className="btn btn-primary w-full sm:w-auto justify-center">
             + Nueva Empresa
           </Link>
         </div>
       </div>
 
       {/* Alertas de Inteligencia (50%) + Tareas Pendientes (50%) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem', alignItems: 'start' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 items-start">
         {/* Alertas — lado izquierdo */}
         <div>
           <AlertsDashboard alerts={predicAlerts} zonaName={encodeURIComponent(decodedZona)} />
@@ -421,7 +421,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', marginBottom: '2rem' }}>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
         <div className="glass-panel card" style={{ padding: '1rem' }}>
           <div className="flex justify-between items-center" style={{ marginBottom: '0.5rem' }}>
             <span className="stat-label" style={{ fontSize: '0.75rem' }}>Total Empresas</span>
@@ -473,7 +473,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
       </div>
 
       {/* Row: Planificador Diario and Planificador Semanal (50% each) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Planificador de Hoy */}
         <div className="glass-panel card delay-200" style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className="card-title">Planificador de Hoy</h3>
@@ -580,8 +580,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
       </div>
 
       {/* Progress Charts (Daily 30% and Weekly 70%) */}
-      <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 7fr', marginTop: '1.5rem' }}>
-        <div className="glass-panel card delay-300" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mt-6">
+        <div className="glass-panel card delay-300 lg:col-span-3 flex flex-col">
           <h3 className="card-title">Estado de Ruta Diaria</h3>
           <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Progreso de hoy</p>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -593,30 +593,30 @@ export default async function DashboardPage({ params, searchParams }: { params: 
           </div>
         </div>
 
-        <div className="glass-panel card delay-350" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="glass-panel card delay-350 lg:col-span-7 flex flex-col">
           <h3 className="card-title">Visitas de la Semana</h3>
-          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Visitas realizadas en los últimos 7 días</p>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p className="card-subtitle mb-6">Visitas realizadas en los últimos 7 días</p>
+          <div className="flex-1 flex items-center justify-center">
             <WeeklyVisitsChart data={weeklyData} />
           </div>
         </div>
       </div>
 
       {/* Monthly Chart */}
-      <div className="glass-panel card delay-400" style={{ marginTop: '1.5rem' }}>
-        <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="glass-panel card mt-6">
+        <h3 className="card-title flex items-center gap-2">
           <BarChart2 size={18} /> GESTION Mensual
         </h3>
-        <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Rendimiento anual del {today.getFullYear()}</p>
+        <p className="card-subtitle mb-6">Rendimiento anual del {today.getFullYear()}</p>
         <MonthlyVisitsChart data={monthlyData} />
       </div>
 
-      {/* Row: Actions Breakdown (70%) and Responses Donut (30%) */}
-      <div className="grid gap-6" style={{ gridTemplateColumns: '7fr 3fr', marginTop: '1.5rem' }}>
-        <div className="glass-panel card" style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Row: Breakdown and Responses (50% each) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="glass-panel card flex flex-col">
           <h3 className="card-title">Desglose de Acciones</h3>
-          <p className="card-subtitle" style={{ marginBottom: '1.5rem' }}>Visitas, WhatsApp, Correos y Llamadas realizadas este año</p>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p className="card-subtitle mb-6">Visitas, WhatsApp, Correos y Llamadas realizadas este año</p>
+          <div className="flex-1 flex items-center justify-center">
             <ActionsBreakdownChart data={actionsBreakdownData} />
           </div>
         </div>
