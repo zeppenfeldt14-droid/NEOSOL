@@ -8,6 +8,7 @@ import { QuickActionsClient } from './QuickActionsClient'
 import { getSessionUser } from '@/lib/auth'
 import { HistorialComprasClient } from './HistorialComprasClient'
 import { RespuestaObtenidaButton } from './RespuestaObtenidaButton'
+import { NuevaAccionForm } from './NuevaAccionForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -268,26 +269,9 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
         <div className="glass-panel card delay-200">
           <div className="flex justify-between items-center border-b pb-4" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1rem' }}>
             <h3 className="card-title m-0">Acciones y Tareas</h3>
-            {/* Modal opener could go here in a real app, for now just a form below */}
           </div>
           
-          <form action={addAccion.bind(null, empresaId)} className="flex gap-2 items-end mb-4 bg-black/20 p-3 rounded-lg">
-             <div className="form-group flex-1 mb-0">
-               <input type="text" name="descripcion" required placeholder="Nueva tarea (ej. Enviar catálogo)" className="form-input" style={{ padding: '0.5rem', fontSize: '0.75rem' }} />
-             </div>
-             <div className="form-group mb-0" style={{ width: '130px' }}>
-               <select name="tipo" className="form-input" style={{ padding: '0.5rem', fontSize: '0.75rem' }}>
-                 <option value="llamada">Llamada</option>
-                 <option value="correo">Correo</option>
-                 <option value="visita">Visita</option>
-                 <option value="whatsapp">WhatsApp</option>
-               </select>
-             </div>
-             <div className="form-group mb-0" style={{ width: '130px' }}>
-               <input type="date" name="fechaVencimiento" className="form-input" style={{ padding: '0.5rem', fontSize: '0.75rem' }} />
-             </div>
-             <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem', height: '36px' }}>+</button>
-          </form>
+          <NuevaAccionForm empresaId={empresaId} addAccionAction={addAccion} />
 
           <div className="flex flex-col gap-2">
             {empresa.acciones.filter(a => a.estado === 'pendiente').map(accion => (

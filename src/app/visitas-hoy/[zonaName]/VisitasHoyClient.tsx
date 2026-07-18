@@ -37,6 +37,7 @@ const TIPO_CONFIG: Record<string, { label: string; color: string; bgClass: strin
   whatsapp:         { label: 'WhatsApp',   color: '#25d366', bgClass: 'bg-green-500/10 text-green-400 border-green-500/25', emoji: '💬' },
   correo:           { label: 'Correo',     color: '#3b82f6', bgClass: 'bg-blue-500/10 text-blue-400 border-blue-500/25', emoji: '📧' },
   llamada:          { label: 'Llamada',    color: '#f59e0b', bgClass: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/25', emoji: '📞' },
+  planificacion:    { label: 'Planificación', color: '#c084fc', bgClass: 'bg-purple-500/10 text-purple-400 border-purple-500/25', emoji: '📅' },
 }
 
 export default function VisitasHoyClient({ initialAcciones, zonaName }: Props) {

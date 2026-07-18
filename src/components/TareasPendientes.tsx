@@ -33,6 +33,7 @@ const TIPO_CONFIG: Record<string, { label: string; color: string; bgColor: strin
   whatsapp:         { label: 'WhatsApp',           color: '#25d366', bgColor: 'rgba(37,211,102,0.12)', emoji: '💬' },
   correo:           { label: 'Correo',             color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', emoji: '📧' },
   llamada:          { label: 'Llamada',            color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', emoji: '📞' },
+  planificacion:    { label: 'Planificación',      color: '#c084fc', bgColor: 'rgba(192,132,252,0.12)', emoji: '📅' },
 }
 
 function formatHora(date: Date | string | null) {
