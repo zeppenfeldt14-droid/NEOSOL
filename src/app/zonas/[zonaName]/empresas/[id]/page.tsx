@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit, Tag } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit, Tag, Navigation } from 'lucide-react'
 import { CompleteActionButton } from './ActionButtons'
 import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
@@ -157,13 +157,26 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <MapPin size={16} className="text-secondary" />
-            <div>
-              <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Dirección</div>
-              <div style={{ fontWeight: 500 }}>{empresa.direccion || 'No especificada'}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{empresa.barrio || ''}</div>
+          <div className="flex items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-3">
+              <MapPin size={16} className="text-secondary" />
+              <div>
+                <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Dirección</div>
+                <div style={{ fontWeight: 500 }}>{empresa.direccion || 'No especificada'}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{empresa.barrio || ''}</div>
+              </div>
             </div>
+            {empresa.direccion && (
+              <a 
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${empresa.direccion}, ${empresa.barrio || ''}, ${empresa.partido || ''}`)}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-secondary !p-2 !rounded-full text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                title="Abrir en Google Maps"
+              >
+                <Navigation size={18} />
+              </a>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

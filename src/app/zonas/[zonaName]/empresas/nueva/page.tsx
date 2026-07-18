@@ -231,18 +231,20 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
               </div>
               <div className="flex flex-col gap-2 md:col-span-2">
                 <h4 className="text-sm font-semibold text-white/70 mt-2 mb-1">Datos Bancarios</h4>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="form-label">Institución (Banco)</label>
-                <input type="text" name="bancoInstitucion" className="form-input" placeholder="Ej. Banco Galicia" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="form-label">Sucursal</label>
-                <input type="text" name="bancoSucursal" className="form-input" placeholder="Ej. Centro" />
-              </div>
-              <div className="flex flex-col gap-2 md:col-span-2">
-                <label className="form-label">Tipo y Nº de Cuenta / CBU / Alias</label>
-                <input type="text" name="bancoCuenta" className="form-input" placeholder="CBU, Alias o Número de cuenta" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="form-label">Institución (Banco)</label>
+                    <input type="text" name="bancoInstitucion" className="form-input" placeholder="Ej. Banco Galicia" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="form-label">Sucursal</label>
+                    <input type="text" name="bancoSucursal" className="form-input" placeholder="Ej. Centro" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="form-label">Tipo y Nº de Cuenta / CBU / Alias</label>
+                    <input type="text" name="bancoCuenta" className="form-input" placeholder="CBU, Alias o Número de cuenta" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
