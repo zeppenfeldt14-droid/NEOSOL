@@ -80,3 +80,53 @@ export async function reactivarCliente(id: number) {
   revalidatePath('/planificador')
   revalidatePath('/')
 }
+
+export async function solicitarEliminacion(tipo: 'EMPRESA' | 'ACCION', targetId: number, nombreTarget: string, solicitadoPor: string, motivo: string) {
+  await prisma.solicitudEliminacion.create({
+    data: {
+      tipo,
+      targetId,
+      nombreTarget,
+      solicitadoPor,
+      motivo: motivo.trim()
+    }
+  })
+}
+
+export async function getSolicitudesPendientes() {
+  return await prisma.solicitudEliminacion.findMany({
+    where: { estado: 'pendiente' },
+    orderBy: { creadoEn: 'desc' }
+  })
+}
+
+export async function resolverSolicitudEliminacion(solicitudId: number, aprobado: boolean) {
+  const solicitud = await prisma.solicitudEliminacion.findUnique({
+    where: { id: solicitudId }
+  })
+  if (!solicitud) return
+
+  if (aprobado) {
+    try {
+      if (solicitud.tipo === 'EMPRESA') {
+        await prisma.accion.deleteMany({ where: { empresaId: solicitud.targetId } })
+        await prisma.visita.deleteMany({ where: { empresaId: solicitud.targetId } })
+        await prisma.alerta.deleteMany({ where: { empresaId: solicitud.targetId } })
+        await prisma.empresa.delete({ where: { id: solicitud.targetId } })
+      } else if (solicitud.tipo === 'ACCION') {
+        await prisma.accion.delete({ where: { id: solicitud.targetId } })
+      }
+    } catch (e) {
+      console.error('Error al ejecutar eliminación aprobada:', e)
+    }
+  }
+
+  await prisma.solicitudEliminacion.update({
+    where: { id: solicitudId },
+    data: { estado: aprobado ? 'aprobado' : 'rechazado' }
+  })
+
+  revalidatePath('/empresas')
+  revalidatePath('/planificador')
+  revalidatePath('/')
+}

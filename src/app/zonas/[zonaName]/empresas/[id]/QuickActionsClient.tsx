@@ -1,6 +1,6 @@
 'use client'
 
-import { setEmpresaEstado, descartarEmpresa, eliminarEmpresaDefinitivamente, darDeBajaEmpresa, reactivarCliente } from './quick-actions'
+import { setEmpresaEstado, descartarEmpresa, eliminarEmpresaDefinitivamente, darDeBajaEmpresa, reactivarCliente, solicitarEliminacion } from './quick-actions'
 import { CheckCircle2, UserCheck, Printer, Ban, Trash2, ArrowUpCircle, Loader2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { FichaAltaSheet } from './ficha-pdf/FichaPDFClient'
 
-export function QuickActionsClient({ id, estado, zonaName, empresa }: { id: number, estado: string, zonaName: string, empresa: any }) {
+export function QuickActionsClient({ id, estado, zonaName, empresa, userNivel, userAlias, hasPendingDeleteRequest }: { id: number, estado: string, zonaName: string, empresa: any, userNivel: number, userAlias: string, hasPendingDeleteRequest: boolean }) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
@@ -165,20 +165,38 @@ export function QuickActionsClient({ id, estado, zonaName, empresa }: { id: numb
         {isGeneratingPdf ? 'Generando PDF...' : 'Ficha Alta PDF'}
       </button>
 
-      <button 
-        onClick={async () => {
-          if (confirm('PELIGRO: ¿Estás totalmente seguro de que deseas ELIMINAR esta empresa y todo su historial de forma permanente?')) {
-            setIsUpdating(true)
-            await eliminarEmpresaDefinitivamente(id)
-            router.push('/empresas')
-          }
-        }}
-        disabled={isUpdating}
-        className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
-        title="Eliminar empresa permanentemente"
-      >
-        <Trash2 size={16} /> Eliminar
-      </button>
+      {hasPendingDeleteRequest && (
+        <span className="badge badge-warning flex items-center gap-1 text-xs">
+          ⚠️ Eliminación Pendiente de Aprobación
+        </span>
+      )}
+
+      {(!hasPendingDeleteRequest || userNivel === 1) && (
+        <button 
+          onClick={async () => {
+            if (userNivel === 1) {
+              if (confirm('PELIGRO: ¿Estás totalmente seguro de que deseas ELIMINAR esta empresa y todo su historial de forma permanente?')) {
+                setIsUpdating(true)
+                await eliminarEmpresaDefinitivamente(id)
+                router.push(`/zonas/${zonaName}/empresas`)
+              }
+            } else {
+              const motivo = prompt('Para solicitar la ELIMINACIÓN de esta empresa, por favor indica y justifica el motivo de baja definitiva:')
+              if (!motivo) return
+              setIsUpdating(true)
+              await solicitarEliminacion('EMPRESA', id, empresa.nombre, userAlias, motivo)
+              alert('La solicitud de eliminación ha sido enviada al Administrador (Nivel 1) para su aprobación.')
+              router.refresh()
+              setIsUpdating(false)
+            }
+          }}
+          disabled={isUpdating}
+          className="btn btn-action text-red-500 border-red-500/20 hover:bg-red-500/10 px-3 text-xs font-bold"
+          title={userNivel === 1 ? "Eliminar empresa permanentemente" : "Solicitar eliminación al Administrador"}
+        >
+          <Trash2 size={16} /> {userNivel === 1 ? 'Eliminar' : 'Solicitar Eliminar'}
+        </button>
+      )}
 
       {/* Hidden element for PDF generation */}
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>

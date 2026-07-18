@@ -41,6 +41,22 @@ export async function createEmpresa(formData: FormData) {
     throw new Error('El nombre de la empresa es obligatorio')
   }
 
+  const existing = await prisma.empresa.findFirst({
+    where: {
+      nombre: {
+        equals: nombre.trim(),
+        mode: 'insensitive'
+      }
+    }
+  })
+
+  if (existing) {
+    if (existing.estado.toLowerCase() === 'descartada') {
+      throw new Error(`La empresa "${nombre}" ya existe en el sistema en estado DESCARTADA para evitar la re-carga de prospectos fuera de perfil.`)
+    }
+    throw new Error(`La empresa "${nombre}" ya existe en el sistema (Estado actual: ${existing.estado.toUpperCase()}).`)
+  }
+
   const empresa = await prisma.empresa.create({
     data: {
       nombre,

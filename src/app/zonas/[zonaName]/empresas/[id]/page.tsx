@@ -71,6 +71,14 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   }
 
 
+  const hasPendingDeleteRequest = await prisma.solicitudEliminacion.findFirst({
+    where: {
+      tipo: 'EMPRESA',
+      targetId: empresaId,
+      estado: 'pendiente'
+    }
+  })
+
   // Serializar la empresa para pasar al cliente sin problemas de fechas
   const serializedEmpresa = {
     ...empresa,
@@ -107,7 +115,15 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
               </p>
             </div>
             <div className="flex gap-2">
-              <QuickActionsClient id={empresa.id} estado={empresa.estado} zonaName={zonaName} empresa={serializedEmpresa} />
+              <QuickActionsClient 
+                id={empresa.id} 
+                estado={empresa.estado} 
+                zonaName={zonaName} 
+                empresa={serializedEmpresa}
+                userNivel={user.nivel}
+                userAlias={user.alias}
+                hasPendingDeleteRequest={!!hasPendingDeleteRequest}
+              />
               <Link href={`/zonas/${zonaName}/empresas/${empresaId}/editar`} className="btn btn-secondary flex items-center gap-2">
                 <Edit size={16} /> Editar Ficha
               </Link>

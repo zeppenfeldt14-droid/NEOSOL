@@ -153,6 +153,17 @@ model LogBitacora {
   creadoEn     DateTime @default(now())
 }
 
+model SolicitudEliminacion {
+  id            Int      @id @default(autoincrement())
+  tipo          String   // 'EMPRESA' | 'ACCION'
+  targetId      Int
+  nombreTarget  String
+  solicitadoPor String
+  motivo        String
+  creadoEn      DateTime @default(now())
+  estado        String   @default("pendiente") // 'pendiente' | 'aprobado' | 'rechazado'
+}
+
 model Zona {
   id       Int      @id @default(autoincrement())
   nombre   String   @unique

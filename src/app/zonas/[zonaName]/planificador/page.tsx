@@ -182,16 +182,20 @@ export default async function PlanificadorPage(props: {
     ]
   })
 
-  // Acciones próximas (7 días)
-  const proximaSemana = new Date(today)
-  proximaSemana.setDate(proximaSemana.getDate() + 7)
+  // Acciones próximas (Agenda de Acciones y Tareas futuras)
   const proximas = await prisma.accion.findMany({
     where: {
       estado: 'pendiente',
-      fechaVencimiento: {
-        gte: tomorrow,
-        lt: proximaSemana
-      },
+      OR: [
+        {
+          fechaVencimiento: {
+            gte: tomorrow
+          }
+        },
+        {
+          fechaVencimiento: null
+        }
+      ],
       ...whereAccion
     },
     include: { empresa: true },
@@ -276,6 +280,30 @@ export default async function PlanificadorPage(props: {
         diasDesdeUltimaVisita: diasDesde,
         motivo: motivo
       })
+    } else if (emp.estado === 'baja') {
+      // Regla de bajas: auto-sugerir visitas si han pasado 60 días desde la fecha de baja (o última visita)
+      const fechaReferencia = emp.fechaBaja || ultimaVisita
+      let diasDesdeRef = null
+      if (fechaReferencia) {
+        diasDesdeRef = Math.floor((currentMs - new Date(fechaReferencia).getTime()) / (1000 * 60 * 60 * 24))
+      }
+
+      if (diasDesdeRef === null || diasDesdeRef >= 60) {
+        sugerencias.push({
+          id: emp.id,
+          nombre: emp.nombre,
+          zona: emp.subZona ? emp.subZona.trim().toUpperCase() : 'SIN ASIGNAR',
+          barrio: emp.barrio,
+          direccion: emp.direccion,
+          telefono: emp.telefono,
+          estado: emp.estado,
+          cicloVentaDias: 60,
+          diasDesdeUltimaVisita: diasDesdeRef,
+          motivo: diasDesdeRef === null 
+            ? 'Cliente de BAJA sin fecha registrada (Re-contactar)' 
+            : `Re-contactar cliente de BAJA (pasaron ${diasDesdeRef} días)`
+        })
+      }
     }
   }
 
@@ -303,6 +331,12 @@ export default async function PlanificadorPage(props: {
     orderBy: { fechaVencimiento: 'asc' }
   }) : []
 
+  const pendingActionDeletes = await prisma.solicitudEliminacion.findMany({
+    where: { tipo: 'ACCION', estado: 'pendiente' },
+    select: { targetId: true }
+  })
+  const pendingActionDeleteIds = pendingActionDeletes.map(r => r.targetId)
+
   return (
     <div className="animate-fade-in pb-12">
       <div className="page-header">
@@ -310,7 +344,7 @@ export default async function PlanificadorPage(props: {
           <h1 className="page-title">Planificador de Rutas</h1>
           <p className="page-subtitle">
             {vista === 'hoy' ? `Organiza tus visitas para hoy: ${today.toLocaleDateString()}` : 
-             vista === 'semana' ? 'Programa las visitas para la próxima semana.' :
+             vista === 'semana' ? 'Agenda de Acciones y Tareas futuras.' :
              `Resumen mensual de visitas (${startOfMonth.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })})`}
           </p>
         </div>
@@ -321,7 +355,7 @@ export default async function PlanificadorPage(props: {
           Visitas del Día
         </Link>
         <Link href="?vista=semana" className={`btn ${vista === 'semana' ? 'btn-primary' : 'btn-secondary'}`}>
-          Planificación Próxima Semana
+          Agenda de Acciones y Tareas futuras
         </Link>
         <Link href="?vista=mes" className={`btn ${vista === 'mes' ? 'btn-primary' : 'btn-secondary'}`}>
           Resumen del Mes
@@ -335,6 +369,10 @@ export default async function PlanificadorPage(props: {
           crearRutaAction={crearRutaAction}
           accionesHoy={paraHoy}
           accionesFuturas={proximas}
+          accionesVencidas={vencidas}
+          userNivel={user.nivel}
+          userAlias={user.alias}
+          pendingActionDeleteIds={pendingActionDeleteIds}
           eliminarAccionAction={eliminarAccionAction}
           reagendarAccionAction={reagendarAccionAction}
           reordenarRutaAction={reordenarRutaAction}

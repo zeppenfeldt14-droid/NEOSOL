@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { CompleteActionButton } from '../empresas/[id]/ActionButtons'
 import { formatDate } from '@/lib/date'
+import { solicitarEliminacion, getSolicitudesPendientes, resolverSolicitudEliminacion } from '../empresas/[id]/quick-actions'
 
 type EmpresaSugerida = {
   id: number
@@ -36,6 +37,10 @@ export default function IntelligentPlanner({
   crearRutaAction,
   accionesHoy = [],
   accionesFuturas = [],
+  accionesVencidas = [],
+  userNivel = 3,
+  userAlias = '',
+  pendingActionDeleteIds = [],
   eliminarAccionAction,
   reagendarAccionAction,
   reordenarRutaAction,
@@ -49,6 +54,10 @@ export default function IntelligentPlanner({
   crearRutaAction: (empresaIds: number[], targetDateStr?: string) => Promise<void>
   accionesHoy?: any[]
   accionesFuturas?: any[]
+  accionesVencidas?: any[]
+  userNivel?: number
+  userAlias?: string
+  pendingActionDeleteIds?: number[]
   eliminarAccionAction?: (id: number) => Promise<void>
   reagendarAccionAction?: (id: number, dateStr: string) => Promise<void>
   reordenarRutaAction?: (ids: number[]) => Promise<void>
@@ -74,6 +83,22 @@ export default function IntelligentPlanner({
   const pdfRef = useRef<HTMLDivElement>(null)
   const weeklyPdfRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [copied, setCopied] = useState(false)
+  const [solicitudes, setSolicitudes] = useState<any[]>([])
+
+  useEffect(() => {
+    if (userNivel === 1) {
+      getSolicitudesPendientes().then(setSolicitudes).catch(console.error)
+    }
+  }, [userNivel])
+
+  const handleResolverSolicitud = async (solId: number, aprobado: boolean) => {
+    if (confirm(`¿Estás seguro de que deseas ${aprobado ? 'APROBAR y eliminar permanentemente' : 'RECHAZAR'} esta solicitud?`)) {
+      setIsSubmitting(true)
+      await resolverSolicitudEliminacion(solId, aprobado)
+      setSolicitudes(prev => prev.filter(s => s.id !== solId))
+      window.location.reload()
+    }
+  }
 
   // Mini-modal Gestionado
   const [gestionandoAccion, setGestionandoAccion] = useState<any | null>(null)
@@ -124,8 +149,28 @@ export default function IntelligentPlanner({
   }
 
   const handleEliminarAccion = async (accionId: number) => {
-    if (eliminarAccionAction && confirm('¿Eliminar esta acción de la ruta?')) {
-      await eliminarAccionAction(accionId)
+    if (!eliminarAccionAction) return
+
+    if (userNivel === 1) {
+      if (confirm('¿Eliminar esta acción de la ruta permanentemente?')) {
+        await eliminarAccionAction(accionId)
+      }
+    } else {
+      const motivo = prompt('Para solicitar la ELIMINACIÓN de esta tarea/acción, por favor justifica el motivo:')
+      if (!motivo) return
+      
+      let desc = 'Tarea sin descripción'
+      const foundHoy = localAccionesHoy.find(a => a.id === accionId)
+      const foundFut = accionesFuturas.find(a => a.id === accionId)
+      const foundVen = accionesVencidas.find(a => a.id === accionId)
+      const targetAccion = foundHoy || foundFut || foundVen
+      if (targetAccion) {
+        desc = targetAccion.descripcion || `Acción de tipo ${targetAccion.tipo}`
+      }
+
+      await solicitarEliminacion('ACCION', accionId, desc, userAlias, motivo)
+      alert('La solicitud de eliminación ha sido enviada al Administrador (Nivel 1) para su aprobación.')
+      window.location.reload()
     }
   }
 
@@ -174,6 +219,11 @@ export default function IntelligentPlanner({
     otras.sort((a, b) => (ordenTipo[a.tipo] ?? 9) - (ordenTipo[b.tipo] ?? 9))
     return { visitas, otras }
   }, [localAccionesHoy])
+
+  const sinFechaAcciones = useMemo(() => {
+    if (!accionesFuturas) return []
+    return accionesFuturas.filter(accion => !accion.fechaVencimiento)
+  }, [accionesFuturas])
 
   const groupedFuturas = useMemo(() => {
     const groups: Record<string, any[]> = {}
@@ -347,7 +397,12 @@ export default function IntelligentPlanner({
             <Building2 size={16} style={{ color: isGeneratingPDF ? '#4b5563' : 'var(--text-muted)' }} />
             <div>
               <div style={{ fontWeight: 500, color: isGeneratingPDF ? 'black' : 'white' }}>{emp.nombre}</div>
-              <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)' }}>{emp.estado?.toUpperCase()}</div>
+              <div style={{ fontSize: '0.75rem', color: isGeneratingPDF ? '#6b7280' : 'var(--text-muted)' }}>
+                {emp.estado?.toUpperCase()}
+                {pendingActionDeleteIds.includes(accion.id) && (
+                  <span className="text-warning ml-2 font-semibold">⚠️ Eliminación Pendiente</span>
+                )}
+              </div>
             </div>
           </div>
         </td>
@@ -371,9 +426,11 @@ export default function IntelligentPlanner({
                 onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
                 style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
               />
-              <button onClick={() => handleEliminarAccion(accion.id)}
-                style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title="Quitar"><Trash2 size={14} /></button>
+              {(!pendingActionDeleteIds.includes(accion.id) || userNivel === 1) && (
+                <button onClick={() => handleEliminarAccion(accion.id)}
+                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Quitar"><Trash2 size={14} /></button>
+              )}
             </div>
           </td>
         )}
@@ -393,7 +450,96 @@ export default function IntelligentPlanner({
   )
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ position: 'relative' }}>
+      {/* MODAL BLOQUEANTE DE TAREAS VENCIDAS */}
+      {accionesVencidas.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div className="glass-panel card max-w-4xl w-full" style={{ borderTop: '4px solid var(--error)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 className="card-title" style={{ margin: 0, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--error)', fontSize: '1.25rem' }}>
+              <AlertCircle size={24} /> Tareas y Visitas Vencidas Pendientes
+            </h2>
+            <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Atención: Tienes <strong>{accionesVencidas.length}</strong> tareas programadas de días anteriores que quedaron pendientes. Debes registrar una acción comercial (re-agendar, completar o eliminar) para poder continuar utilizando el Planificador.
+            </p>
+
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '90px' }}>Tipo</th>
+                    <th>Empresa</th>
+                    <th>Descripción / Tarea</th>
+                    <th style={{ textAlign: 'right', width: '220px' }}>Gestión</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accionesVencidas.map(accion => {
+                    const emp = accion.empresa
+                    return (
+                      <tr key={accion.id}>
+                        <td>{renderTipoBadgeStatic(accion.tipo)}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
+                            <div>
+                              <div style={{ fontWeight: 500, color: 'white' }}>{emp?.nombre || 'General'}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{emp?.estado?.toUpperCase()}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                          {accion.descripcion}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--error)', marginTop: '0.25rem' }}>
+                            Venció: {accion.fechaVencimiento ? new Date(accion.fechaVencimiento).toLocaleDateString() : '-'}
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <input type="date" title="Re-agendar a futuro"
+                              onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
+                              style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '120px', cursor: 'pointer' }}
+                            />
+                            <button
+                              onClick={async () => {
+                                if (gestionarAccionNoVisitaAction) {
+                                  await gestionarAccionNoVisitaAction({ accionId: accion.id, empresaId: emp.id, tipo: accion.tipo, notas: 'Completada desde bloqueo vencidas' })
+                                  window.location.reload()
+                                }
+                              }}
+                              className="btn btn-success"
+                              style={{ padding: '0.25rem 0.5rem', height: '32px', fontSize: '0.75rem' }}
+                              title="Completar tarea"
+                            >
+                              Completar
+                            </button>
+                            {(!pendingActionDeleteIds.includes(accion.id) || userNivel === 1) ? (
+                              <button onClick={() => handleEliminarAccion(accion.id)}
+                                style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                title="Quitar"><Trash2 size={14} /></button>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--warning)', padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(245,158,11,0.1)' }}>Pendiente</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* BLOQUE HOY */}
       {(localAccionesHoy.length > 0 || vista === 'hoy') && (
@@ -480,90 +626,165 @@ export default function IntelligentPlanner({
       )}
 
       {/* BLOQUE FUTURAS */}
-      {vista === 'semana' && groupedFuturas.length > 0 && (
-        <div className="glass-panel card">
-          <h2 className="card-title" style={{ margin: 0, marginBottom: '1.5rem' }}>Planificación por Fecha</h2>
-          <div className="space-y-6">
-            {groupedFuturas.map(({ date, items }) => {
-              const dateObj = new Date(date + 'T12:00:00Z')
-              return (
-                <div key={date} ref={el => { weeklyPdfRefs.current[date] = el }}
-                  style={generatingPdfDate === date
-                    ? { backgroundColor: 'white', color: 'black', padding: '2rem' }
-                    : { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '1rem', border: '1px solid rgba(255,255,255,0.05)' }
-                  }>
-                  {generatingPdfDate === date && (
-                    <div style={{ marginBottom: '2rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
-                      <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1B365D' }}>Mi Ruta de Visitas</h1>
-                      <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>{dateObj.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: generatingPdfDate === date ? 'none' : '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: generatingPdfDate === date ? '#1B365D' : 'var(--primary)', margin: 0 }}>
-                      {dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </h3>
-                    {generatingPdfDate !== date && (
-                      <button onClick={() => handleDownloadWeeklyPDF(date)} disabled={generatingPdfDate !== null}
-                        className="btn btn-secondary flex items-center justify-center" 
-                        style={{ padding: '0.5rem', minWidth: '32px', minHeight: '32px', borderRadius: '8px' }}
-                        title="Descargar PDF de Ruta"
-                      >
-                        <Download size={14} />
-                      </button>
-                    )}
-                  </div>
-                  <div className={generatingPdfDate === date ? '' : 'table-container'}>
-                    <table className="table" style={generatingPdfDate === date ? { color: 'black' } : {}}>
-                      <thead>
-                        <tr style={generatingPdfDate === date ? { borderBottom: '2px solid #e5e7eb' } : {}}>
-                          <th style={{ width: '90px' }}>Tipo</th>
-                          <th>Empresa</th>
-                          <th>Ubicación</th>
-                          {generatingPdfDate !== date && <th style={{ textAlign: 'right' }}>Acciones</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map(accion => {
-                          const emp = accion.empresa
-                          return (
-                            <tr key={accion.id} style={{ borderBottom: generatingPdfDate === date ? '1px solid #f3f4f6' : '' }}>
-                              <td>{renderTipoBadgeStatic(accion.tipo)}</td>
-                              <td>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                  <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
-                                  <div>
-                                    <div style={{ fontWeight: 500, color: generatingPdfDate === date ? 'black' : 'white' }}>{emp.nombre}</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{emp.estado?.toUpperCase()}</div>
-                                  </div>
+      {vista === 'semana' && (groupedFuturas.length > 0 || sinFechaAcciones.length > 0) && (
+        <div className="space-y-6">
+          {/* TAREAS SIN FECHA DEFINIDA */}
+          {sinFechaAcciones.length > 0 && (
+            <div className="glass-panel card">
+              <h2 className="card-title" style={{ margin: 0, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={18} className="text-warning" /> Tareas y Acciones sin Fecha Definida
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+                Estas tareas y acciones comerciales están pendientes pero no tienen fecha de vencimiento. Asignales una fecha para agendarlas en una ruta de visitas.
+              </p>
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '90px' }}>Tipo</th>
+                      <th>Empresa</th>
+                      <th>Descripción / Tarea</th>
+                      <th style={{ textAlign: 'right', width: '220px' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sinFechaAcciones.map(accion => {
+                      const emp = accion.empresa
+                      return (
+                        <tr key={accion.id}>
+                          <td>{renderTipoBadgeStatic(accion.tipo)}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
+                              <div>
+                                <div style={{ fontWeight: 500, color: 'white' }}>{emp?.nombre || 'General'}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  {emp?.estado?.toUpperCase()}
+                                  {pendingActionDeleteIds.includes(accion.id) && (
+                                    <span className="text-warning ml-2 font-semibold">⚠️ Eliminación Pendiente</span>
+                                  )}
                                 </div>
-                              </td>
-                              <td>
-                                <div style={{ fontSize: '0.875rem' }}><MapPin size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />{emp.direccion || '-'}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{emp.barrio} • {emp.zona}</div>
-                              </td>
-                              {generatingPdfDate !== date && (
-                                <td style={{ textAlign: 'right' }}>
-                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                    <input type="date" title="Re-agendar" defaultValue={date}
-                                      onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
-                                      style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
-                                    />
-                                    <button onClick={() => handleEliminarAccion(accion.id)}
-                                      style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                      title="Quitar"><Trash2 size={14} /></button>
-                                  </div>
-                                </td>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                            {accion.descripcion}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                              <input type="date" title="Asignar Fecha de Vencimiento"
+                                onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
+                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '120px', cursor: 'pointer' }}
+                              />
+                              {(!pendingActionDeleteIds.includes(accion.id) || userNivel === 1) && (
+                                <button onClick={() => handleEliminarAccion(accion.id)}
+                                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  title="Quitar"><Trash2 size={14} /></button>
                               )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {groupedFuturas.length > 0 && (
+            <div className="glass-panel card">
+              <h2 className="card-title" style={{ margin: 0, marginBottom: '1.5rem' }}>Planificación por Fecha</h2>
+              <div className="space-y-6">
+                {groupedFuturas.map(({ date, items }) => {
+                  const dateObj = new Date(date + 'T12:00:00Z')
+                  return (
+                    <div key={date} ref={el => { weeklyPdfRefs.current[date] = el }}
+                      style={generatingPdfDate === date
+                        ? { backgroundColor: 'white', color: 'black', padding: '2rem' }
+                        : { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '1rem', border: '1px solid rgba(255,255,255,0.05)' }
+                      }>
+                      {generatingPdfDate === date && (
+                        <div style={{ marginBottom: '2rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
+                          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#1B365D' }}>Mi Ruta de Visitas</h1>
+                          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>{dateObj.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: generatingPdfDate === date ? 'none' : '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: generatingPdfDate === date ? '#1B365D' : 'var(--primary)', margin: 0 }}>
+                          {dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </h3>
+                        {generatingPdfDate !== date && (
+                          <button onClick={() => handleDownloadWeeklyPDF(date)} disabled={generatingPdfDate !== null}
+                            className="btn btn-secondary flex items-center justify-center" 
+                            style={{ padding: '0.5rem', minWidth: '32px', minHeight: '32px', borderRadius: '8px' }}
+                            title="Descargar PDF de Ruta"
+                          >
+                            <Download size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <div className={generatingPdfDate === date ? '' : 'table-container'}>
+                        <table className="table" style={generatingPdfDate === date ? { color: 'black' } : {}}>
+                          <thead>
+                            <tr style={generatingPdfDate === date ? { borderBottom: '2px solid #e5e7eb' } : {}}>
+                              <th style={{ width: '90px' }}>Tipo</th>
+                              <th>Empresa</th>
+                              <th>Ubicación</th>
+                              {generatingPdfDate !== date && <th style={{ textAlign: 'right' }}>Acciones</th>}
                             </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                          </thead>
+                          <tbody>
+                            {items.map(accion => {
+                              const emp = accion.empresa
+                              return (
+                                <tr key={accion.id} style={{ borderBottom: generatingPdfDate === date ? '1px solid #f3f4f6' : '' }}>
+                                  <td>{renderTipoBadgeStatic(accion.tipo)}</td>
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                      <Building2 size={16} style={{ color: 'var(--text-muted)' }} />
+                                      <div>
+                                        <div style={{ fontWeight: 500, color: generatingPdfDate === date ? 'black' : 'white' }}>{emp.nombre}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                          {emp.estado?.toUpperCase()}
+                                          {pendingActionDeleteIds.includes(accion.id) && (
+                                            <span className="text-warning ml-2 font-semibold">⚠️ Eliminación Pendiente</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div style={{ fontSize: '0.875rem' }}><MapPin size={12} style={{ display: 'inline', color: 'var(--text-muted)', marginRight: '4px' }} />{emp.direccion || '-'}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{emp.barrio} • {emp.zona}</div>
+                                  </td>
+                                  {generatingPdfDate !== date && (
+                                    <td style={{ textAlign: 'right' }}>
+                                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                        <input type="date" title="Re-agendar" defaultValue={date}
+                                          onChange={async e => { if (e.target.value && reagendarAccionAction) await reagendarAccionAction(accion.id, e.target.value) }}
+                                          style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--text-muted)', backgroundColor: 'transparent', color: 'white', fontSize: '0.75rem', width: '24px', cursor: 'pointer' }}
+                                        />
+                                        {(!pendingActionDeleteIds.includes(accion.id) || userNivel === 1) && (
+                                          <button onClick={() => handleEliminarAccion(accion.id)}
+                                            style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            title="Quitar"><Trash2 size={14} /></button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -685,6 +906,54 @@ export default function IntelligentPlanner({
           </tbody>
         </table>
       </div>
+
+      {userNivel === 1 && solicitudes.length > 0 && (
+        <div className="glass-panel card mt-8" style={{ borderTop: '4px solid var(--warning)' }}>
+          <h2 className="card-title" style={{ margin: 0, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--warning)' }}>
+            <AlertCircle size={20} /> Solicitudes de Eliminación Pendientes (Administrador)
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+            Los usuarios de Nivel 2 y 3 han solicitado eliminar los siguientes datos. Revisa la justificación y decide si aprobar o rechazar la solicitud.
+          </p>
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Elemento</th>
+                  <th>Solicitado Por</th>
+                  <th>Motivo / Justificación</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {solicitudes.map(sol => (
+                  <tr key={sol.id}>
+                    <td>
+                      <span className={`badge ${sol.tipo === 'EMPRESA' ? 'badge-danger' : 'badge-warning'}`}>
+                        {sol.tipo}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 500, color: 'white' }}>{sol.nombreTarget} (ID: {sol.targetId})</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{sol.solicitadoPor}</td>
+                    <td style={{ color: 'var(--text-primary)', fontStyle: 'italic' }}>"{sol.motivo}"</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleResolverSolicitud(sol.id, true)} className="btn btn-success text-xs px-3 py-1">
+                          Aprobar y Eliminar
+                        </button>
+                        <button onClick={() => handleResolverSolicitud(sol.id, false)} className="btn btn-secondary text-xs px-3 py-1">
+                          Rechazar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
