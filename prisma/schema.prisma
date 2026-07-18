@@ -29,6 +29,9 @@ model Empresa {
   productosInteres String?
   transporte       String?
   url              String?
+  bancoInstitucion String?
+  bancoSucursal    String?
+  bancoCuenta      String?
   googleMaps       String?
   notas            String?
   estado           String   @default("prospecto")  // 'prospecto' | 'activo' | 'descartada' | 'baja'

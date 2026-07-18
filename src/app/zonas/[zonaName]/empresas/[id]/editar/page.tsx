@@ -248,6 +248,10 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
                 <input type="email" name="email" defaultValue={empresa.email || ''} className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
+                <label className="form-label">Sitio Web (URL)</label>
+                <input type="url" name="url" defaultValue={empresa.url || ''} className="form-input" placeholder="https://" />
+              </div>
+              <div className="flex flex-col gap-2">
                 <label className="form-label">Vendedor Asignado</label>
                 {user.nivel === 3 ? (
                   <>
@@ -283,6 +287,21 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
               <div className="flex flex-col gap-2">
                 <label className="form-label">Días de pago</label>
                 <input type="text" name="diasPago" defaultValue={empresa.diasPago || ''} className="form-input" />
+              </div>
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <h4 className="text-sm font-semibold text-white/70 mt-2 mb-1">Datos Bancarios</h4>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="form-label">Institución (Banco)</label>
+                <input type="text" name="bancoInstitucion" defaultValue={empresa.bancoInstitucion || ''} className="form-input" placeholder="Ej. Banco Galicia" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="form-label">Sucursal</label>
+                <input type="text" name="bancoSucursal" defaultValue={empresa.bancoSucursal || ''} className="form-input" placeholder="Ej. Centro" />
+              </div>
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label className="form-label">Tipo y Nº de Cuenta / CBU / Alias</label>
+                <input type="text" name="bancoCuenta" defaultValue={empresa.bancoCuenta || ''} className="form-input" placeholder="CBU, Alias o Número de cuenta" />
               </div>
             </div>
           </div>

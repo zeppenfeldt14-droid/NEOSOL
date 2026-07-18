@@ -36,7 +36,12 @@ export function parseDatosBancarios(notas: string | null) {
 export function FichaAltaSheet({ empresa, reportRef }: { empresa: any, reportRef: any }) {
   const blueBg = '#3b5998'
   const textColor = '#000000'
-  const banco = parseDatosBancarios(empresa.notas)
+  const bancoOld = parseDatosBancarios(empresa.notas)
+  const banco = {
+    institucion: empresa.bancoInstitucion || bancoOld.institucion,
+    sucursal: empresa.bancoSucursal || bancoOld.sucursal,
+    cuenta: empresa.bancoCuenta || bancoOld.cuenta,
+  }
 
   return (
     <div style={{

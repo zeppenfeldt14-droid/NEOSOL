@@ -80,7 +80,11 @@ export async function createEmpresa(formData: FormData) {
       ocultarVendedor,
       notas,
       estado: 'prospecto',
-      cicloVentaDias
+      cicloVentaDias,
+      url: formData.get('url') as string,
+      bancoInstitucion: formData.get('bancoInstitucion') as string,
+      bancoSucursal: formData.get('bancoSucursal') as string,
+      bancoCuenta: formData.get('bancoCuenta') as string,
     }
   })
 

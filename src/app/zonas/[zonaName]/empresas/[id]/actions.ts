@@ -197,6 +197,10 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     notas: notasFinal,
     estado,
     cicloVentaDias,
+    url: formData.get('url') as string,
+    bancoInstitucion: formData.get('bancoInstitucion') as string,
+    bancoSucursal: formData.get('bancoSucursal') as string,
+    bancoCuenta: formData.get('bancoCuenta') as string,
   }
 
   if (canModifyConfig) {
