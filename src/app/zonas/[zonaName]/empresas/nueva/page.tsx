@@ -84,8 +84,8 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
           <input type="hidden" name="defaultZona" value={decodedZona} />
           
           {/* Bloque 1: Información General */}
-          <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
-            <h3 className="text-lg font-medium text-white mb-4 text-primary">Información General</h3>
+          <div className="col-span-1 md:col-span-2 bg-slate-800/50 p-4 md:p-6 rounded-xl border border-white/5 mb-6">
+            <h3 className="text-lg font-medium text-white mb-4 text-primary text-center">Información General</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Institución (Nombre y Apellido) / Empresa *</label>
@@ -150,8 +150,8 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
           </div>
 
           {/* Bloque 2: Dirección y Logística */}
-          <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
-            <h3 className="text-lg font-medium text-white mb-4 text-primary">Dirección y Logística</h3>
+          <div className="col-span-1 md:col-span-2 bg-zinc-800/50 p-4 md:p-6 rounded-xl border border-white/5 mb-6">
+            <h3 className="text-lg font-medium text-white mb-4 text-primary text-center">Dirección y Logística</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Dirección Fiscal / Legal</label>
@@ -177,8 +177,8 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
           </div>
 
           {/* Bloque 3: Contacto */}
-          <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
-            <h3 className="text-lg font-medium text-white mb-4 text-primary">Contacto</h3>
+          <div className="col-span-1 md:col-span-2 bg-indigo-900/20 p-4 md:p-6 rounded-xl border border-white/5 mb-6">
+            <h3 className="text-lg font-medium text-white mb-4 text-primary text-center">Contacto</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Celular / TEL.</label>
@@ -218,8 +218,8 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
           </div>
 
           {/* Bloque 4: Administración y Cobranzas */}
-          <div className="col-span-1 md:col-span-2 border-b border-white/10 pb-4 mb-2">
-            <h3 className="text-lg font-medium text-white mb-4 text-primary">Administración y Cobranzas</h3>
+          <div className="col-span-1 md:col-span-2 bg-emerald-900/20 p-4 md:p-6 rounded-xl border border-white/5 mb-6">
+            <h3 className="text-lg font-medium text-white mb-4 text-primary text-center">Administración y Cobranzas</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Contacto de Cobranzas</label>
@@ -248,8 +248,8 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
           </div>
 
           {/* Bloque 5: CRM Interno */}
-          <div className="col-span-1 md:col-span-2 mb-4">
-            <h3 className="text-lg font-medium text-white mb-4 text-primary">CRM Interno</h3>
+          <div className="col-span-1 md:col-span-2 bg-purple-900/20 p-4 md:p-6 rounded-xl border border-white/5 mb-6">
+            <h3 className="text-lg font-medium text-white mb-4 text-primary text-center">CRM Interno</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="form-label">Productos de Interés</label>
