@@ -101,21 +101,45 @@ export default async function DashboardPage({ params, searchParams }: { params: 
 
   // Efectividad: nuevos clientes este mes / empresas contactadas este mes × 100
   const now = new Date()
-  let startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  let endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  let startOfMonth: Date | undefined = new Date(now.getFullYear(), now.getMonth(), 1)
+  let endOfMonth: Date | undefined = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
   let labelPeriodo = "este mes"
 
-  if (currentPeriod.startsWith('Q')) {
+  if (currentPeriod === 'todo') {
+    startOfMonth = new Date(2000, 0, 1)
+    endOfMonth = new Date(2100, 11, 31)
+    labelPeriodo = "en el historial completo"
+  } else if (currentPeriod === 'hoy') {
+    startOfMonth = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    endOfMonth = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+    labelPeriodo = "hoy"
+  } else if (currentPeriod === 'semana') {
+    startOfMonth = new Date(now)
+    startOfMonth.setDate(startOfMonth.getDate() - 7)
+    startOfMonth.setHours(0, 0, 0, 0)
+    endOfMonth = new Date(now)
+    endOfMonth.setHours(23, 59, 59, 999)
+    labelPeriodo = "en los últimos 7 días"
+  } else if (currentPeriod.startsWith('Q')) {
     const q = parseInt(currentPeriod.charAt(1))
     startOfMonth = new Date(now.getFullYear(), (q - 1) * 3, 1)
     endOfMonth = new Date(now.getFullYear(), q * 3, 0, 23, 59, 59)
     labelPeriodo = `en Q${q}`
+  } else if (currentPeriod.includes(',')) {
+    const months = currentPeriod.split(',').map(Number)
+    const minMonth = Math.min(...months)
+    const maxMonth = Math.max(...months)
+    startOfMonth = new Date(now.getFullYear(), minMonth, 1)
+    endOfMonth = new Date(now.getFullYear(), maxMonth + 1, 0, 23, 59, 59)
+    labelPeriodo = `en los meses seleccionados`
   } else {
     const m = parseInt(currentPeriod)
-    startOfMonth = new Date(now.getFullYear(), m, 1)
-    endOfMonth = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59)
-    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-    labelPeriodo = `en ${monthNames[m]}`
+    if (!isNaN(m)) {
+      startOfMonth = new Date(now.getFullYear(), m, 1)
+      endOfMonth = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59)
+      const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+      labelPeriodo = `en ${monthNames[m]}`
+    }
   }
 
   const visitasMesQuery = await prisma.visita.findMany({
