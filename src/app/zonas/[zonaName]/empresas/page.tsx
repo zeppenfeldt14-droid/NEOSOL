@@ -65,8 +65,21 @@ export default async function EmpresasPage({ params }: { params: Promise<{ zonaN
 
   const subZones = Array.from(subZonesSet).sort()
 
+  // Fetch rubros from DB and unique company rubros
+  const dbRubros = await prisma.rubro.findMany({
+    orderBy: { nombre: 'asc' }
+  })
+  const rubrosSet = new Set<string>()
+  dbRubros.forEach(r => rubrosSet.add(r.nombre.trim().toUpperCase()))
+  empresasAll.forEach(emp => {
+    if (emp.rubro) {
+      rubrosSet.add(emp.rubro.trim().toUpperCase())
+    }
+  })
+  const rubrosList = Array.from(rubrosSet).sort()
+
   return (
-    <EmpresasClient empresas={empresasAll} zonas={subZones} />
+    <EmpresasClient empresas={empresasAll} zonas={subZones} rubros={rubrosList} />
   )
 }
 

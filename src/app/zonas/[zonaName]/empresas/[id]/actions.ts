@@ -154,6 +154,7 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
   const email = formData.get('email') as string
   const responsable = formData.get('responsable') as string
   const subZona = formData.get('subZona') as string || 'SIN ASIGNAR'
+  const rubro = formData.get('rubro') as string || null
   
   const notas = formData.get('notas') as string
   const estado = formData.get('estado') as string
@@ -192,6 +193,7 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     productosInteres,
     transporte,
     subZona,
+    rubro,
     notas: notasFinal,
     estado,
     cicloVentaDias,

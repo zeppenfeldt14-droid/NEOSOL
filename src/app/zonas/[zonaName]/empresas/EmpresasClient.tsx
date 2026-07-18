@@ -12,6 +12,7 @@ type Empresa = {
   nombre: string
   zona: string | null
   subZona: string | null
+  rubro: string | null
   ocultarVendedor: boolean
   direccion: string | null
   barrio: string | null
@@ -22,16 +23,83 @@ type Empresa = {
   visitas: any[]
 }
 
-export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[], zonas: string[] }) {
+export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: Empresa[], zonas: string[], rubros: string[] }) {
   const params = useParams()
   const zonaName = params.zonaName as string
   const [searchQuery, setSearchQuery] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<'todos' | 'prospecto' | 'activo' | 'baja' | 'descartada'>('todos')
   const [zonaFilter, setZonaFilter] = useState<string>('todas')
+  const [rubroFilter, setRubroFilter] = useState<string>('todos')
 
   const decodedZona = useMemo(() => {
     return decodeURIComponent(zonaName)
   }, [zonaName])
+
+  const getRubroDisplayName = (name: string) => {
+    const match = name.match(/^CATEGORIA\s+(\d+)$/i);
+    if (match) {
+      return `Categoría ${match[1]}`;
+    }
+    return name;
+  };
+
+  const RUBRO_LEGENDS: Record<string, { title: string, desc: string, icon: string }> = {
+    'CATEGORIA 1': {
+      title: 'Mayoristas de Golosinas, Galletitas y Kiosco',
+      desc: 'Distribuidoras y mayoristas de golosinas, galletitas, alfajores, snacks, bebidas y candy bar.',
+      icon: '🍬'
+    },
+    'CATEGORIA 2': {
+      title: 'Mayoristas Gastronómicos (Canal HORECA)',
+      desc: 'Abastecedores de alimentos, lácteos, fiambres, conservas y descartables para restaurantes, catering y hoteles.',
+      icon: '🍽️'
+    },
+    'CATEGORIA 3': {
+      title: 'Hipermayoristas y Consumo Masivo',
+      desc: 'Grandes superficies y autoservicios mayoristas de consumo masivo general (alimentos secos, limpieza, perfumería).',
+      icon: '🛒'
+    },
+    'CATEGORIA 4': {
+      title: 'Especialistas en Lácteos y Fiambres',
+      desc: 'Distribución y venta mayorista/minorista de quesos, fiambres, embutidos y productos de almacén lácteos.',
+      icon: '🧀'
+    },
+    'CATEGORIA 5': {
+      title: 'Especialidad, Dietéticas y Saludables',
+      desc: 'Alimentos saludables secos/congelados, dietéticas, productos veganos, sin gluten (Sin TACC), Kosher e importados.',
+      icon: '🌱'
+    },
+    'CATEGORIA 6': {
+      title: 'Cadenas de Kioscos (Retail Minorista)',
+      desc: 'Cadenas de kioscos de proximidad (24hs) o locales minoristas con sucursales.',
+      icon: '🏪'
+    },
+    'CATEGORIA 7': {
+      title: 'Logística y Plataformas de Entrega',
+      desc: 'Centros de distribución B2B, logística de última milla, envíos Flex y plataformas de delivery.',
+      icon: '🚚'
+    },
+    'CATEGORIA 8': {
+      title: 'Cotillón y Artículos de Fiesta',
+      desc: 'Venta mayorista y minorista de artículos de cotillón, repostería y organización de fiestas.',
+      icon: '🎉'
+    },
+    'CATEGORIA 9': {
+      title: 'Rubros No Compatibles (Descartados)',
+      desc: 'Almacenes de maquinarias, perfumerías exclusivas y casas particulares fuera del perfil alimenticio.',
+      icon: '❌'
+    },
+    'CATEGORIA 10': {
+      title: 'Otras Distribuidoras y Mayoristas Generales',
+      desc: 'Distribuidoras generales, multirrubro o secos a validar en el terreno.',
+      icon: '📦'
+    },
+    'CATEGORIA 11': {
+      title: 'Institucional / Salud',
+      desc: 'Hospitales, clínicas, sanatorios e instituciones públicas/privadas de salud.',
+      icon: '🏥'
+    }
+  }
 
   const handleExportPDF = () => {
     const doc = new jsPDF()
@@ -47,6 +115,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
     if (searchQuery) filters.push(`Búsqueda: "${searchQuery}"`)
     if (estadoFilter !== 'todos') filters.push(`Estado: ${estadoFilter}`)
     if (zonaFilter !== 'todas') filters.push(`Mini-zona: ${zonaFilter}`)
+    if (rubroFilter !== 'todos') filters.push(`Rubro: ${rubroFilter}`)
     doc.text(filters.length > 0 ? `Filtros: ${filters.join(' | ')}` : 'Todos los registros', 14, 22)
     
     // Define Headers and Data
@@ -91,6 +160,26 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
     }
   }
 
+  const handleAddRubro = async () => {
+    const name = prompt('Nombre de la nueva categoría comercial / rubro (ej: DISTRIBUIDORAS, BEBIDAS):')
+    if (!name || !name.trim()) return
+
+    try {
+      const res = await fetch('/api/rubros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: name.trim().toUpperCase() })
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al crear')
+      }
+      window.location.reload()
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
   const filteredEmpresas = useMemo(() => {
     const result = empresas.filter(emp => {
       const q = searchQuery.toLowerCase()
@@ -104,7 +193,10 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
       const empSubZonaNormalizada = emp.subZona ? emp.subZona.trim().toUpperCase() : 'SIN ASIGNAR'
       const matchesZona = zonaFilter === 'todas' || empSubZonaNormalizada === zonaFilter.toUpperCase()
 
-      return matchesSearch && matchesEstado && matchesZona
+      const empRubroNormalizado = emp.rubro ? emp.rubro.trim().toUpperCase() : 'SIN RUBRO'
+      const matchesRubro = rubroFilter === 'todos' || empRubroNormalizado === rubroFilter.toUpperCase()
+
+      return matchesSearch && matchesEstado && matchesZona && matchesRubro
     })
     
     // Ordenar: Activos -> Prospectos -> Bajas -> Descartadas
@@ -124,7 +216,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
       }
       return a.nombre.localeCompare(b.nombre)
     })
-  }, [empresas, searchQuery, estadoFilter, zonaFilter])
+  }, [empresas, searchQuery, estadoFilter, zonaFilter, rubroFilter])
 
   return (
     <div className="animate-fade-in pb-12">
@@ -218,6 +310,61 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
             </button>
           </div>
         </div>
+
+        <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
+          <label className="form-label" style={{ marginBottom: '0.5rem' }}>Rubros / Categorías Comerciales</label>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={() => setRubroFilter('todos')}
+              className={`btn-toggle ${rubroFilter === 'todos' ? 'active' : ''}`}
+            >
+              Todos
+            </button>
+            {rubros.map(r => (
+              <button
+                key={r}
+                onClick={() => setRubroFilter(r)}
+                className={`btn-toggle ${rubroFilter === r ? 'active' : ''}`}
+                style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+              >
+                {getRubroDisplayName(r)}
+              </button>
+            ))}
+            <button
+              onClick={handleAddRubro}
+              className="btn-toggle border-dashed hover:border-primary/50 hover:text-primary"
+              title="Crear Nuevo Rubro Comercial"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {rubroFilter !== 'todos' && RUBRO_LEGENDS[rubroFilter.toUpperCase()] && (
+            <div className="animate-fade-in" style={{
+              marginTop: '1rem',
+              padding: '1rem 1.25rem',
+              backgroundColor: 'rgba(59, 89, 152, 0.08)',
+              border: '1px solid rgba(59, 89, 152, 0.2)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              boxShadow: '0 4px 20px -2px rgba(0,0,0,0.2)'
+            }}>
+              <span style={{ fontSize: '1.5rem', lineHeight: '1' }}>
+                {RUBRO_LEGENDS[rubroFilter.toUpperCase()].icon}
+              </span>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  {getRubroDisplayName(rubroFilter)}: {RUBRO_LEGENDS[rubroFilter.toUpperCase()].title}
+                </h4>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {RUBRO_LEGENDS[rubroFilter.toUpperCase()].desc}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="table-container">
@@ -251,7 +398,7 @@ export default function EmpresasClient({ empresas, zonas }: { empresas: Empresa[
                     {empresa.barrio || '-'}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                    {empresa.subZona || 'SIN ASIGNAR'}
+                    {empresa.subZona || 'SIN ASIGNAR'} • {getRubroDisplayName(empresa.rubro || 'SIN RUBRO')}
                   </div>
                 </td>
                 <td>

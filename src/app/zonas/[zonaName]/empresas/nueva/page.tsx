@@ -28,6 +28,11 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
     orderBy: { nombre: 'asc' }
   })
 
+  // Fetch all rubros
+  const rubros = await prisma.rubro.findMany({
+    orderBy: { nombre: 'asc' }
+  })
+
   // Fetch all major zones
   const todasLasZonas = await prisma.zona.findMany({
     orderBy: { nombre: 'asc' }
@@ -91,6 +96,14 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
                   <option value="CORREO">CORREO</option>
                   {subZonas.map(sz => (
                     <option key={sz.id} value={sz.nombre}>{sz.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="form-label">Rubro Comercial</label>
+                <select name="rubro" defaultValue="CATEGORIA 1" className="form-input bg-dark">
+                  {rubros.map(r => (
+                    <option key={r.id} value={r.nombre}>{r.nombre}</option>
                   ))}
                 </select>
               </div>

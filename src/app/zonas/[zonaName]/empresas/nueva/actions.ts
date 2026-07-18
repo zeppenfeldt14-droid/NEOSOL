@@ -19,6 +19,7 @@ export async function createEmpresa(formData: FormData) {
   
   const defaultZona = formData.get('defaultZona') as string || 'CABA'
   const subZona = formData.get('subZona') as string || 'SIN ASIGNAR'
+  const rubro = formData.get('rubro') as string || null
   
   const canModifyConfig = user && user.nivel === 1
   const zona = canModifyConfig ? (formData.get('zona') as string || defaultZona) : defaultZona
@@ -59,6 +60,7 @@ export async function createEmpresa(formData: FormData) {
       transporte,
       zona,
       subZona,
+      rubro,
       ocultarVendedor,
       notas,
       estado: 'prospecto',

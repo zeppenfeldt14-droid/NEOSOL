@@ -11,6 +11,7 @@ model Empresa {
   id               Int      @id @default(autoincrement())
   zona             String?
   subZona          String?
+  rubro            String?
   ocultarVendedor  Boolean  @default(false)
   nombre           String   // Institución / Empresa
   cuit             String?
@@ -59,6 +60,11 @@ model SubZona {
   nombre String // CABA 1, CABA 2, OESTE 1, OESTE 2, etc.
 
   @@unique([zona, nombre])
+}
+
+model Rubro {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
 }
 
 model Visita {

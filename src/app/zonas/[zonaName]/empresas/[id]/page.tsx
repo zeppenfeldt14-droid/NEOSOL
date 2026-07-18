@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit, Tag } from 'lucide-react'
 import { CompleteActionButton } from './ActionButtons'
 import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
@@ -99,6 +99,14 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
             <div>
               <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Zona</div>
               <div style={{ fontWeight: 500 }}>{empresa.zona || 'No asignada'}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Tag size={16} className="text-secondary" />
+            <div>
+              <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Rubro Comercial</div>
+              <div style={{ fontWeight: 500 }}>{empresa.rubro || 'No asignado'}</div>
             </div>
           </div>
 
