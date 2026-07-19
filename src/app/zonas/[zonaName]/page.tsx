@@ -171,13 +171,14 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   for (const emp of activasParaEfectividad) {
     const primeraVenta = emp.visitas[0]
     const fechaAlta = primeraVenta ? new Date(primeraVenta.fecha) : new Date(emp.creadoEn)
-    if (fechaAlta >= startOfMonth && fechaAlta <= endOfMonth) {
+    if (startOfMonth && endOfMonth && fechaAlta >= startOfMonth && fechaAlta <= endOfMonth) {
       nuevosClientesMes++
     }
   }
 
-  const efectividad = empresasContactadasMes > 0
-    ? Math.round((nuevosClientesMes / empresasContactadasMes) * 100)
+  const universoObjetivo = empresasProspecto + empresasClientes
+  const efectividad = universoObjetivo > 0
+    ? Math.round((empresasClientes / universoObjetivo) * 100)
     : null
 
   // Last 5 companies added or updated
@@ -487,11 +488,18 @@ export default async function DashboardPage({ params, searchParams }: { params: 
             <span className="stat-label" style={{ fontSize: '0.75rem' }}>Efectividad</span>
             <div className="badge badge-success" style={{ padding: '0.15rem 0.4rem' }}><CheckCircle size={12} /></div>
           </div>
-          <div className="stat-value text-accent" style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-            {efectividad !== null ? `${efectividad}%` : '0%'}
+          <div className="flex items-end gap-2" style={{ marginBottom: '0.25rem' }}>
+            <div className="stat-value text-accent" style={{ fontSize: '1.75rem', lineHeight: '1' }}>
+              {efectividad !== null ? `${efectividad}%` : '0%'}
+            </div>
+            {nuevosClientesMes > 0 && (
+              <span className="text-green-400 font-medium text-xs mb-1">
+                +{nuevosClientesMes} {labelPeriodo.replace('en ', '')}
+              </span>
+            )}
           </div>
           <div className="text-secondary" style={{ fontSize: '0.7rem' }}>
-            {`${nuevosClientesMes} nuevo(s) / ${empresasContactadasMes} contactada(s) ${labelPeriodo}`}
+            {`${empresasClientes} cliente(s) de ${universoObjetivo} objetivo`}
           </div>
         </div>
       </div>
