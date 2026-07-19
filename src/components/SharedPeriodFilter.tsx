@@ -88,11 +88,9 @@ export default function SharedPeriodFilter({ currentPeriod, onPeriodChange, alig
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 md:right-auto md:left-0 mt-3 w-[290px] sm:w-80 max-w-[calc(100vw-1rem)] backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in" style={{
-          transform: align === 'right' ? 'translateX(0)' : 'none',
-          right: align === 'right' ? '0' : 'auto',
-          left: align === 'left' ? '0' : 'auto'
-        }}>
+        <div className={`absolute mt-3 w-[290px] sm:w-80 max-w-[calc(100vw-1rem)] backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.15)] z-50 p-5 animate-fade-in ${
+          align === 'right' ? 'right-0 origin-top-right' : 'right-0 md:right-auto md:left-0 origin-top-right md:origin-top-left'
+        }`}>
           <div className="text-[10px] font-black text-primary uppercase tracking-wider mb-2.5">Períodos Predefinidos</div>
           
           <div className="grid grid-cols-3 gap-2 mb-2">

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { Briefcase, Building2, CheckCircle, Clock, MapPin, BarChart2, Calendar as CalendarIcon } from 'lucide-react'
+import { Briefcase, Building2, CheckCircle, Clock, MapPin, BarChart2, Calendar as CalendarIcon, Calendar, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { DailyRouteChart } from '@/components/charts/DailyRouteChart'
 import { MonthlyVisitsChart } from '@/components/charts/MonthlyVisitsChart'
@@ -412,8 +412,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
         </div>
         <div className="flex flex-wrap items-center gap-4 mt-4 sm:mt-0">
           <PeriodFilter />
-          <Link href="/empresas/nueva" className="btn btn-primary w-full sm:w-auto justify-center">
-            + Nueva Empresa
+          <Link href="/empresas/nueva" className="btn btn-primary w-full sm:w-auto flex items-center justify-center gap-2">
+            <Plus size={16} /> <span className="hidden sm:inline">Nueva Empresa</span>
           </Link>
         </div>
       </div>
@@ -516,8 +516,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
               <div className="flex flex-col gap-4 items-center justify-center h-full" style={{ minHeight: '200px', opacity: 0.5 }}>
                 <MapPin size={48} />
                 <p>No hay visitas programadas para hoy.</p>
-                <Link href={`/zonas/${zonaName}/planificador`} className="btn btn-secondary">
-                  Ir al Planificador
+                <Link href={`/zonas/${zonaName}/planificador`} className="btn btn-secondary flex items-center justify-center gap-2">
+                  <MapPin size={16} /> <span className="hidden sm:inline">Ir al Planificador</span>
                 </Link>
               </div>
             ) : (
@@ -543,8 +543,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
                   })}
                 </div>
                 <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Link href={`/zonas/${zonaName}/planificador?vista=hoy`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
-                    Ir a la Ruta Completa
+                  <Link href={`/zonas/${zonaName}/planificador?vista=hoy`} className="btn btn-primary flex items-center justify-center gap-2" style={{ width: '100%' }}>
+                    <MapPin size={16} /> <span className="hidden sm:inline">Ir a la Ruta Completa</span>
                   </Link>
                 </div>
               </>
@@ -562,8 +562,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
               <div className="flex flex-col gap-4 items-center justify-center h-full" style={{ minHeight: '200px', opacity: 0.5 }}>
                 <CalendarIcon size={48} />
                 <p>No hay visitas planificadas para los próximos días.</p>
-                <Link href={`/zonas/${zonaName}/planificador?vista=semana`} className="btn btn-secondary">
-                  Planificar Semana
+                <Link href={`/zonas/${zonaName}/planificador?vista=semana`} className="btn btn-secondary flex items-center justify-center gap-2">
+                  <Calendar size={16} /> <span className="hidden sm:inline">Planificar Semana</span>
                 </Link>
               </div>
             ) : (
@@ -601,8 +601,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
                   })}
                 </div>
                 <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  <Link href={`/zonas/${zonaName}/planificador?vista=semana`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
-                    Ver Planificador Semanal
+                  <Link href={`/zonas/${zonaName}/planificador?vista=semana`} className="btn btn-primary flex items-center justify-center gap-2" style={{ width: '100%' }}>
+                    <Calendar size={16} /> <span className="hidden sm:inline">Ver Planificador Completo</span>
                   </Link>
                 </div>
               </>
