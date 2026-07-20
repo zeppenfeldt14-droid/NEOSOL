@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, X, Check, Trash2, Plus, Building2 } from 'lucide-react'
+import { FileText, X, Check, Trash2, Plus, Building2, Bell, Clock } from 'lucide-react'
 
 type Nota = {
   id: number
@@ -11,6 +11,8 @@ type Nota = {
   destinatario: string
   estado: string
   creadoEn: string
+  fechaRecordatorio: string | null
+  recordatorioVisto: boolean
 }
 
 export default function PlannerNotes({ zona, empresasList }: { zona: string, empresasList: { id: number, nombre: string }[] }) {
@@ -21,6 +23,10 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
   const [texto, setTexto] = useState('')
   const [empresaId, setEmpresaId] = useState('')
   const [destinatario, setDestinatario] = useState('personal')
+  const [recordatorio, setRecordatorio] = useState('ninguno')
+  const [customDate, setCustomDate] = useState('')
+
+  const [activeAlarms, setActiveAlarms] = useState<Nota[]>([])
 
   const fetchNotas = async () => {
     try {
@@ -28,14 +34,27 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
       if (res.ok) {
         const data = await res.json()
         setNotas(data)
+        checkAlarms(data)
       }
     } catch (e) { console.error(e) }
   }
 
+  const checkAlarms = (data: Nota[]) => {
+    const now = new Date()
+    const alarms = data.filter(n => 
+      n.estado === 'pendiente' && 
+      n.fechaRecordatorio && 
+      !n.recordatorioVisto && 
+      new Date(n.fechaRecordatorio) <= now
+    )
+    setActiveAlarms(alarms)
+  }
+
   useEffect(() => {
     fetchNotas()
-    // Poll every 1 min
-    const interval = setInterval(fetchNotas, 60000)
+    const interval = setInterval(() => {
+      fetchNotas()
+    }, 60000)
     return () => clearInterval(interval)
   }, [zona])
 
@@ -45,6 +64,20 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
     e.preventDefault()
     if (!texto.trim()) return
     setLoading(true)
+
+    let finalFechaRecordatorio = null
+    const now = new Date()
+    if (recordatorio === '1h') {
+      now.setHours(now.getHours() + 1)
+      finalFechaRecordatorio = now.toISOString()
+    } else if (recordatorio === 'manana') {
+      now.setDate(now.getDate() + 1)
+      now.setHours(9, 0, 0, 0)
+      finalFechaRecordatorio = now.toISOString()
+    } else if (recordatorio === 'custom' && customDate) {
+      finalFechaRecordatorio = new Date(customDate).toISOString()
+    }
+
     try {
       const res = await fetch('/api/notas-planificador', {
         method: 'POST',
@@ -53,13 +86,16 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
           texto,
           empresaId: empresaId || null,
           destinatario,
-          zona
+          zona,
+          fechaRecordatorio: finalFechaRecordatorio
         })
       })
       if (res.ok) {
         setTexto('')
         setEmpresaId('')
         setDestinatario('personal')
+        setRecordatorio('ninguno')
+        setCustomDate('')
         await fetchNotas()
       }
     } catch (error) {
@@ -91,10 +127,42 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
     } catch (error) { console.error(error) }
   }
 
+  const handleDismissAlarm = async (id: number) => {
+    try {
+      await fetch(`/api/notas-planificador/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordatorioVisto: true })
+      })
+      await fetchNotas()
+    } catch (error) { console.error(error) }
+  }
+
+  const getRelativeTime = (dateStr: string) => {
+    const d = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+
+    if (diffDays === 0) {
+      if (diffHours === 0) {
+        if (diffMinutes <= 1) return 'Hace 1 min'
+        return `Hace ${diffMinutes} min`
+      }
+      return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`
+    } else if (diffDays === 1) {
+      return 'Ayer'
+    } else {
+      return `Hace ${diffDays} días`
+    }
+  }
+
   return (
     <>
       <button
-        onClick={() => setShowModal(true)}
+        onClick={() => { setShowModal(true); fetchNotas(); }}
         className="btn flex items-center justify-center transition-all duration-300"
         style={{
           padding: '0.5rem 1rem',
@@ -125,10 +193,11 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
         )}
       </button>
 
+      {/* MODAL PRINCIPAL */}
       {showModal && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)',
-          backdropFilter: 'blur(4px)', zIndex: 99999, display: 'flex',
+          backdropFilter: 'blur(4px)', zIndex: 99990, display: 'flex',
           justifyContent: 'center', alignItems: 'center', padding: '1rem'
         }}>
           <div className="glass-panel w-full max-w-2xl max-h-[90vh] flex flex-col" style={{ borderRadius: '12px', borderTop: '4px solid #c084fc' }}>
@@ -154,14 +223,11 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                     style={{ minHeight: '80px', resize: 'vertical' }}
                   />
                 </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Empresa (Opcional)</label>
-                    <select 
-                      value={empresaId} 
-                      onChange={e => setEmpresaId(e.target.value)}
-                      className="input w-full"
-                    >
+                    <select value={empresaId} onChange={e => setEmpresaId(e.target.value)} className="input w-full">
                       <option value="">-- General (Sin empresa) --</option>
                       {empresasList.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.nombre}</option>
@@ -170,17 +236,38 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                   </div>
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Destinatario / Etiqueta</label>
-                    <select 
-                      value={destinatario} 
-                      onChange={e => setDestinatario(e.target.value)}
-                      className="input w-full"
-                    >
+                    <select value={destinatario} onChange={e => setDestinatario(e.target.value)} className="input w-full">
                       <option value="personal">Para Mí (Personal)</option>
                       <option value="gerencia">Para Gerencia</option>
                       <option value="asistente">Para Asistente / Soporte</option>
                     </select>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Recordatorio / Alarma</label>
+                    <select value={recordatorio} onChange={e => setRecordatorio(e.target.value)} className="input w-full">
+                      <option value="ninguno">Sin recordatorio</option>
+                      <option value="1h">En 1 Hora</option>
+                      <option value="manana">Mañana (09:00 AM)</option>
+                      <option value="custom">Agendar fecha y hora exacta</option>
+                    </select>
+                  </div>
+                  {recordatorio === 'custom' && (
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Fecha y Hora</label>
+                      <input 
+                        type="datetime-local" 
+                        value={customDate} 
+                        onChange={e => setCustomDate(e.target.value)} 
+                        className="input w-full" 
+                        required 
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end">
                   <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding: '0.5rem 1.5rem', borderRadius: '6px', display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: '#c084fc' }}>
                     <Plus size={16} /> Guardar Nota
@@ -204,7 +291,9 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                           {nota.estado === 'completada' ? <s>{nota.texto}</s> : nota.texto}
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          <span>{new Date(nota.creadoEn).toLocaleDateString()}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#c084fc' }}>
+                            <Clock size={12} /> {getRelativeTime(nota.creadoEn)}
+                          </span>
                           {nota.empresa && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                               <Building2 size={12} /> {nota.empresa.nombre}
@@ -213,14 +302,21 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                           <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Para: {nota.destinatario}
                           </span>
+                          {nota.fechaRecordatorio && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#ef4444' }}>
+                              <Bell size={12} /> Recordatorio programado
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={() => handleCompletar(nota.id, nota.estado)} 
+                          title={nota.estado === 'completada' ? 'Desmarcar' : 'Completar / Tildar'}
                           style={{ padding: '0.4rem', borderRadius: '6px', color: nota.estado === 'completada' ? '#10b981' : 'var(--text-muted)', backgroundColor: nota.estado === 'completada' ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.1)' }}>
                           <Check size={16} />
                         </button>
                         <button onClick={() => handleEliminar(nota.id)} 
+                          title="Eliminar permanentemente"
                           style={{ padding: '0.4rem', borderRadius: '6px', color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)' }}>
                           <Trash2 size={16} />
                         </button>
@@ -230,10 +326,51 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                 ))}
                 {notas.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay notas pendientes.
+                    No hay notas.
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ALERTAS (RECORDATORIOS VENCIDOS) */}
+      {activeAlarms.length > 0 && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex',
+          justifyContent: 'center', alignItems: 'center', padding: '1rem'
+        }}>
+          <div className="glass-panel w-full max-w-lg flex flex-col" style={{ borderRadius: '12px', borderTop: '4px solid #ef4444', animation: 'scaleIn 0.3s ease-out' }}>
+            <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', backgroundColor: 'rgba(239,68,68,0.2)', color: '#ef4444', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}>
+                <Bell size={32} />
+              </div>
+              <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.5rem', color: 'white', fontWeight: 700 }}>
+                ¡Tienes {activeAlarms.length} {activeAlarms.length === 1 ? 'Recordatorio!' : 'Recordatorios!'}
+              </h2>
+              <p style={{ color: 'var(--text-muted)' }}>Estos son recordatorios programados que ya se han cumplido.</p>
+            </div>
+            
+            <div style={{ padding: '0 1.5rem 1.5rem' }}>
+              {activeAlarms.map(al => (
+                <div key={al.id} style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginBottom: '0.75rem', borderLeft: '3px solid #ef4444' }}>
+                  <p style={{ fontSize: '1rem', color: 'white', margin: '0 0 0.5rem 0', whiteSpace: 'pre-wrap' }}>{al.texto}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {al.empresa ? al.empresa.nombre : 'General'}
+                    </span>
+                    <button 
+                      onClick={() => handleDismissAlarm(al.id)}
+                      className="btn btn-primary"
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', backgroundColor: '#ef4444', color: 'white' }}
+                    >
+                      Entendido
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

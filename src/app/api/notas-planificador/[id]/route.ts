@@ -1,17 +1,22 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id)
+    const { id: idStr } = await params;
+    const id = parseInt(idStr)
     if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     
     const body = await request.json()
-    const { estado } = body
+    const { estado, recordatorioVisto } = body
+
+    const data: any = {}
+    if (estado !== undefined) data.estado = estado
+    if (recordatorioVisto !== undefined) data.recordatorioVisto = recordatorioVisto
 
     const nota = await prisma.notaPlanificador.update({
       where: { id },
-      data: { estado }
+      data
     })
 
     return NextResponse.json(nota)
@@ -21,9 +26,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id)
+    const { id: idStr } = await params;
+    const id = parseInt(idStr)
     if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     await prisma.notaPlanificador.delete({

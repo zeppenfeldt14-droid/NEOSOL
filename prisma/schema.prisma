@@ -443,4 +443,7 @@ model NotaPlanificador {
   zona             String
   creadoPor        String?
   creadoEn         DateTime  @default(now())
+  
+  fechaRecordatorio DateTime? // Si tiene recordatorio programado
+  recordatorioVisto Boolean   @default(false) // Si el usuario ya vio la alerta
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
   try {
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { texto, empresaId, destinatario, zona } = body
+    const { texto, empresaId, destinatario, zona, fechaRecordatorio } = body
 
     if (!texto || !zona) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
@@ -42,6 +42,7 @@ export async function POST(request: Request) {
         empresaId: empresaId ? parseInt(empresaId) : null,
         destinatario: destinatario || 'personal',
         zona,
+        fechaRecordatorio: fechaRecordatorio ? new Date(fechaRecordatorio) : null,
         estado: 'pendiente'
       },
       include: {
