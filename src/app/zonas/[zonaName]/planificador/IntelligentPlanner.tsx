@@ -576,7 +576,7 @@ export default function IntelligentPlanner({
               </div>
             )}
 
-            <div className={`grid grid-cols-1 ${accionesAgrupadas.visitas.length > 0 && accionesAgrupadas.otras.length > 0 ? 'xl:grid-cols-2 gap-6' : ''}`}>
+            <div className={`grid grid-cols-1 gap-6`}>
               {/* GRUPO 1: Visitas */}
               {accionesAgrupadas.visitas.length > 0 && (
                 <div>
