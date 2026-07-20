@@ -101,6 +101,21 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
     }
   }
 
+  const getEmojiDataURL = (emoji: string): string => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.clearRect(0, 0, 64, 64)
+      ctx.font = '50px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(emoji, 32, 36)
+    }
+    return canvas.toDataURL('image/png')
+  }
+
   const handleExportPDF = () => {
     const doc = new jsPDF()
     
@@ -139,10 +154,6 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
     sortedRubros.forEach(rubro => {
       const legend = RUBRO_LEGENDS[rubro]
       let titleText = `Rubro: ${rubro}`
-      if (legend) {
-        const catNum = rubro.replace(/[^\d]/g, '')
-        titleText = `${catNum}. ${legend.title}`
-      }
 
       // Verificamos si hay espacio en la página
       if (currentY > 270) {
@@ -150,12 +161,31 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
         currentY = 20
       }
 
-      // Título centrado
       doc.setFontSize(10)
       doc.setTextColor(0, 0, 0)
       doc.setFont('helvetica', 'bold')
+
+      if (legend) {
+        const catNum = rubro.replace(/[^\d]/g, '')
+        titleText = `${catNum}. ${legend.title}`
+        
+        try {
+          const emojiBase64 = getEmojiDataURL(legend.icon)
+          const textWidth = doc.getStringUnitWidth(titleText) * doc.getFontSize() / doc.internal.scaleFactor
+          const iconSize = 4.5
+          const spacing = 2
+          const totalWidth = iconSize + spacing + textWidth
+          const startX = (doc.internal.pageSize.getWidth() - totalWidth) / 2
+          
+          doc.addImage(emojiBase64, 'PNG', startX, currentY - 3.5, iconSize, iconSize)
+          doc.text(titleText, startX + iconSize + spacing, currentY)
+        } catch (e) {
+          doc.text(titleText, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' })
+        }
+      } else {
+        doc.text(titleText, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' })
+      }
       
-      doc.text(titleText, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' })
       currentY += 4
 
       // Generar tabla

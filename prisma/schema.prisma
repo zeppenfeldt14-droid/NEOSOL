@@ -55,6 +55,7 @@ model Empresa {
   alertas         Alerta[]
   pedidos         Pedido[]
   ticketsSoporte  TicketSoporte[]
+  notasPlanificador NotaPlanificador[]
 }
 
 model SubZona {
@@ -431,4 +432,15 @@ model TicketSoporte {
   creadoEn    DateTime  @default(now())
   cerradoEn   DateTime?
   actualizadoEn DateTime @updatedAt
+}
+model NotaPlanificador {
+  id               Int       @id @default(autoincrement())
+  texto            String
+  empresaId        Int?
+  empresa          Empresa?  @relation(fields: [empresaId], references: [id], onDelete: SetNull)
+  destinatario     String    @default("personal") // 'personal' | 'gerencia' | 'asistente'
+  estado           String    @default("pendiente") // 'pendiente' | 'completada'
+  zona             String
+  creadoPor        String?
+  creadoEn         DateTime  @default(now())
 }
