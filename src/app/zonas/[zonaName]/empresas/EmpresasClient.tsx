@@ -119,10 +119,11 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
     doc.text(filters.length > 0 ? `Filtros: ${filters.join(' | ')}` : 'Todos los registros', 14, 22)
     
     // Define Headers and Data
-    const headers = [['Código', 'Empresa', 'Ubicación', 'Contacto', 'Estado']]
+    const headers = [['Categoría / Rubro', 'Empresa', 'Mini-zona', 'Ubicación', 'Contacto', 'Estado']]
     const rows = filteredEmpresas.map(emp => [
-      emp.id.toString().padStart(6, '0'),
+      emp.rubro ? getRubroDisplayName(emp.rubro) : '---',
       emp.nombre,
+      emp.subZona || '---',
       `${emp.direccion || ''} ${emp.barrio ? `(${emp.barrio})` : ''}`.trim() || '---',
       emp.telefono || '---',
       emp.estado.toUpperCase()
