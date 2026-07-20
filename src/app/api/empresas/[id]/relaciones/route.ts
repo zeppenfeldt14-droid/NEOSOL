@@ -3,10 +3,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const empresaId = parseInt(params.id)
+    const { id } = await params
+    const empresaId = parseInt(id)
     if (isNaN(empresaId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const pedidos = await prisma.pedido.findMany({

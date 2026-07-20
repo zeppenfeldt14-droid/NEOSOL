@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { FileText, X, Check, Trash2, Plus, Building2, Bell, Clock, Search, ChevronDown } from 'lucide-react'
 
 type Nota = {
@@ -324,7 +324,7 @@ export default function PlannerNotes({
   const filteredEmpresas = empresasList.filter(emp => emp.nombre.toLowerCase().includes(empresaSearchTerm.toLowerCase()))
   const selectedEmpresaName = empresasList.find(e => e.id.toString() === empresaId)?.nombre || '-- General (Sin empresa) --'
 
-  const destinatarioOptions = React.useMemo(() => {
+  const destinatarioOptions = useMemo(() => {
     let base = [{ value: 'personal', label: 'Para Mí (Personal)' }]
     if (userNivel === 3) {
       const allowed = contactos.filter(c => c.nivel === 1 || c.nivel === 2).map(c => ({ value: c.alias, label: `${c.alias} (${c.rol})` }))
