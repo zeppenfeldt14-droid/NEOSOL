@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf'
 import { CompleteActionButton } from '../empresas/[id]/ActionButtons'
 import { formatDate } from '@/lib/date'
 import { solicitarEliminacion, getSolicitudesPendientes, resolverSolicitudEliminacion } from '../empresas/[id]/quick-actions'
+import PlannerNotes from './PlannerNotes'
 
 type EmpresaSugerida = {
   id: number
@@ -67,6 +68,8 @@ export default function IntelligentPlanner({
   gestionarAccionNoVisitaAction?: (payload: { accionId: number; empresaId: number; tipo: string; notas?: string }) => Promise<void>
   cambiarTipoAccionAction?: (accionId: number, nuevoTipo: string) => Promise<void>
   vista?: string
+  empresasList?: { id: number, nombre: string }[]
+  zonaNameStr?: string
 }) {
   const params = useParams()
   const zonaName = params.zonaName as string
@@ -558,6 +561,12 @@ export default function IntelligentPlanner({
               <p className="card-subtitle">Tu recorrido actual. Puedes gestionar o eliminar acciones.</p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {empresasList && zonaNameStr && (
+                <PlannerNotes 
+                  zona={zonaNameStr} 
+                  empresasList={empresasList} 
+                />
+              )}
               {/* Botón link de ruta del día */}
               <button onClick={handleCopyLink}
                 className={`btn ${copied ? 'btn-success' : 'btn-secondary'}`}

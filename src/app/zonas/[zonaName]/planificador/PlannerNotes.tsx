@@ -264,32 +264,37 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
     <>
       <button
         onClick={() => { setShowModal(true); fetchNotas(); }}
-        className="btn flex items-center justify-center transition-all duration-300"
+        className="btn flex items-center justify-center transition-all duration-300 relative"
+        title="Notas y Tareas Pendientes"
         style={{
-          padding: '0.5rem 1rem',
-          borderRadius: '8px',
+          padding: '0.5rem',
+          borderRadius: '10px',
           display: 'flex',
-          gap: '0.5rem',
+          gap: '0',
           fontWeight: 600,
           backgroundColor: uncompleted.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(192,132,252,0.15)',
           color: uncompleted.length > 0 ? '#ef4444' : '#c084fc',
           border: `1px solid ${uncompleted.length > 0 ? 'rgba(239,68,68,0.4)' : 'rgba(192,132,252,0.3)'}`,
-          animation: uncompleted.length > 0 ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+          animation: uncompleted.length > 0 ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+          minWidth: '38px',
+          minHeight: '38px'
         }}
       >
         <FileText size={18} />
-        <span>NOTAS</span>
         {uncompleted.length > 0 && (
           <span style={{
             backgroundColor: '#ef4444',
             color: 'white',
             borderRadius: '50%',
-            width: '20px',
-            height: '20px',
+            width: '18px',
+            height: '18px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '0.7rem'
+            fontSize: '0.65rem',
+            position: 'absolute',
+            top: '-6px',
+            right: '-6px'
           }}>{uncompleted.length}</span>
         )}
       </button>

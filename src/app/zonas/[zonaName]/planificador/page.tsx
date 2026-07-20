@@ -414,10 +414,6 @@ export default async function PlanificadorPage(props: {
         <Link href={`?vista=mes&period=${period}`} className={`btn ${vista === 'mes' ? 'btn-primary' : 'btn-secondary'}`}>
           Resumen del Mes
         </Link>
-        <PlannerNotes 
-          zona={decodedZona} 
-          empresasList={empresasAll.map(emp => ({ id: emp.id, nombre: emp.nombre }))} 
-        />
       </div>
 
       {vista !== 'mes' && (
@@ -438,6 +434,8 @@ export default async function PlanificadorPage(props: {
           gestionarAccionNoVisitaAction={gestionarAccionNoVisitaAction}
           cambiarTipoAccionAction={cambiarTipoAccionAction}
           vista={vista}
+          empresasList={empresasAll.map(emp => ({ id: emp.id, nombre: emp.nombre }))}
+          zonaNameStr={decodedZona}
         />
       )}
 
