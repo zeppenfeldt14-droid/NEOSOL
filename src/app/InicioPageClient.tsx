@@ -212,7 +212,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           <SharedPeriodFilter 
             currentPeriod={currentPeriodParam} 
             onPeriodChange={handlePeriodChange} 
-            align="left"
+            align="right"
           />
         </div>
       </div>

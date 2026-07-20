@@ -25,6 +25,7 @@ type EmpresaSugerida = {
 
 // Configuración visual por tipo de acción
 const TIPO_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
+  visita:           { label: 'Visita',    color: '#10b981', bgColor: 'rgba(16,185,129,0.15)' },
   visita_programada: { label: 'Visita',    color: '#10b981', bgColor: 'rgba(16,185,129,0.15)' },
   whatsapp:         { label: 'WhatsApp',   color: '#25d366', bgColor: 'rgba(37,211,102,0.15)' },
   correo:           { label: 'Correo',     color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)'  },
@@ -214,8 +215,8 @@ export default function IntelligentPlanner({
 
   // Agrupar: visitas primero, luego whatsapp/correo/llamada
   const accionesAgrupadas = useMemo(() => {
-    const visitas = localAccionesHoy.filter(a => a.tipo === 'visita_programada')
-    const otras = localAccionesHoy.filter(a => a.tipo !== 'visita_programada')
+    const visitas = localAccionesHoy.filter(a => a.tipo === 'visita_programada' || a.tipo === 'visita')
+    const otras = localAccionesHoy.filter(a => a.tipo !== 'visita_programada' && a.tipo !== 'visita')
     const ordenTipo: Record<string, number> = { whatsapp: 0, correo: 1, llamada: 2 }
     otras.sort((a, b) => (ordenTipo[a.tipo] ?? 9) - (ordenTipo[b.tipo] ?? 9))
     return { visitas, otras }
