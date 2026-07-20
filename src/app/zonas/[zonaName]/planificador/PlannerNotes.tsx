@@ -8,11 +8,29 @@ type Nota = {
   texto: string
   empresaId: number | null
   empresa?: { id: number, nombre: string }
+  pedido?: { id: number, numeroPedido: string }
+  factura?: { id: number, numeroFactura: string }
+  cobranza?: { id: number, montoOriginal: number, cuota: number, totalCuotas: number }
   destinatario: string
   estado: string
   creadoEn: string
   fechaRecordatorio: string | null
   recordatorioVisto: boolean
+}
+
+type UsuarioContacto = {
+  id: number
+  alias: string
+  nombre: string
+  nivel: number
+  zona: string
+  rol: string
+}
+
+type Relaciones = {
+  pedidos: any[]
+  facturas: any[]
+  cobranzas: any[]
 }
 
 function ComboBox({ 
@@ -100,13 +118,26 @@ function ComboBox({
   )
 }
 
-export default function PlannerNotes({ zona, empresasList }: { zona: string, empresasList: { id: number, nombre: string }[] }) {
+export default function PlannerNotes({ 
+  zona, 
+  empresasList,
+  userNivel = 3,
+  userAlias = ''
+}: { 
+  zona: string, 
+  empresasList: { id: number, nombre: string }[],
+  userNivel?: number,
+  userAlias?: string
+}) {
   const [showModal, setShowModal] = useState(false)
   const [notas, setNotas] = useState<Nota[]>([])
   const [loading, setLoading] = useState(false)
 
   const [texto, setTexto] = useState('')
   const [empresaId, setEmpresaId] = useState('')
+  const [pedidoId, setPedidoId] = useState('')
+  const [facturaId, setFacturaId] = useState('')
+  const [cobranzaId, setCobranzaId] = useState('')
   const [destinatario, setDestinatario] = useState('personal')
   const [recordatorio, setRecordatorio] = useState('ninguno')
   const [customDate, setCustomDate] = useState('')
@@ -115,6 +146,18 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
   const [empresaSearchTerm, setEmpresaSearchTerm] = useState('')
 
   const [activeAlarms, setActiveAlarms] = useState<Nota[]>([])
+  const [contactos, setContactos] = useState<UsuarioContacto[]>([])
+  const [relaciones, setRelaciones] = useState<Relaciones>({ pedidos: [], facturas: [], cobranzas: [] })
+
+  const fetchContactos = async () => {
+    try {
+      const res = await fetch('/api/usuarios/contactos')
+      if (res.ok) {
+        const data = await res.json()
+        setContactos(data)
+      }
+    } catch (e) { console.error(e) }
+  }
 
   const fetchNotas = async () => {
     try {
@@ -140,11 +183,26 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
 
   useEffect(() => {
     fetchNotas()
+    fetchContactos()
     const interval = setInterval(() => {
       fetchNotas()
     }, 60000)
     return () => clearInterval(interval)
   }, [zona])
+
+  useEffect(() => {
+    if (empresaId) {
+      fetch(`/api/empresas/${empresaId}/relaciones`)
+        .then(res => res.json())
+        .then(data => setRelaciones(data))
+        .catch(console.error)
+    } else {
+      setRelaciones({ pedidos: [], facturas: [], cobranzas: [] })
+    }
+    setPedidoId('')
+    setFacturaId('')
+    setCobranzaId('')
+  }, [empresaId])
 
   const uncompleted = notas.filter(n => n.estado === 'pendiente')
 
@@ -183,6 +241,9 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
         body: JSON.stringify({
           texto,
           empresaId: empresaId || null,
+          pedidoId: pedidoId || null,
+          facturaId: facturaId || null,
+          cobranzaId: cobranzaId || null,
           destinatario,
           zona,
           fechaRecordatorio: finalFechaRecordatorio
@@ -191,6 +252,9 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
       if (res.ok) {
         setTexto('')
         setEmpresaId('')
+        setPedidoId('')
+        setFacturaId('')
+        setCobranzaId('')
         setDestinatario('personal')
         setRecordatorio('ninguno')
         setCustomDate('')
@@ -259,6 +323,17 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
 
   const filteredEmpresas = empresasList.filter(emp => emp.nombre.toLowerCase().includes(empresaSearchTerm.toLowerCase()))
   const selectedEmpresaName = empresasList.find(e => e.id.toString() === empresaId)?.nombre || '-- General (Sin empresa) --'
+
+  const destinatarioOptions = React.useMemo(() => {
+    let base = [{ value: 'personal', label: 'Para Mí (Personal)' }]
+    if (userNivel === 3) {
+      const allowed = contactos.filter(c => c.nivel === 1 || c.nivel === 2).map(c => ({ value: c.alias, label: `${c.alias} (${c.rol})` }))
+      return [...base, ...allowed]
+    } else {
+      const allowed = contactos.filter(c => c.alias !== userAlias).map(c => ({ value: c.alias, label: `${c.alias} (${c.rol})` }))
+      return [...base, ...allowed]
+    }
+  }, [contactos, userNivel, userAlias])
 
   return (
     <>
@@ -349,16 +424,44 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                     <ComboBox 
                       value={destinatario} 
                       onChange={setDestinatario} 
-                      options={[
-                        { value: 'personal', label: 'Para Mí (Personal)' },
-                        { value: 'gerencia', label: 'Para Gerencia' },
-                        { value: 'asistente', label: 'Para Asistente / Soporte' }
-                      ]}
+                      options={destinatarioOptions}
                       placeholder="Seleccionar o crear..."
                       allowCustom={true}
                     />
                   </div>
                 </div>
+
+                {empresaId && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Vincular a Pedido</label>
+                      <ComboBox 
+                        value={pedidoId} 
+                        onChange={setPedidoId} 
+                        options={[{ value: '', label: '-- Ninguno --' }, ...relaciones.pedidos.map(p => ({ value: p.id.toString(), label: p.numeroPedido }))]}
+                        placeholder="-- Ninguno --"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Vincular a Factura</label>
+                      <ComboBox 
+                        value={facturaId} 
+                        onChange={setFacturaId} 
+                        options={[{ value: '', label: '-- Ninguno --' }, ...relaciones.facturas.map(f => ({ value: f.id.toString(), label: f.numeroFactura }))]}
+                        placeholder="-- Ninguno --"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Vincular a Cobranza</label>
+                      <ComboBox 
+                        value={cobranzaId} 
+                        onChange={setCobranzaId} 
+                        options={[{ value: '', label: '-- Ninguno --' }, ...relaciones.cobranzas.map(c => ({ value: c.id.toString(), label: `Cuota ${c.cuota}/${c.totalCuotas} - $${c.montoOriginal}` }))]}
+                        placeholder="-- Ninguno --"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -422,7 +525,22 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                               <Building2 size={12} /> {nota.empresa.nombre}
                             </span>
                           )}
-                          <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {nota.pedido && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                              Pedido: {nota.pedido.numeroPedido}
+                            </span>
+                          )}
+                          {nota.factura && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                              Factura: {nota.factura.numeroFactura}
+                            </span>
+                          )}
+                          {nota.cobranza && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                              Cobranza: Cta {nota.cobranza.cuota}/{nota.cobranza.totalCuotas}
+                            </span>
+                          )}
+                          <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
                             Para: {nota.destinatario}
                           </span>
                           {nota.fechaRecordatorio && (

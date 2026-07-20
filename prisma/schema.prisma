@@ -273,6 +273,7 @@ model Pedido {
   detalles    DetallePedido[]
   facturas    Factura[]
   cobranzas   Cobranza[]
+  notasPlanificador NotaPlanificador[]
 }
 
 model DetallePedido {
@@ -320,6 +321,7 @@ model Factura {
   actualizadoEn DateTime @updatedAt
   
   pagos         Pago[]
+  notasPlanificador NotaPlanificador[]
 }
 
 model Cobranza {
@@ -347,6 +349,7 @@ model Cobranza {
   actualizadoEn   DateTime @updatedAt
   
   pagos           Pago[]
+  notasPlanificador NotaPlanificador[]
 }
 
 model Pago {
@@ -438,7 +441,15 @@ model NotaPlanificador {
   texto            String
   empresaId        Int?
   empresa          Empresa?  @relation(fields: [empresaId], references: [id], onDelete: SetNull)
-  destinatario     String    @default("personal") // 'personal' | 'gerencia' | 'asistente'
+  
+  pedidoId         Int?
+  pedido           Pedido?   @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
+  facturaId        Int?
+  factura          Factura?  @relation(fields: [facturaId], references: [id], onDelete: SetNull)
+  cobranzaId       Int?
+  cobranza         Cobranza? @relation(fields: [cobranzaId], references: [id], onDelete: SetNull)
+
+  destinatario     String    @default("personal") // 'personal' | 'gerencia' | 'asistente' o alias
   estado           String    @default("pendiente") // 'pendiente' | 'completada'
   zona             String
   creadoPor        String?

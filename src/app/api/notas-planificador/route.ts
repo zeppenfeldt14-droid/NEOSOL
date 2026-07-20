@@ -15,6 +15,15 @@ export async function GET(request: Request) {
       include: {
         empresa: {
           select: { nombre: true, id: true }
+        },
+        pedido: {
+          select: { numeroPedido: true, id: true }
+        },
+        factura: {
+          select: { numeroFactura: true, id: true }
+        },
+        cobranza: {
+          select: { id: true, montoOriginal: true, cuota: true, totalCuotas: true }
         }
       },
       orderBy: { creadoEn: 'desc' }
@@ -30,7 +39,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { texto, empresaId, destinatario, zona, fechaRecordatorio } = body
+    const { texto, empresaId, destinatario, zona, fechaRecordatorio, pedidoId, facturaId, cobranzaId } = body
 
     if (!texto || !zona) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
@@ -40,6 +49,9 @@ export async function POST(request: Request) {
       data: {
         texto,
         empresaId: empresaId ? parseInt(empresaId) : null,
+        pedidoId: pedidoId ? parseInt(pedidoId) : null,
+        facturaId: facturaId ? parseInt(facturaId) : null,
+        cobranzaId: cobranzaId ? parseInt(cobranzaId) : null,
         destinatario: destinatario || 'personal',
         zona,
         fechaRecordatorio: fechaRecordatorio ? new Date(fechaRecordatorio) : null,
@@ -48,6 +60,15 @@ export async function POST(request: Request) {
       include: {
         empresa: {
           select: { nombre: true, id: true }
+        },
+        pedido: {
+          select: { numeroPedido: true, id: true }
+        },
+        factura: {
+          select: { numeroFactura: true, id: true }
+        },
+        cobranza: {
+          select: { id: true, montoOriginal: true, cuota: true, totalCuotas: true }
         }
       }
     })

@@ -566,7 +566,9 @@ export default function IntelligentPlanner({
               {empresasList && zonaNameStr && (
                 <PlannerNotes 
                   zona={zonaNameStr} 
-                  empresasList={empresasList} 
+                  empresasList={empresasList}
+                  userNivel={userNivel}
+                  userAlias={userAlias}
                 />
               )}
               {/* Botón link de ruta del día */}
