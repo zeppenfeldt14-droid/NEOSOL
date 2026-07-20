@@ -84,9 +84,9 @@ function ComboBox({
                   Sin resultados.
                 </div>
               )}
-              {filtered.length === 0 && allowCustom && search && (
+              {allowCustom && search && (
                 <div 
-                  className="px-3 py-2 text-sm rounded-sm cursor-pointer text-blue-400 hover:bg-slate-700"
+                  className="px-3 py-2 text-sm rounded-sm cursor-pointer text-blue-400 hover:bg-slate-700 mt-1 border-t border-slate-700/50 pt-2"
                   onClick={() => { onChange(search); setIsOpen(false); setSearch(''); }}
                 >
                   + Crear "{search}"
