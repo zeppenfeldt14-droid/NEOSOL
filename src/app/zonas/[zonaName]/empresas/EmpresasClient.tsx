@@ -118,24 +118,68 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
     if (rubroFilter !== 'todos') filters.push(`Rubro: ${rubroFilter}`)
     doc.text(filters.length > 0 ? `Filtros: ${filters.join(' | ')}` : 'Todos los registros', 14, 22)
     
-    // Define Headers and Data
-    const headers = [['Categoría / Rubro', 'Empresa', 'Mini-zona', 'Ubicación', 'Contacto', 'Estado']]
-    const rows = filteredEmpresas.map(emp => [
-      emp.rubro ? getRubroDisplayName(emp.rubro) : '---',
-      emp.nombre,
-      emp.subZona || '---',
-      `${emp.direccion || ''} ${emp.barrio ? `(${emp.barrio})` : ''}`.trim() || '---',
-      emp.telefono || '---',
-      emp.estado.toUpperCase()
-    ])
+    // Agrupar empresas por rubro
+    const empresasPorRubro: Record<string, Empresa[]> = {}
+    filteredEmpresas.forEach(emp => {
+      const r = emp.rubro || 'Sin Categoría'
+      if (!empresasPorRubro[r]) empresasPorRubro[r] = []
+      empresasPorRubro[r].push(emp)
+    })
     
-    autoTable(doc, {
-      head: headers,
-      body: rows,
-      startY: 26,
-      theme: 'striped',
-      headStyles: { fillColor: [59, 89, 152] }, // Neosol Blue (#3b5998)
-      styles: { fontSize: 8 }
+    // Ordenar rubros por número (CATEGORIA 1, CATEGORIA 2...)
+    const sortedRubros = Object.keys(empresasPorRubro).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, '')) || 999
+      const numB = parseInt(b.replace(/\D/g, '')) || 999
+      return numA - numB
+    })
+
+    let currentY = 30;
+    const headers = [['Empresa', 'Mini-zona', 'Ubicación', 'Contacto', 'Estado']]
+
+    sortedRubros.forEach(rubro => {
+      const legend = RUBRO_LEGENDS[rubro]
+      let titleText = `📌 ${rubro}`
+      if (legend) {
+        const catNum = rubro.replace(/[^\d]/g, '')
+        titleText = `${legend.icon} ${catNum}. ${legend.title}`
+      }
+
+      // Verificamos si hay espacio en la página
+      if (currentY > 270) {
+        doc.addPage()
+        currentY = 20
+      }
+
+      // Título centrado
+      doc.setFontSize(10)
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'bold')
+      
+      // Eliminar posibles emojis no soportados o dejar jsPDF hacer fallback (suele ignorar emojis si la fuente no los soporta, pero lo intentamos)
+      const textWidth = doc.getStringUnitWidth(titleText) * doc.getFontSize() / doc.internal.scaleFactor
+      const textOffset = (doc.internal.pageSize.getWidth() - textWidth) / 2
+      doc.text(titleText, textOffset, currentY)
+      currentY += 4
+
+      // Generar tabla
+      const rows = empresasPorRubro[rubro].map(emp => [
+        emp.nombre,
+        emp.subZona || '---',
+        `${emp.direccion || ''} ${emp.barrio ? `(${emp.barrio})` : ''}`.trim() || '---',
+        emp.telefono || '---',
+        emp.estado.toUpperCase()
+      ])
+
+      autoTable(doc, {
+        head: headers,
+        body: rows,
+        startY: currentY,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 89, 152] }, // Neosol Blue (#3b5998)
+        styles: { fontSize: 8 }
+      })
+
+      currentY = (doc as any).lastAutoTable.finalY + 12
     })
     
     doc.save(`Empresas_${decodedZona.replace(/\s+/g, '_')}.pdf`)

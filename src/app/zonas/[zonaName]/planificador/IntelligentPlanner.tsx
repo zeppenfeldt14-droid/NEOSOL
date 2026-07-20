@@ -340,7 +340,8 @@ export default function IntelligentPlanner({
       )
     }
     if (accion.tipo === 'whatsapp') {
-      const phone = emp.telefono?.replace(/\D/g, '') || ''
+      const rawPhone = emp.telefono?.split(/[\/,;]|\s+y\s+|\s+o\s+/i)[0] || ''
+      const phone = rawPhone.replace(/\D/g, '')
       return phone ? (
         <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
           style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', backgroundColor: 'rgba(37,211,102,0.2)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
