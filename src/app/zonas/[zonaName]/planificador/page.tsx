@@ -9,6 +9,7 @@ import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/date'
 import { marcarVisitadaAction, gestionarAccionNoVisitaAction, cambiarTipoAccionAction } from './actions'
+import PlannerNotes from './PlannerNotes'
 
 export const dynamic = 'force-dynamic'
 
@@ -413,6 +414,10 @@ export default async function PlanificadorPage(props: {
         <Link href={`?vista=mes&period=${period}`} className={`btn ${vista === 'mes' ? 'btn-primary' : 'btn-secondary'}`}>
           Resumen del Mes
         </Link>
+        <PlannerNotes 
+          zona={decodedZona} 
+          empresasList={empresasAll.map(emp => ({ id: emp.id, nombre: emp.nombre }))} 
+        />
       </div>
 
       {vista !== 'mes' && (
