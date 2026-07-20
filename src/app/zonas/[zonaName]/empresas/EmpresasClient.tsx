@@ -134,14 +134,14 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
     })
 
     let currentY = 30;
-    const headers = [['Empresa', 'Mini-zona', 'Ubicación', 'Contacto', 'Estado']]
+    const headers = [['Mini-zona', 'Empresa', 'Ubicación', 'Contacto', 'Estado']]
 
     sortedRubros.forEach(rubro => {
       const legend = RUBRO_LEGENDS[rubro]
-      let titleText = `📌 ${rubro}`
+      let titleText = `Rubro: ${rubro}`
       if (legend) {
         const catNum = rubro.replace(/[^\d]/g, '')
-        titleText = `${legend.icon} ${catNum}. ${legend.title}`
+        titleText = `${catNum}. ${legend.title}`
       }
 
       // Verificamos si hay espacio en la página
@@ -155,16 +155,13 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
       doc.setTextColor(0, 0, 0)
       doc.setFont('helvetica', 'bold')
       
-      // Eliminar posibles emojis no soportados o dejar jsPDF hacer fallback (suele ignorar emojis si la fuente no los soporta, pero lo intentamos)
-      const textWidth = doc.getStringUnitWidth(titleText) * doc.getFontSize() / doc.internal.scaleFactor
-      const textOffset = (doc.internal.pageSize.getWidth() - textWidth) / 2
-      doc.text(titleText, textOffset, currentY)
+      doc.text(titleText, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' })
       currentY += 4
 
       // Generar tabla
       const rows = empresasPorRubro[rubro].map(emp => [
-        emp.nombre,
         emp.subZona || '---',
+        emp.nombre,
         `${emp.direccion || ''} ${emp.barrio ? `(${emp.barrio})` : ''}`.trim() || '---',
         emp.telefono || '---',
         emp.estado.toUpperCase()
