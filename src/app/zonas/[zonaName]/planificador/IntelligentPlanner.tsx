@@ -328,13 +328,14 @@ export default function IntelligentPlanner({
   // Render botón contextual según tipo
   const renderContextualBtn = (accion: any) => {
     const emp = accion.empresa
-    if (accion.tipo === 'visita_programada') {
+    if (accion.tipo === 'visita_programada' || accion.tipo === 'visita') {
       return (
         <button
           onClick={e => { e.stopPropagation(); const q = encodeURIComponent(`${emp.direccion||''}, ${emp.barrio||''}, CABA`); window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank') }}
-          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer', backgroundColor: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
+          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: 'pointer', backgroundColor: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          title="Navegar"
         >
-          <Navigation size={13} /> Navegar
+          <Navigation size={16} />
         </button>
       )
     }
@@ -342,24 +343,27 @@ export default function IntelligentPlanner({
       const phone = emp.telefono?.replace(/\D/g, '') || ''
       return phone ? (
         <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', backgroundColor: 'rgba(37,211,102,0.2)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', textDecoration: 'none' }}>
-          <MessageCircle size={13} /> WhatsApp
+          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', backgroundColor: 'rgba(37,211,102,0.2)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+          title="Enviar WhatsApp">
+          <MessageCircle size={16} />
         </a>
       ) : <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sin tel.</span>
     }
     if (accion.tipo === 'correo') {
       return emp.email ? (
         <a href={`mailto:${emp.email}`} onClick={e => e.stopPropagation()}
-          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', textDecoration: 'none' }}>
-          <Mail size={13} /> Correo
+          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', backgroundColor: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+          title="Enviar Correo">
+          <Mail size={16} />
         </a>
       ) : <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sin email</span>
     }
     if (accion.tipo === 'llamada') {
       return emp.telefono ? (
         <a href={`tel:${emp.telefono}`} onClick={e => e.stopPropagation()}
-          style={{ padding: '0.25rem 0.75rem', borderRadius: '4px', backgroundColor: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', textDecoration: 'none' }}>
-          <Phone size={13} /> {emp.telefono}
+          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', backgroundColor: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+          title="Llamar">
+          <Phone size={16} />
         </a>
       ) : <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sin tel.</span>
     }
