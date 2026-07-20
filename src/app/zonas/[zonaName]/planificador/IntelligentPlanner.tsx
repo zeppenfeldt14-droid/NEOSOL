@@ -50,7 +50,9 @@ export default function IntelligentPlanner({
   marcarVisitadaAction,
   gestionarAccionNoVisitaAction,
   cambiarTipoAccionAction,
-  vista = 'hoy'
+  vista = 'hoy',
+  empresasList,
+  zonaNameStr
 }: {
   sugerencias: EmpresaSugerida[]
   zonas: string[]

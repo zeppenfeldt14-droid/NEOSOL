@@ -9,7 +9,6 @@ import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatDate } from '@/lib/date'
 import { marcarVisitadaAction, gestionarAccionNoVisitaAction, cambiarTipoAccionAction } from './actions'
-import PlannerNotes from './PlannerNotes'
 
 export const dynamic = 'force-dynamic'
 
