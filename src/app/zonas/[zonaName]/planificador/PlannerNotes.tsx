@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileText, X, Check, Trash2, Plus, Building2, Bell, Clock } from 'lucide-react'
+import { FileText, X, Check, Trash2, Plus, Building2, Bell, Clock, Search, ChevronDown } from 'lucide-react'
 
 type Nota = {
   id: number
@@ -15,6 +15,91 @@ type Nota = {
   recordatorioVisto: boolean
 }
 
+function ComboBox({ 
+  value, 
+  onChange, 
+  options, 
+  placeholder, 
+  allowCustom = false,
+  customText = "Buscar o crear..."
+}: { 
+  value: string, 
+  onChange: (val: string) => void, 
+  options: {value: string, label: string}[], 
+  placeholder: string,
+  allowCustom?: boolean,
+  customText?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  
+  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+  const selectedLabel = options.find(o => o.value === value)?.label || value || placeholder
+
+  return (
+    <div className="relative">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="form-input w-full cursor-pointer flex justify-between items-center bg-slate-800/60"
+      >
+        <span className="truncate whitespace-nowrap overflow-hidden text-ellipsis">{selectedLabel}</span>
+        <ChevronDown size={16} className="text-slate-400 flex-shrink-0 ml-2" />
+      </div>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
+          <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-xl flex flex-col" style={{ maxHeight: '250px' }}>
+            <div className="p-2 border-b border-slate-700 flex items-center gap-2">
+              <Search size={14} className="text-slate-400" />
+              <input 
+                type="text"
+                autoFocus
+                placeholder={customText}
+                className="bg-transparent text-sm text-white w-full outline-none"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && allowCustom && search) {
+                    onChange(search);
+                    setIsOpen(false);
+                    setSearch('');
+                    e.preventDefault();
+                  }
+                }}
+              />
+            </div>
+            <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+              {filtered.map(opt => (
+                <div 
+                  key={opt.value}
+                  className={`px-3 py-2 text-sm rounded-sm cursor-pointer ${value === opt.value ? 'bg-blue-600/30 text-blue-400' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+                  onClick={() => { onChange(opt.value); setIsOpen(false); setSearch(''); }}
+                >
+                  {opt.label}
+                </div>
+              ))}
+              {filtered.length === 0 && !allowCustom && (
+                <div className="px-3 py-4 text-sm text-center text-slate-500">
+                  Sin resultados.
+                </div>
+              )}
+              {filtered.length === 0 && allowCustom && search && (
+                <div 
+                  className="px-3 py-2 text-sm rounded-sm cursor-pointer text-blue-400 hover:bg-slate-700"
+                  onClick={() => { onChange(search); setIsOpen(false); setSearch(''); }}
+                >
+                  + Crear "{search}"
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function PlannerNotes({ zona, empresasList }: { zona: string, empresasList: { id: number, nombre: string }[] }) {
   const [showModal, setShowModal] = useState(false)
   const [notas, setNotas] = useState<Nota[]>([])
@@ -25,6 +110,9 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
   const [destinatario, setDestinatario] = useState('personal')
   const [recordatorio, setRecordatorio] = useState('ninguno')
   const [customDate, setCustomDate] = useState('')
+
+  const [isEmpresaDropdownOpen, setIsEmpresaDropdownOpen] = useState(false)
+  const [empresaSearchTerm, setEmpresaSearchTerm] = useState('')
 
   const [activeAlarms, setActiveAlarms] = useState<Nota[]>([])
 
@@ -76,6 +164,16 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
       finalFechaRecordatorio = now.toISOString()
     } else if (recordatorio === 'custom' && customDate) {
       finalFechaRecordatorio = new Date(customDate).toISOString()
+    } else if (recordatorio !== 'ninguno') {
+      const match = recordatorio.match(/^(\d+)\s*([hHmMdD])/);
+      if (match) {
+        const val = parseInt(match[1]);
+        const unit = match[2].toLowerCase();
+        if (unit === 'h') now.setHours(now.getHours() + val);
+        else if (unit === 'm') now.setMinutes(now.getMinutes() + val);
+        else if (unit === 'd') now.setDate(now.getDate() + val);
+        finalFechaRecordatorio = now.toISOString();
+      }
     }
 
     try {
@@ -159,6 +257,9 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
     }
   }
 
+  const filteredEmpresas = empresasList.filter(emp => emp.nombre.toLowerCase().includes(empresaSearchTerm.toLowerCase()))
+  const selectedEmpresaName = empresasList.find(e => e.id.toString() === empresaId)?.nombre || '-- General (Sin empresa) --'
+
   return (
     <>
       <button
@@ -219,40 +320,57 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                     onChange={e => setTexto(e.target.value)}
                     required
                     placeholder="Ej. Pedir muestras para Salvia de golosinería..."
-                    className="input w-full"
+                    className="form-input w-full"
                     style={{ minHeight: '80px', resize: 'vertical' }}
                   />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="relative">
                     <label className="text-xs text-slate-400 mb-1 block">Empresa (Opcional)</label>
-                    <select value={empresaId} onChange={e => setEmpresaId(e.target.value)} className="input w-full">
-                      <option value="">-- General (Sin empresa) --</option>
-                      {empresasList.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.nombre}</option>
-                      ))}
-                    </select>
+                    <ComboBox 
+                      value={empresaId} 
+                      onChange={setEmpresaId} 
+                      options={[
+                        { value: '', label: '-- General (Sin empresa) --' },
+                        ...empresasList.map(e => ({ value: e.id.toString(), label: e.nombre }))
+                      ]}
+                      placeholder="-- General (Sin empresa) --"
+                      customText="Buscar empresa..."
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Destinatario / Etiqueta</label>
-                    <select value={destinatario} onChange={e => setDestinatario(e.target.value)} className="input w-full">
-                      <option value="personal">Para Mí (Personal)</option>
-                      <option value="gerencia">Para Gerencia</option>
-                      <option value="asistente">Para Asistente / Soporte</option>
-                    </select>
+                    <ComboBox 
+                      value={destinatario} 
+                      onChange={setDestinatario} 
+                      options={[
+                        { value: 'personal', label: 'Para Mí (Personal)' },
+                        { value: 'gerencia', label: 'Para Gerencia' },
+                        { value: 'asistente', label: 'Para Asistente / Soporte' }
+                      ]}
+                      placeholder="Seleccionar o crear..."
+                      allowCustom={true}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Recordatorio / Alarma</label>
-                    <select value={recordatorio} onChange={e => setRecordatorio(e.target.value)} className="input w-full">
-                      <option value="ninguno">Sin recordatorio</option>
-                      <option value="1h">En 1 Hora</option>
-                      <option value="manana">Mañana (09:00 AM)</option>
-                      <option value="custom">Agendar fecha y hora exacta</option>
-                    </select>
+                    <ComboBox 
+                      value={recordatorio} 
+                      onChange={setRecordatorio} 
+                      options={[
+                        { value: 'ninguno', label: 'Sin recordatorio' },
+                        { value: '1h', label: 'En 1 Hora' },
+                        { value: 'manana', label: 'Mañana (09:00 AM)' },
+                        { value: 'custom', label: 'Agendar fecha y hora exacta' }
+                      ]}
+                      placeholder="Seleccionar o crear (ej. 2h, 30m)..."
+                      allowCustom={true}
+                      customText="Buscar o escribir (ej. 2h, 30m)..."
+                    />
                   </div>
                   {recordatorio === 'custom' && (
                     <div>
@@ -261,7 +379,7 @@ export default function PlannerNotes({ zona, empresasList }: { zona: string, emp
                         type="datetime-local" 
                         value={customDate} 
                         onChange={e => setCustomDate(e.target.value)} 
-                        className="input w-full" 
+                        className="form-input w-full" 
                         required 
                       />
                     </div>
