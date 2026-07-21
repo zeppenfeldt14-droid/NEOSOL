@@ -86,7 +86,11 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
     params.set('zona', zonaName)
     const res = await fetch(`/api/facturas?${params.toString()}`)
     const data = await res.json()
-    const all: Factura[] = Array.isArray(data) ? data : []
+    const all: Factura[] = Array.isArray(data) ? data.map((f: any) => ({
+      ...f,
+      empresaNombre: f.pedido?.empresa?.nombre || '',
+      vendedorAlias: f.pedido?.vendedorAlias || ''
+    })) : []
 
     // Date filter
     const now = new Date()
