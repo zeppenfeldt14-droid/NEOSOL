@@ -14,6 +14,7 @@ type Nota = {
   destinatario: string
   estado: string
   creadoEn: string
+  creadoPor?: string
   fechaRecordatorio: string | null
   recordatorioVisto: boolean
 }
