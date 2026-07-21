@@ -247,7 +247,7 @@ export default function VisitasHoyClient({ initialAcciones, zonaName }: Props) {
                 <MessageSquare size={10} /> Notas
               </label>
               <textarea rows={3} placeholder="Observaciones..." value={notas} onChange={e => setNotas(e.target.value)}
-                className="form-input bg-[#12182c]/60 border border-white/10 rounded-xl text-xs p-3 focus:border-primary outline-none resize-none" spellCheck={true} lang="es" />
+                className="form-input bg-[#12182c]/60 border border-white/10 rounded-xl text-xs p-3 focus:border-primary outline-none resize-none" spellCheck="true" lang="es-AR" autoCorrect="on" />
             </div>
 
             {submitError && (

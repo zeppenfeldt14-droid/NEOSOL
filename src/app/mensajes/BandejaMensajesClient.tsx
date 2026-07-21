@@ -90,8 +90,17 @@ export default function BandejaMensajesClient({ userAlias, usuarios }: { userAli
     (m.destinatario && m.destinatario.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
+  const getUserColor = (alias: string) => {
+    const user = usuarios.find(c => c.alias === alias)
+    if (!user) return 'text-primary'
+    if (user.nivel === 1) return 'text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20 font-black'
+    if (user.nivel === 2) return 'text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 font-black'
+    if (user.nivel === 3) return 'text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 font-black'
+    return 'text-primary'
+  }
+
   return (
-    <div className="flex flex-col h-full bg-[#0b1021] border border-white/10 rounded-2xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#0a0f1d] border border-white/10 rounded-2xl overflow-hidden">
       
       {/* HEADER TABS */}
       <div className="flex border-b border-white/10 bg-[#12182c]">
@@ -158,7 +167,7 @@ export default function BandejaMensajesClient({ userAlias, usuarios }: { userAli
                 onChange={(e) => setNuevoTexto(e.target.value)}
                 className="form-input bg-black/50 min-h-[100px]"
                 placeholder="Escribe el mensaje aquí..."
-                spellCheck={true} lang="es"
+                spellCheck="true" lang="es-AR" autoCorrect="on"
               />
             </div>
             <div className="flex justify-end">
@@ -180,49 +189,59 @@ export default function BandejaMensajesClient({ userAlias, usuarios }: { userAli
             <p className="font-bold">No hay mensajes {activeTab === 'recibidos' ? 'recibidos' : 'enviados'}</p>
           </div>
         ) : (
-          displayedMensajes.map(m => (
-            <div key={m.id} className={`p-4 rounded-xl border flex flex-col gap-3 transition-all ${m.estado === 'completada' ? 'bg-[#12182c]/40 border-white/5 opacity-70' : 'bg-[#151c36] border-white/10 hover:border-primary/50'}`}>
-              
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex flex-col">
-                  <div className="text-xs text-secondary font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                    {activeTab === 'recibidos' ? (
-                      <>De: <span className="text-primary">{m.creadoPor || 'Sistema'}</span></>
-                    ) : (
-                      <>Para: <span className="text-primary">{m.destinatario}</span></>
-                    )}
+          [
+            { title: 'Pendientes', data: displayedMensajes.filter(m => m.estado !== 'completada'), color: 'text-yellow-500' },
+            { title: 'Resueltas', data: displayedMensajes.filter(m => m.estado === 'completada'), color: 'text-green-500' }
+          ].map(group => group.data.length > 0 && (
+            <div key={group.title} className="mb-4">
+              <h3 className={`text-xs font-black ${group.color} uppercase tracking-widest mb-3 border-b border-white/5 pb-2`}>{group.title} ({group.data.length})</h3>
+              <div className="flex flex-col gap-3">
+                {group.data.map(m => (
+                  <div key={m.id} className={`p-4 rounded-xl border flex flex-col gap-3 transition-all ${m.estado === 'completada' ? 'bg-[#12182c]/40 border-white/5 opacity-70' : 'bg-[#151c36] border-white/10 hover:border-primary/50'}`}>
+                    
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex flex-col">
+                        <div className="text-xs text-secondary font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                          {activeTab === 'recibidos' ? (
+                            <>De: <span className={getUserColor(m.creadoPor || '')}>{m.creadoPor || 'Sistema'}</span></>
+                          ) : (
+                            <>Para: <span className={getUserColor(m.destinatario)}>{m.destinatario}</span></>
+                          )}
+                        </div>
+                        <p className="text-white text-sm whitespace-pre-wrap">{m.texto}</p>
+                      </div>
+                      
+                      {/* Context Badges */}
+                      {(m.empresa || m.pedido || m.factura || m.cobranza) && (
+                        <div className="flex flex-col gap-1 items-end shrink-0">
+                          {m.empresa && <span className="badge badge-info text-[10px]">🏢 {m.empresa.nombre}</span>}
+                          {m.pedido && <span className="badge badge-warning text-[10px]">📦 Pedido</span>}
+                          {m.factura && <span className="badge badge-danger text-[10px]">📄 Factura</span>}
+                          {m.cobranza && <span className="badge badge-success text-[10px]">💰 Cobranza</span>}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-2 pt-3 border-t border-white/5">
+                      <div className="flex items-center gap-4 text-xs text-secondary">
+                        <span className="flex items-center gap-1"><Clock size={12} /> {new Date(m.creadoEn).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                        <span className={`px-2 py-0.5 rounded-md font-bold uppercase ${m.estado === 'completada' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                          {m.estado}
+                        </span>
+                      </div>
+                      
+                      {/* Actions */}
+                      {m.estado !== 'completada' && activeTab === 'recibidos' && (
+                        <button 
+                          onClick={() => handleCompletar(m.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 text-xs font-bold transition-colors"
+                        >
+                          <CheckCircle size={14} /> Marcar Resuelto
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-white text-sm whitespace-pre-wrap">{m.texto}</p>
-                </div>
-                
-                {/* Context Badges */}
-                {(m.empresa || m.pedido || m.factura || m.cobranza) && (
-                  <div className="flex flex-col gap-1 items-end shrink-0">
-                    {m.empresa && <span className="badge badge-info text-[10px]">🏢 {m.empresa.nombre}</span>}
-                    {m.pedido && <span className="badge badge-warning text-[10px]">📦 Pedido</span>}
-                    {m.factura && <span className="badge badge-danger text-[10px]">📄 Factura</span>}
-                    {m.cobranza && <span className="badge badge-success text-[10px]">💰 Cobranza</span>}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-between items-center mt-2 pt-3 border-t border-white/5">
-                <div className="flex items-center gap-4 text-xs text-secondary">
-                  <span className="flex items-center gap-1"><Clock size={12} /> {new Date(m.creadoEn).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                  <span className={`px-2 py-0.5 rounded-md font-bold uppercase ${m.estado === 'completada' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                    {m.estado}
-                  </span>
-                </div>
-                
-                {/* Actions */}
-                {m.estado !== 'completada' && activeTab === 'recibidos' && (
-                  <button 
-                    onClick={() => handleCompletar(m.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 text-xs font-bold transition-colors"
-                  >
-                    <CheckCircle size={14} /> Marcar Resuelto
-                  </button>
-                )}
+                ))}
               </div>
             </div>
           ))

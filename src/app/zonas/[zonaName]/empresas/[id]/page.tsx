@@ -196,11 +196,11 @@ function RegistroContacto({ empresaId, addVisitaAction }: { empresaId: number, a
       </div>
       <div className="form-group" style={{ gridColumn: 'span 2' }}>
         <label className="form-label">Notas / Observaciones</label>
-        <textarea name="notas" rows={3} placeholder="Detalles de la visita..." className="form-input" spellCheck={true} lang="es"></textarea>
+        <textarea name="notas" rows={3} placeholder="Detalles de la visita..." className="form-input" spellCheck="true" lang="es-AR" autoCorrect="on"></textarea>
       </div>
       <div className="form-group" style={{ gridColumn: 'span 2' }}>
         <label className="form-label">Próxima Acción Recomendada</label>
-        <input type="text" name="proximaAccion" placeholder="Ej. Enviar lista de precios por correo" className="form-input" spellCheck={true} lang="es" />
+        <input type="text" name="proximaAccion" placeholder="Ej. Enviar lista de precios por correo" className="form-input" spellCheck="true" lang="es-AR" autoCorrect="on" />
       </div>
       <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
         <button type="submit" className="btn btn-primary">Registrar Visita</button>

@@ -206,6 +206,15 @@ export default function PlannerNotes({
 
   const uncompleted = notas.filter(n => n.estado === 'pendiente')
 
+  const getUserColor = (alias: string) => {
+    const user = contactos.find(c => c.alias === alias)
+    if (!user) return ''
+    if (user.nivel === 1) return 'text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20 font-black'
+    if (user.nivel === 2) return 'text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 font-black'
+    if (user.nivel === 3) return 'text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 font-black'
+    return ''
+  }
+
   const handleCrearNota = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!texto.trim()) return
@@ -402,8 +411,7 @@ export default function PlannerNotes({
                     placeholder="Ej. Pedir muestras para Salvia de golosinería..."
                     className="form-input w-full"
                     style={{ minHeight: '80px', resize: 'vertical' }}
-                    spellCheck={true}
-                    lang="es"
+                    spellCheck="true" lang="es-AR" autoCorrect="on"
                   />
                 </div>
                 
@@ -504,74 +512,96 @@ export default function PlannerNotes({
               </form>
 
               {/* Lista */}
-              <div className="space-y-3">
-                {notas.map(nota => (
-                  <div key={nota.id} style={{ 
-                    padding: '1rem', 
-                    borderRadius: '8px', 
-                    backgroundColor: nota.estado === 'completada' ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.05)',
-                    borderLeft: `4px solid ${nota.estado === 'completada' ? '#10b981' : nota.destinatario === 'gerencia' ? '#f59e0b' : nota.destinatario === 'asistente' ? '#3b82f6' : '#c084fc'}`,
-                    opacity: nota.estado === 'completada' ? 0.6 : 1
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
-                      <div className="flex-1">
-                        <div style={{ fontSize: '0.9rem', color: 'white', marginBottom: '0.5rem', whiteSpace: 'pre-wrap' }}>
-                          {nota.estado === 'completada' ? <s>{nota.texto}</s> : nota.texto}
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#c084fc' }}>
-                            <Clock size={12} /> {getRelativeTime(nota.creadoEn)}
-                          </span>
-                          {nota.empresa && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <Building2 size={12} /> {nota.empresa.nombre}
-                            </span>
-                          )}
-                          {nota.pedido && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                              Pedido: {nota.pedido.numeroPedido}
-                            </span>
-                          )}
-                          {nota.factura && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                              Factura: {nota.factura.numeroFactura}
-                            </span>
-                          )}
-                          {nota.cobranza && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                              Cobranza: Cta {nota.cobranza.cuota}/{nota.cobranza.totalCuotas}
-                            </span>
-                          )}
-                          <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', backgroundColor: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                            Para: {nota.destinatario}
-                          </span>
-                          {nota.fechaRecordatorio && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#ef4444' }}>
-                              <Bell size={12} /> Recordatorio programado
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {nota.estado !== 'completada' && (
-                          <button onClick={() => handleCompletar(nota.id)} 
-                            title="Marcar como Completada"
-                            style={{ padding: '0.4rem', borderRadius: '6px', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)' }}>
-                            <Check size={16} />
-                          </button>
-                        )}
-                        <button onClick={() => handleEliminar(nota.id)} 
-                          title="Eliminar permanentemente"
-                          style={{ padding: '0.4rem', borderRadius: '6px', color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)' }}>
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+              <div className="space-y-4 mt-2">
+                {[
+                  { title: 'Pendientes', data: uncompleted, color: 'text-yellow-500' },
+                  { title: 'Resueltas', data: notas.filter(n => n.estado === 'completada'), color: 'text-green-500' }
+                ].map(group => group.data.length > 0 && (
+                  <div key={group.title}>
+                    <h3 className={`text-[10px] font-black ${group.color} uppercase tracking-widest mb-3 border-b border-white/5 pb-2`}>
+                      {group.title} ({group.data.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {group.data.map(nota => {
+                        const userColor = getUserColor(nota.creadoPor || '') || '#c084fc';
+                        const destColor = getUserColor(nota.destinatario) || 'rgba(255,255,255,0.05)';
+                        
+                        return (
+                          <div key={nota.id} style={{ 
+                            padding: '1rem', 
+                            borderRadius: '8px', 
+                            backgroundColor: nota.estado === 'completada' ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.05)',
+                            borderLeft: `4px solid ${nota.estado === 'completada' ? '#10b981' : (userColor.includes('orange') ? '#f97316' : userColor.includes('blue') ? '#3b82f6' : userColor.includes('green') ? '#22c55e' : '#c084fc')}`,
+                            opacity: nota.estado === 'completada' ? 0.6 : 1
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
+                              <div className="flex-1">
+                                <div style={{ fontSize: '0.9rem', color: 'white', marginBottom: '0.5rem', whiteSpace: 'pre-wrap' }}>
+                                  {nota.estado === 'completada' ? <s>{nota.texto}</s> : nota.texto}
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#c084fc' }}>
+                                    <Clock size={12} /> {getRelativeTime(nota.creadoEn)}
+                                  </span>
+                                  {nota.creadoPor && (
+                                    <span className={userColor}>
+                                      De: {nota.creadoPor}
+                                    </span>
+                                  )}
+                                  {nota.empresa && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                      <Building2 size={12} /> {nota.empresa.nombre}
+                                    </span>
+                                  )}
+                                  {nota.pedido && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                      Pedido: {nota.pedido.numeroPedido}
+                                    </span>
+                                  )}
+                                  {nota.factura && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                      Factura: {nota.factura.numeroFactura}
+                                    </span>
+                                  )}
+                                  {nota.cobranza && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                      Cobranza: Cta {nota.cobranza.cuota}/{nota.cobranza.totalCuotas}
+                                    </span>
+                                  )}
+                                  <span className={destColor}>
+                                    Para: {nota.destinatario}
+                                  </span>
+                                  {nota.fechaRecordatorio && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#ef4444' }}>
+                                      <Bell size={12} /> Recordatorio programado
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                {nota.estado !== 'completada' && (
+                                  <button onClick={() => handleCompletar(nota.id)} 
+                                    title="Marcar como Completada"
+                                    style={{ padding: '0.4rem', borderRadius: '6px', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)' }}>
+                                    <Check size={16} />
+                                  </button>
+                                )}
+                                <button onClick={() => handleEliminar(nota.id)} 
+                                  title="Eliminar permanentemente"
+                                  style={{ padding: '0.4rem', borderRadius: '6px', color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)' }}>
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 ))}
                 {notas.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay notas.
+                    No hay notas ni tareas pendientes.
                   </div>
                 )}
               </div>

@@ -267,7 +267,7 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
               </div>
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="form-label">Notas Adicionales (Tipo/Nº Cuenta, Cobrador, etc.)</label>
-                <textarea name="notas" className="form-input min-h-[100px]" spellCheck={true} lang="es"></textarea>
+                <textarea name="notas" className="form-input min-h-[100px]" spellCheck="true" lang="es-AR" autoCorrect="on"></textarea>
               </div>
             </div>
           </div>

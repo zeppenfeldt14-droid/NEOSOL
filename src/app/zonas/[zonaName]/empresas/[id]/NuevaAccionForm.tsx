@@ -76,8 +76,7 @@ export function NuevaAccionForm({ empresaId, addAccionAction }: NuevaAccionFormP
           placeholder="Nueva tarea (ej. Enviar catálogo)" 
           className="form-input" 
           style={{ padding: '0.5rem', fontSize: '0.75rem' }} 
-          spellCheck={true}
-          lang="es"
+          spellCheck="true" lang="es-AR" autoCorrect="on"
         />
       </div>
       <div className="form-group mb-0" style={{ width: '150px' }}>
