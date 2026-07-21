@@ -63,7 +63,7 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
 
   const handleSubmit = () => {
     if (!resultado) { setError('Seleccioná un resultado para continuar.'); return }
-    if (!notas.trim()) { setError('Las notas son obligatorias.'); return }
+    const notasFinales = notas.trim() || `Registro de ${RESULTADOS.find(r => r.value === resultado)?.label || 'gestión'}`
     setError('')
 
     startTransition(async () => {
@@ -74,7 +74,7 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
         resultado,
         contacto,
         cargo,
-        notas,
+        notas: notasFinales,
         exhibicion,
         crearSiguienteAccion: crearSiguiente,
         siguienteAccionTipo: crearSiguiente ? sigTipo : undefined,
@@ -97,18 +97,21 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        width: '100%', maxWidth: '420px', background: 'linear-gradient(135deg, #141a2e 0%, #1a2240 100%)',
+        width: '100%', maxWidth: '440px', maxHeight: '90vh',
+        background: 'linear-gradient(135deg, #141a2e 0%, #1a2240 100%)',
         borderRadius: '20px', border: '1px solid rgba(255,255,255,0.12)',
         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
         position: 'relative', animation: 'modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
       }} onClick={e => e.stopPropagation()}>
 
-        {/* HEADER */}
+        {/* HEADER (FIXED AT TOP) */}
         <div style={{
           background: 'rgba(255,255,255,0.03)',
-          padding: '1.5rem 1.5rem 1rem',
+          padding: '1.25rem 1.5rem 1rem',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          flexShrink: 0
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -130,7 +133,8 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
           </button>
         </div>
 
-        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* BODY (SCROLLABLE CONTENT) */}
+        <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto', flex: 1 }}>
 
           {/* RESULTADO */}
           <div>
@@ -227,13 +231,13 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
           {/* NOTAS */}
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-              <ClipboardList size={11} /> Notas de la Visita *
+              <ClipboardList size={11} /> Notas de la Visita
             </label>
             <textarea
               value={notas}
               onChange={e => setNotas(e.target.value)}
               placeholder="Describí lo que pasó en la visita: qué dijo el cliente, qué mostraste, acuerdos o comentarios relevantes..."
-              rows={4}
+              rows={3}
               style={{
                 width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px',
                 border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
@@ -345,14 +349,18 @@ export default function CheckoutVisitaModal({ accionId, empresaId, empresaNombre
               </div>
             )}
           </div>
+        </div>
 
-          {/* ERROR */}
+        {/* FOOTER (ALWAYS FIXED AT BOTTOM OF MODAL CARD) */}
+        <div style={{
+          padding: '1rem 1.5rem', borderTop: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(14, 19, 38, 0.95)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem'
+        }}>
           {error && (
             <p style={{ color: '#f87171', fontSize: '0.85rem', margin: 0, textAlign: 'center' }}>{error}</p>
           )}
 
-          {/* FOOTER */}
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button
               onClick={onClose}
               style={{

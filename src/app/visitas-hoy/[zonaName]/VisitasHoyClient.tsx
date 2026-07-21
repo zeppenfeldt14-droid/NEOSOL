@@ -205,8 +205,8 @@ export default function VisitasHoyClient({ initialAcciones, zonaName }: Props) {
 
       {/* MODAL GESTIONAR */}
       {completarModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-end justify-center p-4">
-          <div className="bg-[#0e1326] border border-white/10 rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 flex flex-col gap-5 shadow-2xl">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0e1326] border border-white/10 rounded-3xl w-full max-w-sm p-6 flex flex-col gap-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <div>
                 <h3 className="font-black text-sm uppercase tracking-wider text-white">
