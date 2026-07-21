@@ -58,13 +58,18 @@ export function ComisionesList({ zonaName, selectedPeriod }: { zonaName: string,
   // Filtrado de datos por vendedor y periodo
   const mesesFiltrados = data.filter(m => {
     // Filtrar por periodo (Mes o Trimestre)
+    if (selectedPeriod === 'todo') return true
+    if (selectedPeriod === 'hoy' || selectedPeriod === 'semana' || selectedPeriod === 'mes') {
+      return m.mes === new Date().getMonth()
+    }
     if (selectedPeriod.startsWith('Q')) {
       if (selectedPeriod === 'Q1') return m.mes >= 0 && m.mes <= 2
       if (selectedPeriod === 'Q2') return m.mes >= 3 && m.mes <= 5
       if (selectedPeriod === 'Q3') return m.mes >= 6 && m.mes <= 8
       if (selectedPeriod === 'Q4') return m.mes >= 9 && m.mes <= 11
     } else {
-      return m.mes === parseInt(selectedPeriod, 10)
+      const selectedMonths = selectedPeriod.split(',').map(Number)
+      return selectedMonths.includes(m.mes)
     }
     return false
   }).map(m => {
