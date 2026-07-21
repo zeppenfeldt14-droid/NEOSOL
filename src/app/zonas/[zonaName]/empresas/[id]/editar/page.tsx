@@ -198,6 +198,8 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
                   className="form-input"
                   rows={3}
                   placeholder="Explica por qué se dio de baja al cliente (ej: dejó de comprar, encontró otro proveedor, cierre de negocio...)"
+                  spellCheck={true}
+                  lang="es"
                 />
               </div>
               <script dangerouslySetInnerHTML={{ __html: `
@@ -326,7 +328,7 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="form-label">Notas Adicionales (Tipo/Nº Cuenta, Cobrador, etc.)</label>
-                <textarea name="notas" defaultValue={empresa.notas || ''} className="form-input min-h-[100px]"></textarea>
+                <textarea name="notas" defaultValue={empresa.notas || ''} className="form-input min-h-[100px]" spellCheck={true} lang="es"></textarea>
               </div>
             </div>
           </div>

@@ -246,7 +246,8 @@ export default function PlannerNotes({
           cobranzaId: cobranzaId || null,
           destinatario,
           zona,
-          fechaRecordatorio: finalFechaRecordatorio
+          fechaRecordatorio: finalFechaRecordatorio,
+          creadoPor: userAlias
         })
       })
       if (res.ok) {
@@ -270,7 +271,9 @@ export default function PlannerNotes({
   const handleCompletar = async (id: number) => {
     try {
       await fetch(`/api/notas-planificador/${id}`, {
-        method: 'DELETE'
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'completada' })
       })
       await fetchNotas()
     } catch (error) { console.error(error) }
@@ -399,6 +402,8 @@ export default function PlannerNotes({
                     placeholder="Ej. Pedir muestras para Salvia de golosinería..."
                     className="form-input w-full"
                     style={{ minHeight: '80px', resize: 'vertical' }}
+                    spellCheck={true}
+                    lang="es"
                   />
                 </div>
                 
@@ -548,11 +553,13 @@ export default function PlannerNotes({
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => handleCompletar(nota.id)} 
-                          title="Completar y Eliminar"
-                          style={{ padding: '0.4rem', borderRadius: '6px', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)' }}>
-                          <Check size={16} />
-                        </button>
+                        {nota.estado !== 'completada' && (
+                          <button onClick={() => handleCompletar(nota.id)} 
+                            title="Marcar como Completada"
+                            style={{ padding: '0.4rem', borderRadius: '6px', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)' }}>
+                            <Check size={16} />
+                          </button>
+                        )}
                         <button onClick={() => handleEliminar(nota.id)} 
                           title="Eliminar permanentemente"
                           style={{ padding: '0.4rem', borderRadius: '6px', color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)' }}>

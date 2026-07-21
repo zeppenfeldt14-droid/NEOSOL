@@ -907,6 +907,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                 placeholder="Observaciones generales del pedido..."
                 rows={2}
                 className="form-input bg-black/40 border border-white/10 rounded-xl resize-none text-sm"
+                spellCheck={true}
+                lang="es"
               />
             </div>
 
@@ -918,6 +920,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                 placeholder="Acuerdos especiales pactados en la negociación..."
                 rows={2}
                 className="form-input bg-black/40 border border-white/10 rounded-xl resize-none text-sm"
+                spellCheck={true}
+                lang="es"
               />
             </div>
           </div>

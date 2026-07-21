@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package, Home, Menu } from 'lucide-react'
+import { LayoutDashboard, Users, Map as MapIcon, FileText, Settings, LogOut, ShieldCheck, ChevronDown, ChevronRight, Plus, Globe, X, ShoppingCart, TrendingUp, Banknote, Package, Home, Menu, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { NotificationBell } from './mensajes/NotificationBell'
 
 interface UserSession {
   id: number
@@ -175,6 +176,12 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
               <span className="font-bold text-white uppercase tracking-wider text-xs">Inicio</span>
             </Link>
           )}
+
+          {/* Bandeja de Mensajes (Global) */}
+          <Link href="/mensajes" className={`nav-item ${isLinkActive('/mensajes') ? 'active' : ''}`}>
+            <MessageSquare className="nav-icon text-primary" />
+            <span className="font-bold text-white uppercase tracking-wider text-xs">Mensajes</span>
+          </Link>
           
           {/* LEVEL 3 (Vendedor): Show single zone directly */}
           {user.nivel === 3 ? (
@@ -393,6 +400,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
             <h2 style={{ fontSize: '1.25rem', fontWeight: 500 }} className="text-white font-bold">NEOSOL CRM</h2>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell userAlias={user.alias} />
             <div className="flex flex-col text-right">
               <span className="text-xs font-black text-white leading-tight">{userName}</span>
               <span className="text-[10px] text-secondary font-bold leading-none mt-1">{userRol}</span>

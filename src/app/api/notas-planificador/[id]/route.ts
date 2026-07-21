@@ -10,6 +10,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json()
     const { estado, recordatorioVisto } = body
 
+    const notaAnterior = await prisma.notaPlanificador.findUnique({
+      where: { id }
+    })
+
     const data: any = {}
     if (estado !== undefined) data.estado = estado
     if (recordatorioVisto !== undefined) data.recordatorioVisto = recordatorioVisto
@@ -18,6 +22,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       where: { id },
       data
     })
+
+    // Si la nota pasó a completada y tiene un creador diferente al destinatario
+    if (estado === 'completada' && notaAnterior?.estado !== 'completada' && notaAnterior?.creadoPor) {
+      // Evitar enviarse notificación a sí mismo si el creador es el mismo destinatario o si el creador es 'Sistema'
+      if (notaAnterior.creadoPor !== notaAnterior.destinatario && notaAnterior.creadoPor !== 'Sistema') {
+        await prisma.notaPlanificador.create({
+          data: {
+            texto: `✓ Resuelto por ${notaAnterior.destinatario}: "${notaAnterior.texto}"`,
+            destinatario: notaAnterior.creadoPor,
+            zona: notaAnterior.zona,
+            empresaId: notaAnterior.empresaId,
+            pedidoId: notaAnterior.pedidoId,
+            facturaId: notaAnterior.facturaId,
+            cobranzaId: notaAnterior.cobranzaId,
+            creadoPor: 'Sistema'
+          }
+        })
+      }
+    }
 
     return NextResponse.json(nota)
   } catch (error) {

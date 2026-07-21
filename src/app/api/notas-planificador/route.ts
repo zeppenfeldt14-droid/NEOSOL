@@ -6,19 +6,30 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const zona = searchParams.get('zona')
     const alias = searchParams.get('alias')
+    const global = searchParams.get('global')
 
-    if (!zona) {
-      return NextResponse.json({ error: 'Zona requerida' }, { status: 400 })
+    if (!zona && !global) {
+      return NextResponse.json({ error: 'Zona o flag global requerido' }, { status: 400 })
     }
 
-    const whereClause: any = {
-      OR: [
-        { zona }
-      ]
-    }
-    
-    if (alias) {
-      whereClause.OR.push({ destinatario: alias })
+    let whereClause: any = {}
+
+    if (global === 'true' && alias) {
+      whereClause = {
+        OR: [
+          { destinatario: alias },
+          { creadoPor: alias }
+        ]
+      }
+    } else {
+      whereClause = {
+        OR: [
+          { zona: zona as string }
+        ]
+      }
+      if (alias) {
+        whereClause.OR.push({ destinatario: alias })
+      }
     }
 
     const notas = await prisma.notaPlanificador.findMany({
@@ -50,7 +61,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { texto, empresaId, destinatario, zona, fechaRecordatorio, pedidoId, facturaId, cobranzaId } = body
+    const { texto, empresaId, destinatario, zona, fechaRecordatorio, pedidoId, facturaId, cobranzaId, creadoPor } = body
 
     if (!texto || !zona) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
@@ -66,7 +77,8 @@ export async function POST(request: Request) {
         destinatario: destinatario || 'personal',
         zona,
         fechaRecordatorio: fechaRecordatorio ? new Date(fechaRecordatorio) : null,
-        estado: 'pendiente'
+        estado: 'pendiente',
+        creadoPor: creadoPor || null
       },
       include: {
         empresa: {
