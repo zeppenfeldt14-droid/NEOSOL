@@ -221,12 +221,12 @@ export function FichaAltaSheet({ empresa, reportRef }: { empresa: any, reportRef
                   <tbody>
                     <tr>
                       <td style={{ width: '50%', padding: '4px 6px', borderRight: `1px solid ${blueBg}` }}>
-                        <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>TEL.:</span>
+                        <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>TEL. (WhatsApp):</span>
                         <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
                       </td>
                       <td style={{ width: '50%', padding: '4px 6px' }}>
-                        <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>Celular:</span>
-                        <strong style={{ fontSize: '9.5px' }}>{empresa.telefono || '---'}</strong>
+                        <span style={{ fontSize: '7.5px', color: '#4b5563', display: 'block', marginBottom: '1px' }}>TEL. Alternativo:</span>
+                        <strong style={{ fontSize: '9.5px' }}>{empresa.telefono2 || '---'}</strong>
                       </td>
                     </tr>
                   </tbody>

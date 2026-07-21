@@ -181,8 +181,12 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
             <h3 className="text-lg font-medium text-white mb-4 text-primary text-center">Contacto</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <label className="form-label">Celular / TEL.</label>
+                <label className="form-label">Celular / TEL. (Principal / WhatsApp)</label>
                 <input type="text" name="telefono" className="form-input" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="form-label">Teléfono #2 (Alternativo)</label>
+                <input type="text" name="telefono2" className="form-input" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Correo Electrónico / e-mail empresa</label>

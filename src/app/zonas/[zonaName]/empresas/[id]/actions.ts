@@ -151,6 +151,7 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
   const barrio = formData.get('barrio') as string
   const partido = formData.get('partido') as string
   const telefono = formData.get('telefono') as string
+  const telefono2 = formData.get('telefono2') as string
   const email = formData.get('email') as string
   const responsable = formData.get('responsable') as string
   const subZona = formData.get('subZona') as string || 'SIN ASIGNAR'
@@ -184,6 +185,7 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     barrio,
     partido,
     telefono,
+    telefono2,
     email,
     responsable,
     contactoCobranzas,

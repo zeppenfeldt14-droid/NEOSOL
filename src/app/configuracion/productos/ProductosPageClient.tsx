@@ -70,7 +70,7 @@ export function ProductosPageClient({ userNivel }: Props) {
 
   // Tarifa / Aumento Masivo State
   const [showAumentoModal, setShowAumentoModal] = useState(false)
-  const [isNewList, setIsNewList] = useState(false)
+  const [isNewList, setIsNewList] = useState(true)
   const [newListNombre, setNewListNombre] = useState('')
   const [newListVigencia, setNewListVigencia] = useState('')
   const [aumentoPorcentaje, setAumentoPorcentaje] = useState('')
@@ -952,19 +952,7 @@ export function ProductosPageClient({ userNivel }: Props) {
             </div>
 
             <div className="flex flex-col gap-5 overflow-y-auto p-6">
-              {!editListTarget && (
-                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
-                  <ToggleLeft size={20} className={!isNewList ? 'text-primary' : 'text-secondary'} onClick={() => setIsNewList(false)} />
-                  <span className="text-xs font-bold flex-1 text-center">
-                    {isNewList ? 'Crear lista programada' : 'Aumento Inmediato (Sobrescribir actual)'}
-                  </span>
-                  <ToggleRight size={20} className={isNewList ? 'text-primary' : 'text-secondary'} onClick={() => setIsNewList(true)} />
-                </div>
-              )}
-
-              {(isNewList || editListTarget) && (
-                <>
-                  <div className="form-group mb-0">
+              <div className="form-group mb-0">
                     <label className="form-label text-[10px] uppercase font-black text-secondary">Nombre del Tarifario (Ej: Ago 2026)</label>
                     <input
                       type="text"
@@ -983,9 +971,6 @@ export function ProductosPageClient({ userNivel }: Props) {
                       className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
                     />
                   </div>
-                </>
-              )}
-
               <div className="form-group mb-0">
                 <label className="form-label text-[10px] uppercase font-black text-secondary">
                   {editListTarget ? 'Recalcular Porcentaje de Aumento (%) (Opcional)' : 'Porcentaje de Aumento (%) *'}
@@ -1009,19 +994,8 @@ export function ProductosPageClient({ userNivel }: Props) {
                 >
                   <option value="ambas">Ambas Tarifas (Estándar y Volumen)</option>
                   <option value="min">Solo Tarifa Estándar (&lt; 300 cajas)</option>
-                  <option value="max">Solo Tarifa Volumen (&gt;= 300 cajas)</option>
                 </select>
               </div>
-
-              {!isNewList && !editListTarget && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 text-amber-500">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <div className="text-xs font-medium">
-                    <strong className="block font-black mb-1">Cuidado</strong>
-                    Esta acción aumentará todos los precios de la lista <strong>actualmente seleccionada</strong> inmediatamente y no se puede deshacer de forma automática.
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="p-6 border-t border-white/5 shrink-0 flex gap-3">
@@ -1037,32 +1011,7 @@ export function ProductosPageClient({ userNivel }: Props) {
               </button>
               <button
                 onClick={async () => {
-                  if (isNewList || editListTarget) {
-                    await handleTarifaAction()
-                  } else {
-                    if (!aumentoPorcentaje || isNaN(Number(aumentoPorcentaje))) {
-                      alert('Ingrese un porcentaje válido')
-                      return
-                    }
-                    if (confirm(`¿Aplicar un aumento del ${aumentoPorcentaje}% a la lista seleccionada ahora mismo?`)) {
-                      setProcessingTarifa(true)
-                      try {
-                        const res = await fetch('/api/configuracion/tarifas', {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ action: 'aumento_global', porcentaje: Number(aumentoPorcentaje), listaId: selectedListId, tarifaTipo: aumentoTarifaTipo })
-                        })
-                        const data = await res.json()
-                        if (!res.ok) throw new Error(data.error)
-                        await fetchProductos()
-                        setShowAumentoModal(false)
-                      } catch (e: any) {
-                        alert(e.message || 'Error')
-                      } finally {
-                        setProcessingTarifa(false)
-                      }
-                    }
-                  }
+                  await handleTarifaAction()
                 }}
                 className="btn btn-primary flex-1 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-bold"
                 disabled={processingTarifa}

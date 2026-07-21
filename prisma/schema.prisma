@@ -20,6 +20,7 @@ model Empresa {
   barrio           String?  // Localidad
   partido          String?
   telefono         String?  // TEL / Celular
+  telefono2        String?  // Teléfono alternativo
   email            String?
   responsable      String?  // Contacto principal
   contactoCobranzas String?

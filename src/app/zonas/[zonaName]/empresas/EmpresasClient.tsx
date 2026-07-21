@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Search, Plus, MapPin, Phone, Building2, Download } from 'lucide-react'
+import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -17,6 +17,7 @@ type Empresa = {
   direccion: string | null
   barrio: string | null
   telefono: string | null
+  telefono2: string | null
   estado: string
   cicloVentaDias: number | null
   creadoEn: Date
@@ -488,8 +489,23 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
                   </div>
                 </td>
                 <td>
-                  <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Phone size={12} style={{ color: 'var(--text-muted)' }} /> {empresa.telefono || '-'}
+                  <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {empresa.telefono ? (
+                      <div className="flex items-center gap-2">
+                        <a href={`https://wa.me/${empresa.telefono.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300" title="WhatsApp">
+                          <MessageCircle size={14} />
+                        </a>
+                        <span>{empresa.telefono}</span>
+                      </div>
+                    ) : '-'}
+                    {empresa.telefono2 && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <a href={`tel:${empresa.telefono2.replace(/[^0-9+]/g, '')}`} className="text-blue-400 hover:text-blue-300" title="Llamar">
+                          <Phone size={14} />
+                        </a>
+                        <span className="text-secondary">{empresa.telefono2}</span>
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td>
@@ -564,9 +580,20 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
               <div className="flex flex-col gap-1 text-right">
                 <span className="text-[9px] text-secondary uppercase font-bold">Rubro / Contacto</span>
                 <span className="text-xs text-white/80 truncate">{getRubroDisplayName(empresa.rubro || 'SIN RUBRO')}</span>
-                <span className="text-[10px] text-secondary flex items-center justify-end gap-1">
-                  <Phone size={10} /> {empresa.telefono || '—'}
-                </span>
+                {empresa.telefono ? (
+                  <span className="text-[10px] text-secondary flex items-center justify-end gap-1">
+                    <MessageCircle size={10} className="text-green-400" /> {empresa.telefono}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-secondary flex items-center justify-end gap-1">
+                    <Phone size={10} /> —
+                  </span>
+                )}
+                {empresa.telefono2 && (
+                  <span className="text-[10px] text-secondary flex items-center justify-end gap-1 mt-0.5">
+                    <Phone size={10} className="text-blue-400" /> {empresa.telefono2}
+                  </span>
+                )}
               </div>
             </div>
           </Link>

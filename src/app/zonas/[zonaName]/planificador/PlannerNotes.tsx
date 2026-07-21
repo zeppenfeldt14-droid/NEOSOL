@@ -376,9 +376,9 @@ export default function PlannerNotes({
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)',
           backdropFilter: 'blur(4px)', zIndex: 9999999, display: 'flex',
-          justifyContent: 'center', alignItems: 'center', padding: '1rem'
+          justifyContent: 'center', alignItems: 'flex-start', padding: '1rem', paddingTop: '5vh', overflowY: 'auto'
         }}>
-          <div className="glass-panel w-full max-w-2xl max-h-[90vh] flex flex-col" style={{ borderRadius: '12px', borderTop: '4px solid #c084fc' }}>
+          <div className="glass-panel w-full max-w-2xl flex flex-col my-auto" style={{ maxHeight: '90vh', borderRadius: '12px', borderTop: '4px solid #c084fc' }}>
             
             <div style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white' }}>

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit, Tag, Navigation } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, Globe, Map as MapIcon, Building2, User, FileText, Edit, Tag, Navigation, MessageCircle } from 'lucide-react'
 import { CompleteActionButton } from './ActionButtons'
 import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
@@ -84,13 +84,45 @@ function InfoGeneral({ empresa }: { empresa: any }) {
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <Phone size={16} className="text-secondary" />
-        <div>
-          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Teléfono</div>
-          <div style={{ fontWeight: 500 }}>{empresa.telefono || 'No especificado'}</div>
+      <div className="flex items-center justify-between gap-3 w-full">
+        <div className="flex items-center gap-3">
+          <MessageCircle size={16} className="text-secondary" />
+          <div>
+            <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Teléfono / WhatsApp</div>
+            <div style={{ fontWeight: 500 }}>{empresa.telefono || 'No especificado'}</div>
+          </div>
         </div>
+        {empresa.telefono && (
+          <a 
+            href={`https://wa.me/${empresa.telefono.replace(/[^0-9]/g, '')}`}
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn btn-secondary !p-2 !rounded-full text-green-400 hover:text-green-300 hover:bg-green-900/20"
+            title="Enviar WhatsApp"
+          >
+            <MessageCircle size={18} />
+          </a>
+        )}
       </div>
+
+      {empresa.telefono2 && (
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="flex items-center gap-3">
+            <Phone size={16} className="text-secondary" />
+            <div>
+              <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Teléfono #2</div>
+              <div style={{ fontWeight: 500 }}>{empresa.telefono2}</div>
+            </div>
+          </div>
+          <a 
+            href={`tel:${empresa.telefono2.replace(/[^0-9+]/g, '')}`}
+            className="btn btn-secondary !p-2 !rounded-full text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+            title="Llamar"
+          >
+            <Phone size={18} />
+          </a>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <Mail size={16} className="text-secondary" />
