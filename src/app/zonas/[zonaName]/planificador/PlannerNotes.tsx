@@ -161,7 +161,7 @@ export default function PlannerNotes({
 
   const fetchNotas = async () => {
     try {
-      const res = await fetch(`/api/notas-planificador?zona=${encodeURIComponent(zona)}`)
+      const res = await fetch(`/api/notas-planificador?zona=${encodeURIComponent(zona)}&alias=${encodeURIComponent(userAlias)}`)
       if (res.ok) {
         const data = await res.json()
         setNotas(data)
@@ -267,13 +267,10 @@ export default function PlannerNotes({
     }
   }
 
-  const handleCompletar = async (id: number, estadoActual: string) => {
-    const nuevoEstado = estadoActual === 'pendiente' ? 'completada' : 'pendiente'
+  const handleCompletar = async (id: number) => {
     try {
       await fetch(`/api/notas-planificador/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: nuevoEstado })
+        method: 'DELETE'
       })
       await fetchNotas()
     } catch (error) { console.error(error) }
@@ -378,7 +375,7 @@ export default function PlannerNotes({
       {showModal && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)',
-          backdropFilter: 'blur(4px)', zIndex: 99990, display: 'flex',
+          backdropFilter: 'blur(4px)', zIndex: 9999999, display: 'flex',
           justifyContent: 'center', alignItems: 'center', padding: '1rem'
         }}>
           <div className="glass-panel w-full max-w-2xl max-h-[90vh] flex flex-col" style={{ borderRadius: '12px', borderTop: '4px solid #c084fc' }}>
@@ -551,9 +548,9 @@ export default function PlannerNotes({
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => handleCompletar(nota.id, nota.estado)} 
-                          title={nota.estado === 'completada' ? 'Desmarcar' : 'Completar / Tildar'}
-                          style={{ padding: '0.4rem', borderRadius: '6px', color: nota.estado === 'completada' ? '#10b981' : 'var(--text-muted)', backgroundColor: nota.estado === 'completada' ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.1)' }}>
+                        <button onClick={() => handleCompletar(nota.id)} 
+                          title="Completar y Eliminar"
+                          style={{ padding: '0.4rem', borderRadius: '6px', color: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)' }}>
                           <Check size={16} />
                         </button>
                         <button onClick={() => handleEliminar(nota.id)} 
@@ -580,7 +577,7 @@ export default function PlannerNotes({
       {activeAlarms.length > 0 && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex',
+          backdropFilter: 'blur(8px)', zIndex: 9999999, display: 'flex',
           justifyContent: 'center', alignItems: 'center', padding: '1rem'
         }}>
           <div className="glass-panel w-full max-w-lg flex flex-col" style={{ borderRadius: '12px', borderTop: '4px solid #ef4444', animation: 'scaleIn 0.3s ease-out' }}>

@@ -5,13 +5,24 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const zona = searchParams.get('zona')
+    const alias = searchParams.get('alias')
 
     if (!zona) {
       return NextResponse.json({ error: 'Zona requerida' }, { status: 400 })
     }
 
+    const whereClause: any = {
+      OR: [
+        { zona }
+      ]
+    }
+    
+    if (alias) {
+      whereClause.OR.push({ destinatario: alias })
+    }
+
     const notas = await prisma.notaPlanificador.findMany({
-      where: { zona },
+      where: whereClause,
       include: {
         empresa: {
           select: { nombre: true, id: true }
