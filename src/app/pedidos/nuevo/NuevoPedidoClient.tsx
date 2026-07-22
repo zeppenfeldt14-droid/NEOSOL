@@ -236,32 +236,30 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
   // Helper to check if a promotion applies to a specific product
   const doesPromoApplyToProduct = useCallback((promo: any, prod: Producto) => {
+    // If the promo has explicit `detallesPromocion`, use them!
+    if (promo.detallesPromocion && promo.detallesPromocion.length > 0) {
+      return promo.detallesPromocion.some((dp: any) => dp.productoId === prod.id)
+    }
+
     const promoNameLower = promo.nombre.toLowerCase()
     const prodNombreLower = prod.nombre.toLowerCase()
     const prodLineaLower = (prod.linea || '').toLowerCase()
     const prodCodigo = prod.codigoInterno
 
-    // If the promo name specifies a specific code (e.g. "99001")
-    if (promoNameLower.includes(prodCodigo)) {
-      return true
-    }
+    if (promoNameLower.includes(prodCodigo)) return true
 
-    // If the promo name contains any product code, but not this one, then it does not apply to this one
     const anyCodeMatch = ['33001', '33024', '33077', '66033', '66034', '99001', '77001', '77002', '77003', '80000', '80001', '80002', '80003', '80004', '80005', '80006', '80007']
     const hasOtherCode = anyCodeMatch.some(code => code !== prodCodigo && promoNameLower.includes(code))
     if (hasOtherCode) return false
 
-    // If the promo name mentions "minis" and product is in minis line
     if (promoNameLower.includes('minis') || promoNameLower.includes('mini')) {
       return prodLineaLower === 'minis' || prodNombreLower.includes('mini')
     }
 
-    // If the promo name mentions "dulce"
     if (promoNameLower.includes('dulce') && !prodNombreLower.includes('dulce')) {
       return false
     }
 
-    // If the promo name mentions "snacks" or "baguetines" or "neolitas" or "neox"
     if (promoNameLower.includes('snacks') || promoNameLower.includes('baguetines') || promoNameLower.includes('neox') || promoNameLower.includes('neolitas') || promoNameLower.includes('horneados')) {
       return prodLineaLower === 'snacks' || prodNombreLower.includes('baguetine') || prodNombreLower.includes('neolita') || prodNombreLower.includes('neox')
     }
@@ -269,25 +267,41 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     return true
   }, [])
 
-  // Helper to calculate bonus details for a line
-  const getLineaBonusDetails = useCallback((l: LineaPedido) => {
-    let cajasBonus = 0
-    let descripcionBonus = ''
-    let appliedPromos: string[] = []
+  // Helper to calculate bonus details globally for all lines based on promos
+  const recalculateAllBonuses = useCallback((lines: LineaPedido[]) => {
+    // 1. Reset all bonuses
+    const newLines = lines.map(l => ({ ...l, cajasBonus: 0, descripcionBonus: '' }))
 
+    // 2. For each active and selected promo, calculate total boxes in the block
     for (const promo of promosActivas) {
-      if (promosSeleccionadas[promo.id]) {
-        if (doesPromoApplyToProduct(promo, l.producto)) {
-          if (promo.compraMinima && l.cantidadCajas >= promo.compraMinima) {
-            const bonusCount = Math.floor(l.cantidadCajas / promo.compraMinima) * (promo.bonificacion || 1)
-            cajasBonus += bonusCount
-            appliedPromos.push(`${promo.nombre}: +${bonusCount} reg`)
-          }
+      if (!promosSeleccionadas[promo.id]) continue
+
+      // Find all lines that this promo applies to
+      const applicableLinesIndices = newLines
+        .map((l, idx) => doesPromoApplyToProduct(promo, l.producto) ? idx : -1)
+        .filter(idx => idx !== -1)
+      
+      if (applicableLinesIndices.length === 0) continue
+
+      // Sum quantities
+      const totalCajasPromo = applicableLinesIndices.reduce((sum, idx) => sum + newLines[idx].cantidadCajas, 0)
+
+      if (promo.compraMinima && totalCajasPromo >= promo.compraMinima) {
+        const bonusCount = Math.floor(totalCajasPromo / promo.compraMinima) * (promo.bonificacion || 1)
+        
+        // Asignar el bonus al PRIMER producto aplicable
+        if (bonusCount > 0) {
+          const firstLineIdx = applicableLinesIndices[0]
+          newLines[firstLineIdx].cajasBonus += bonusCount
+          
+          const existingDesc = newLines[firstLineIdx].descripcionBonus
+          const newDesc = `${promo.nombre}: +${bonusCount} reg (por ${totalCajasPromo} cajas)`
+          newLines[firstLineIdx].descripcionBonus = existingDesc ? `${existingDesc}, ${newDesc}` : newDesc
         }
       }
     }
-    descripcionBonus = appliedPromos.join(', ')
-    return { cajasBonus, descripcionBonus }
+    
+    return newLines
   }, [promosActivas, promosSeleccionadas, doesPromoApplyToProduct])
 
   const getListPriceForProduct = useCallback((prod: Producto, isVolume: boolean) => {
@@ -314,7 +328,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     const isVolume = totalCajas >= 300 || negociarTarifaVolumen
     const listPrice = getListPriceForProduct(prod, isVolume)
 
-    setLineasPedido(prev => [...prev, {
+    setLineasPedido(prev => recalculateAllBonuses([...prev, {
       producto: prod,
       cantidadCajas: 0,
       cajasBonus: 0,
@@ -322,43 +336,37 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       precioCajaNegociado: listPrice,
       subtotal: 0,
       hasCustomPrice: false
-    }])
+    }]))
   }
 
   const actualizarCantidad = (prodId: number, delta: number) => {
-    setLineasPedido(prev => prev.map(l => {
-      if (l.producto.id !== prodId) return l
-      const nuevaCantidad = Math.max(0, l.cantidadCajas + delta)
-      const updatedLine = {
-        ...l,
-        cantidadCajas: nuevaCantidad,
-      }
-      const { cajasBonus, descripcionBonus } = getLineaBonusDetails(updatedLine)
-      return {
-        ...updatedLine,
-        cajasBonus,
-        descripcionBonus,
-        subtotal: nuevaCantidad * l.precioCajaNegociado,
-      }
-    }))
+    setLineasPedido(prev => {
+      const mapped = prev.map(l => {
+        if (l.producto.id !== prodId) return l
+        const nuevaCantidad = Math.max(0, l.cantidadCajas + delta)
+        return {
+          ...l,
+          cantidadCajas: nuevaCantidad,
+          subtotal: nuevaCantidad * l.precioCajaNegociado,
+        }
+      })
+      return recalculateAllBonuses(mapped)
+    })
   }
 
   const setCantidadDirecta = (prodId: number, valor: number) => {
     const nuevaCantidad = Math.max(0, valor || 0)
-    setLineasPedido(prev => prev.map(l => {
-      if (l.producto.id !== prodId) return l
-      const updatedLine = {
-        ...l,
-        cantidadCajas: nuevaCantidad,
-      }
-      const { cajasBonus, descripcionBonus } = getLineaBonusDetails(updatedLine)
-      return {
-        ...updatedLine,
-        cajasBonus,
-        descripcionBonus,
-        subtotal: nuevaCantidad * l.precioCajaNegociado,
-      }
-    }))
+    setLineasPedido(prev => {
+      const mapped = prev.map(l => {
+        if (l.producto.id !== prodId) return l
+        return {
+          ...l,
+          cantidadCajas: nuevaCantidad,
+          subtotal: nuevaCantidad * l.precioCajaNegociado,
+        }
+      })
+      return recalculateAllBonuses(mapped)
+    })
   }
 
   const actualizarPrecioNegociado = (prodId: number, nuevoPrecio: number) => {
@@ -370,7 +378,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       const hasCustom = Math.abs(nuevoPrecio - listPrice) > 0.01
 
       if (!exists) {
-        return [...prev, {
+        return recalculateAllBonuses([...prev, {
           producto: prod,
           cantidadCajas: 0,
           cajasBonus: 0,
@@ -378,7 +386,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
           precioCajaNegociado: nuevoPrecio,
           subtotal: 0,
           hasCustomPrice: hasCustom
-        }]
+        }])
       }
       return prev.map(l => {
         if (l.producto.id !== prodId) return l
@@ -393,19 +401,12 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   }
 
   const eliminarLinea = (prodId: number) =>
-    setLineasPedido(prev => prev.filter(l => l.producto.id !== prodId))
+    setLineasPedido(prev => recalculateAllBonuses(prev.filter(l => l.producto.id !== prodId)))
 
   // Recalculate bonuses when selected promotions change
   useEffect(() => {
-    setLineasPedido(prev => prev.map(l => {
-      const { cajasBonus, descripcionBonus } = getLineaBonusDetails(l)
-      return {
-        ...l,
-        cajasBonus,
-        descripcionBonus
-      }
-    }))
-  }, [promosSeleccionadas, promosActivas, getLineaBonusDetails])
+    setLineasPedido(prev => recalculateAllBonuses([...prev]))
+  }, [promosSeleccionadas, promosActivas, recalculateAllBonuses])
 
   // Dynamic prices sync when volume tier or price list switches
   useEffect(() => {

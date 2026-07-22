@@ -33,6 +33,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [newPromoBonus, setNewPromoBonus] = useState('')
   const [newPromoDesde, setNewPromoDesde] = useState('')
   const [newPromoHasta, setNewPromoHasta] = useState('')
+  const [selectedPromoProductos, setSelectedPromoProductos] = useState<number[]>([])
+  const [productos, setProductos] = useState<any[]>([])
   const [isLoadingPromos, setIsLoadingPromos] = useState(false)
 
   // Tabs State
@@ -59,6 +61,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
     fetchZonas()
     fetchTarifas()
     fetchPromociones()
+    fetchProductos()
   }, [])
 
   const fetchTarifas = async () => {
@@ -84,6 +87,16 @@ export function ConfigPageClient({ currentLogo }: Props) {
       console.error(e)
     } finally {
       setIsLoadingPromos(false)
+    }
+  }
+
+  const fetchProductos = async () => {
+    try {
+      const res = await fetch('/api/productos')
+      const data = await res.json()
+      if (Array.isArray(data)) setProductos(data)
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -202,7 +215,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
           compraMinima: parseInt(newPromoMin),
           bonificacion: parseInt(newPromoBonus),
           vigenciaDesdeStr: newPromoDesde || null,
-          vigenciaHastaStr: newPromoHasta || null
+          vigenciaHastaStr: newPromoHasta || null,
+          productoIds: selectedPromoProductos
         })
       })
       const data = await res.json()
@@ -214,6 +228,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
       setNewPromoBonus('')
       setNewPromoDesde('')
       setNewPromoHasta('')
+      setSelectedPromoProductos([])
       fetchPromociones()
     } catch (err: any) {
       alert(err.message)
@@ -954,6 +969,26 @@ export function ConfigPageClient({ currentLogo }: Props) {
                     value={newPromoHasta} 
                     onChange={(e) => setNewPromoHasta(e.target.value)} 
                   />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label text-[10px]">Productos que aplican</label>
+                  <div className="max-h-32 overflow-y-auto bg-black/20 p-2 rounded-lg border border-white/5 flex flex-col gap-1">
+                    {productos.map(prod => (
+                      <label key={prod.id} className="flex items-center gap-2 text-[11px] text-white/80 cursor-pointer hover:text-white">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-white/20 bg-black/50 text-primary"
+                          checked={selectedPromoProductos.includes(prod.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedPromoProductos(prev => [...prev, prod.id])
+                            else setSelectedPromoProductos(prev => prev.filter(id => id !== prod.id))
+                          }}
+                        />
+                        {prod.nombre} <span className="text-secondary text-[9px]">({prod.codigoInterno})</span>
+                      </label>
+                    ))}
+                    {productos.length === 0 && <span className="text-xs text-secondary">No hay productos cargados</span>}
+                  </div>
                 </div>
                 <button type="submit" className="btn btn-primary w-full mt-2" disabled={isSaving}>
                   Crear Promoción

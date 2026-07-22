@@ -8,6 +8,11 @@ export async function GET(request: Request) {
     if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
     const promociones = await prisma.promocion.findMany({
+      include: {
+        detallesPromocion: {
+          include: { producto: true }
+        }
+      },
       orderBy: { creadoEn: 'desc' }
     })
 
@@ -26,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { nombre, descripcion, tipo, compraMinima, bonificacion, descuento, vigenciaDesdeStr, vigenciaHastaStr } = body
+    const { nombre, descripcion, tipo, compraMinima, bonificacion, descuento, vigenciaDesdeStr, vigenciaHastaStr, productoIds } = body
 
     if (!nombre) {
       return NextResponse.json({ error: 'Nombre es requerido.' }, { status: 400 })
@@ -45,7 +50,12 @@ export async function POST(request: Request) {
         descuento: descuento !== undefined ? parseFloat(descuento) : null,
         vigenciaDesde,
         vigenciaHasta,
-        activa: true
+        activa: true,
+        ...(productoIds && productoIds.length > 0 ? {
+          detallesPromocion: {
+            create: productoIds.map((id: number) => ({ productoId: id }))
+          }
+        } : {})
       }
     })
 
@@ -64,7 +74,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { id, action, nombre, descripcion, tipo, compraMinima, bonificacion, descuento, vigenciaDesdeStr, vigenciaHastaStr } = body
+    const { id, action, nombre, descripcion, tipo, compraMinima, bonificacion, descuento, vigenciaDesdeStr, vigenciaHastaStr, productoIds } = body
 
     if (!id) {
       return NextResponse.json({ error: 'ID de la promoción es requerido.' }, { status: 400 })
@@ -97,7 +107,13 @@ export async function PUT(request: Request) {
         bonificacion: bonificacion !== undefined ? (bonificacion !== null ? parseInt(bonificacion) : null) : existing.bonificacion,
         descuento: descuento !== undefined ? (descuento !== null ? parseFloat(descuento) : null) : existing.descuento,
         vigenciaDesde,
-        vigenciaHasta
+        vigenciaHasta,
+        ...(productoIds !== undefined ? {
+          detallesPromocion: {
+            deleteMany: {},
+            create: productoIds.map((pid: number) => ({ productoId: pid }))
+          }
+        } : {})
       }
     })
 
@@ -120,6 +136,12 @@ export async function DELETE(request: Request) {
     if (!idStr) return NextResponse.json({ error: 'ID requerido.' }, { status: 400 })
 
     const id = parseInt(idStr)
+    
+    // Eliminar detalles primero para evitar error de FK (foreign key constraints)
+    await prisma.detallePromocion.deleteMany({
+      where: { promocionId: id }
+    })
+
     await prisma.promocion.delete({
       where: { id }
     })
