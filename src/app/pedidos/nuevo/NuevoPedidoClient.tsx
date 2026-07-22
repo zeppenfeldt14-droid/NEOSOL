@@ -287,14 +287,42 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       if (promo.compraMinima && totalCajasPromo >= promo.compraMinima) {
         const bonusCount = Math.floor(totalCajasPromo / promo.compraMinima) * (promo.bonificacion || 1)
         
-        // Asignar el bonus al PRIMER producto aplicable
+        // Distribuir el bonus proporcionalmente entre los productos aplicables
         if (bonusCount > 0) {
-          const firstLineIdx = applicableLinesIndices[0]
-          newLines[firstLineIdx].cajasBonus += bonusCount
+          let remainingBonus = bonusCount
           
-          const existingDesc = newLines[firstLineIdx].descripcionBonus
-          const newDesc = `${promo.nombre}: +${bonusCount} reg (por ${totalCajasPromo} cajas)`
-          newLines[firstLineIdx].descripcionBonus = existingDesc ? `${existingDesc}, ${newDesc}` : newDesc
+          // Sort indices by cantidadCajas descending to prioritize giving bonuses to items they bought more of
+          const sortedIndices = [...applicableLinesIndices].sort((a, b) => newLines[b].cantidadCajas - newLines[a].cantidadCajas)
+
+          // 1. Initial proportional distribution
+          const distributions = sortedIndices.map(idx => {
+            const fraction = (newLines[idx].cantidadCajas / totalCajasPromo)
+            const qty = Math.floor(bonusCount * fraction)
+            remainingBonus -= qty
+            return { idx, qty, remainder: (bonusCount * fraction) - qty }
+          })
+
+          // 2. Distribute remaining based on highest remainder
+          distributions.sort((a, b) => {
+            if (Math.abs(b.remainder - a.remainder) > 0.0001) {
+              return b.remainder - a.remainder
+            }
+            return newLines[b.idx].cantidadCajas - newLines[a.idx].cantidadCajas
+          })
+
+          for (let i = 0; i < remainingBonus && i < distributions.length; i++) {
+             distributions[i].qty += 1
+          }
+
+          // 3. Apply to lines
+          for (const dist of distributions) {
+            if (dist.qty > 0) {
+              newLines[dist.idx].cajasBonus += dist.qty
+              const existingDesc = newLines[dist.idx].descripcionBonus
+              const newDesc = `${promo.nombre}: +${dist.qty} reg`
+              newLines[dist.idx].descripcionBonus = existingDesc ? `${existingDesc}, ${newDesc}` : newDesc
+            }
+          }
         }
       }
     }
