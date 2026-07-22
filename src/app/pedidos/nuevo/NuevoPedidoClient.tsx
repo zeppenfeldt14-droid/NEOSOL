@@ -248,10 +248,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
     if (promoNameLower.includes(prodCodigo)) return true
 
-    const anyCodeMatch = ['33001', '33024', '33077', '66033', '66034', '99001', '77001', '77002', '77003', '80000', '80001', '80002', '80003', '80004', '80005', '80006', '80007']
-    const hasOtherCode = anyCodeMatch.some(code => code !== prodCodigo && promoNameLower.includes(code))
-    if (hasOtherCode) return false
-
+    // Removido hasOtherCode para evitar falsos negativos en rangos como 80000-80007.
+    // Para promociones de un solo producto, se debe usar la selección explícita (checkboxes) en Configuración.
     if (promoNameLower.includes('minis') || promoNameLower.includes('mini')) {
       return prodLineaLower === 'minis' || prodNombreLower.includes('mini')
     }

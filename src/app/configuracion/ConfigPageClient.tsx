@@ -34,6 +34,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [newPromoDesde, setNewPromoDesde] = useState('')
   const [newPromoHasta, setNewPromoHasta] = useState('')
   const [selectedPromoProductos, setSelectedPromoProductos] = useState<number[]>([])
+  const [editingPromoId, setEditingPromoId] = useState<number | null>(null)
   const [productos, setProductos] = useState<any[]>([])
   const [isLoadingPromos, setIsLoadingPromos] = useState(false)
 
@@ -198,6 +199,29 @@ export function ConfigPageClient({ currentLogo }: Props) {
     }
   }
 
+  const handleEditPromo = (p: any) => {
+    setEditingPromoId(p.id)
+    setNewPromoNombre(p.nombre)
+    setNewPromoDesc(p.descripcion || '')
+    setNewPromoMin(p.compraMinima ? p.compraMinima.toString() : '')
+    setNewPromoBonus(p.bonificacion ? p.bonificacion.toString() : '')
+    setNewPromoDesde(p.vigenciaDesde ? new Date(p.vigenciaDesde).toISOString().split('T')[0] : '')
+    setNewPromoHasta(p.vigenciaHasta ? new Date(p.vigenciaHasta).toISOString().split('T')[0] : '')
+    setSelectedPromoProductos(p.detallesPromocion ? p.detallesPromocion.map((d: any) => d.productoId) : [])
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  }
+
+  const handleCancelEditPromo = () => {
+    setEditingPromoId(null)
+    setNewPromoNombre('')
+    setNewPromoDesc('')
+    setNewPromoMin('')
+    setNewPromoBonus('')
+    setNewPromoDesde('')
+    setNewPromoHasta('')
+    setSelectedPromoProductos([])
+  }
+
   const handleCreatePromo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPromoNombre.trim() || !newPromoMin || !newPromoBonus) {
@@ -206,10 +230,12 @@ export function ConfigPageClient({ currentLogo }: Props) {
     }
     setIsSaving(true)
     try {
+      const isEditing = editingPromoId !== null
       const res = await fetch('/api/configuracion/promociones', {
-        method: 'POST',
+        method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: isEditing ? editingPromoId : undefined,
           nombre: newPromoNombre.trim(),
           descripcion: newPromoDesc.trim() || null,
           compraMinima: parseInt(newPromoMin),
@@ -220,15 +246,9 @@ export function ConfigPageClient({ currentLogo }: Props) {
         })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al crear promo')
-      alert('Promoción creada correctamente.')
-      setNewPromoNombre('')
-      setNewPromoDesc('')
-      setNewPromoMin('')
-      setNewPromoBonus('')
-      setNewPromoDesde('')
-      setNewPromoHasta('')
-      setSelectedPromoProductos([])
+      if (!res.ok) throw new Error(data.error || 'Error al guardar promo')
+      alert(isEditing ? 'Promoción actualizada correctamente.' : 'Promoción creada correctamente.')
+      handleCancelEditPromo()
       fetchPromociones()
     } catch (err: any) {
       alert(err.message)
@@ -856,6 +876,12 @@ export function ConfigPageClient({ currentLogo }: Props) {
                               {p.activa ? 'Desactivar' : 'Activar'}
                             </button>
                             <button 
+                              onClick={() => handleEditPromo(p)} 
+                              className="btn btn-secondary !py-1 !px-2 text-xs"
+                            >
+                              Editar
+                            </button>
+                            <button 
                               onClick={() => handleDeletePromo(p.id, p.nombre)} 
                               className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs"
                             >
@@ -907,7 +933,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
           <div className="glass-panel card flex flex-col justify-between" style={{ minHeight: '300px' }}>
             <div>
               <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
-                Nueva Promoción Mensual
+                {editingPromoId ? 'Editar Promoción' : 'Nueva Promoción Mensual'}
               </h3>
               <form onSubmit={handleCreatePromo} className="flex flex-col gap-3">
                 <div className="form-group mb-0">
@@ -990,9 +1016,16 @@ export function ConfigPageClient({ currentLogo }: Props) {
                     {productos.length === 0 && <span className="text-xs text-secondary">No hay productos cargados</span>}
                   </div>
                 </div>
-                <button type="submit" className="btn btn-primary w-full mt-2" disabled={isSaving}>
-                  Crear Promoción
-                </button>
+                <div className="flex gap-2 mt-2">
+                  <button type="submit" className="btn btn-primary flex-1" disabled={isSaving}>
+                    {editingPromoId ? 'Actualizar Promoción' : 'Crear Promoción'}
+                  </button>
+                  {editingPromoId && (
+                    <button type="button" onClick={handleCancelEditPromo} className="btn btn-secondary flex-1" disabled={isSaving}>
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
           </div>
