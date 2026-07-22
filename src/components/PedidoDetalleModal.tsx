@@ -10,6 +10,8 @@ import {
   User
 } from 'lucide-react'
 import { formatDate } from '@/lib/date'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 interface Props {
   pedido: any
@@ -36,8 +38,80 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
-  const handlePrintPedido = () => {
-    window.open(`/api/reportes/download?type=pedido&id=${pedido.id}`, '_blank')
+  const handlePrintPedido = async () => {
+    const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const div = document.createElement('div')
+    div.innerHTML = `
+      <div style="font-family: 'Helvetica Neue', sans-serif; font-size: 11px; padding: 20px; color: #222; background: white; width: 800px;">
+        <div style="border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between;">
+          <div>
+            <div style="font-size: 20px; font-weight: 900; color: #444;">NEOSOL</div>
+            <p><strong>Pedido:</strong> ${pedido.numeroPedido}</p>
+            <p><strong>Cliente:</strong> ${pedido.empresa?.nombre || ''} ${pedido.empresa?.cuit ? `(CUIT: ${pedido.empresa.cuit})` : ''}</p>
+            <p><strong>Vendedor:</strong> ${pedido.vendedorAlias || ''} | <strong>Zona:</strong> ${pedido.zona || ''}</p>
+          </div>
+          <div style="text-align: right;">
+            <p><strong>Fecha:</strong> ${new Date(pedido.creadoEn).toLocaleString('es-AR')}</p>
+            <p><strong>Estado:</strong> ${ESTADO_LABELS[pedido.estado] || pedido.estado}</p>
+          </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+          <thead>
+            <tr>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Cód</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Producto</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Paq/Caja</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Cajas</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Bonus</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Precio Caja</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right; background: #f9f9f9; font-size: 10px; text-transform: uppercase;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pedido.detalles.map((d: any) => `
+              <tr>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left;">${d.producto?.codigoInterno || d.productoId}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left;">${d.productoNombre}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center;">${d.producto?.paqPorCaja || '-'}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center;">${d.cantidadCajas}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: center;">${d.cajasBonus ? `+${d.cajasBonus}` : '-'}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right;">${fmt(d.precioCajaSnapshot)}</td>
+                <td style="border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: right;">${fmt(d.subtotal)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+          <table style="width: 300px; border-collapse: collapse;">
+            <tr><td style="padding: 4px; text-align: left;">Subtotal Neto:</td><td style="padding: 4px; text-align: right;">${fmt(pedido.subtotalSinIVA)}</td></tr>
+            <tr><td style="padding: 4px; text-align: left;">IVA (21%):</td><td style="padding: 4px; text-align: right;">${fmt(pedido.montoIVA)}</td></tr>
+            <tr><td style="padding: 4px; text-align: left;">Recargo Financiación:</td><td style="padding: 4px; text-align: right;">${fmt(pedido.montoFinanciera)}</td></tr>
+            <tr><td style="padding: 4px; text-align: left;"><h3>Total General:</h3></td><td style="padding: 4px; text-align: right;"><h3>${fmt(pedido.totalGeneral)}</h3></td></tr>
+          </table>
+        </div>
+        <div style="margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
+          ${pedido.observaciones ? `<p><strong>Observaciones:</strong> ${pedido.observaciones}</p>` : ''}
+          <p>Condición de Pago: ${pedido.condicionPago || 'N/A'}</p>
+          <p>Generado el ${today}</p>
+        </div>
+      </div>
+    `
+    div.style.position = 'absolute'
+    div.style.top = '-9999px'
+    div.style.left = '-9999px'
+    document.body.appendChild(div)
+
+    try {
+      const canvas = await html2canvas(div.firstElementChild as HTMLElement, { scale: 2 })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      pdf.save(`Pedido_${pedido.numeroPedido}.pdf`)
+    } finally {
+      document.body.removeChild(div)
+    }
   }
 
   return (
