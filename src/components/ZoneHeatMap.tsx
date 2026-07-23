@@ -112,19 +112,15 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
         : ''
 
       const icon = L.divIcon({
-        html: `<div title="${point.nombre || ''}" style="
-          position:relative;
-          width:14px; height:14px;
-          background:${cfg.color};
-          border:2.5px solid rgba(255,255,255,0.9);
-          border-radius:50%;
-          box-shadow:0 2px 5px rgba(0,0,0,0.3);
-          cursor:pointer;
-          transition: transform 0.15s;
-        "></div>`,
+        html: `<div title="${point.nombre || ''}" style="position:relative;width:24px;height:36px;cursor:pointer;transition:transform 0.15s;filter:drop-shadow(0px 3px 4px rgba(0,0,0,0.4));">
+          <svg viewBox="0 0 32 48" style="width:24px;height:36px;">
+            <path fill="${cfg.color}" d="M16 0C7.16 0 0 7.16 0 16c0 12 16 32 16 32s16-20 16-32C32 7.16 24.84 0 16 0z" />
+            <circle cx="16" cy="16" r="6" fill="white" />
+          </svg>
+        </div>`,
         className: '',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7]
+        iconSize: [24, 36],
+        iconAnchor: [12, 36]
       })
 
       L.marker([point.lat, point.lng], { icon })
@@ -212,13 +208,13 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       ] as [number, number, number])
 
       const gradient = mode === 'visitas'
-        ? { 0.1: '#1e3a8a', 0.3: '#1d4ed8', 0.5: '#38bdf8', 0.75: '#fbbf24', 1.0: '#ef4444' }
-        : { 0.1: '#14532d', 0.3: '#15803d', 0.5: '#4ade80', 0.75: '#fbbf24', 1.0: '#ef4444' }
+        ? { 0.2: '#fca5a5', 0.5: '#ef4444', 0.8: '#dc2626', 1.0: '#991b1b' }
+        : { 0.2: '#fca5a5', 0.5: '#ef4444', 0.8: '#dc2626', 1.0: '#991b1b' }
 
       const Lany = L as any
       if (Lany.heatLayer) {
         heatLayerRef.current = Lany.heatLayer(heatPoints, {
-          radius: 40, blur: 30, maxZoom: 17, max: 1.0, gradient
+          radius: 35, blur: 2, maxZoom: 17, max: 1.0, gradient
         }).addTo(map)
       }
 
