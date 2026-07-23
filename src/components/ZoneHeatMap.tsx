@@ -118,7 +118,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
           background:${cfg.color};
           border:2.5px solid rgba(255,255,255,0.9);
           border-radius:50%;
-          box-shadow:0 0 8px ${cfg.glow}, 0 0 20px ${cfg.glow};
+          box-shadow:0 2px 5px rgba(0,0,0,0.3);
           cursor:pointer;
           transition: transform 0.15s;
         "></div>`,
