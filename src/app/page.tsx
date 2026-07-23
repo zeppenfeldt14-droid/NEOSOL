@@ -389,6 +389,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       longitud: true,
       zona: true,
       estado: true,
+      motivoBaja: true,
       _count: {
         select: {
           visitas: {
@@ -462,7 +463,14 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       totalEmpresas: empresasGeo.length,
       userNivel: user.nivel,
       userZona: user.zona || null,
-      allPoints: empresasGeo.map(e => ({ lat: e.latitud!, lng: e.longitud!, zona: e.zona, nombre: e.nombre, estado: e.estado }))
+      allPoints: empresasGeo.map(e => ({ 
+        lat: e.latitud!, 
+        lng: e.longitud!, 
+        zona: e.zona, 
+        nombre: e.nombre, 
+        estado: e.estado,
+        motivoBaja: e.motivoBaja
+      }))
     },
     availableZones,
     selectedZones

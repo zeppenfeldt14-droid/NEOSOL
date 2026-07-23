@@ -17,6 +17,7 @@ type AllPoint = {
   zona?: string | null
   nombre?: string
   estado?: string | null
+  motivoBaja?: string | null
 }
 
 type Props = {
@@ -33,7 +34,7 @@ type Props = {
 const ESTADO_CONFIG: Record<string, { color: string; glow: string; label: string; emoji: string }> = {
   activo:     { color: '#22c55e', glow: '#22c55e80', label: 'Cliente Activo', emoji: '✅' },
   prospecto:  { color: '#f59e0b', glow: '#f59e0b80', label: 'Prospecto',      emoji: '🟡' },
-  descartada: { color: '#6b7280', glow: '#6b728080', label: 'Descartada',     emoji: '⚫' },
+  descartada: { color: '#8b5cf6', glow: '#8b5cf680', label: 'Descartada',     emoji: '🟣' },
   baja:       { color: '#ef4444', glow: '#ef444480', label: 'Baja',           emoji: '🔴' },
 }
 
@@ -105,6 +106,11 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
 
     allPoints.forEach((point: AllPoint) => {
       const cfg = ESTADO_CONFIG[point.estado?.toLowerCase() || ''] || ESTADO_CONFIG.prospecto
+      const isBajaOrDescartada = ['baja', 'descartada'].includes(point.estado?.toLowerCase() || '')
+      const motivoHtml = isBajaOrDescartada && point.motivoBaja 
+        ? `<div style="margin-top:6px;padding:4px 6px;background:rgba(0,0,0,0.05);border-left:2px solid ${cfg.color};font-size:10px;color:#475569;font-style:italic;">Motivo: ${point.motivoBaja}</div>` 
+        : ''
+
       const icon = L.divIcon({
         html: `<div title="${point.nombre || ''}" style="
           position:relative;
@@ -133,8 +139,9 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
               padding:2px 8px;border-radius:12px;
               font-weight:700;font-size:11px;
             ">${cfg.emoji} ${cfg.label}</span>
+            ${motivoHtml}
           </div>
-        `, { closeButton: false, maxWidth: 200 })
+        `, { closeButton: false, maxWidth: 220 })
         .addTo(group)
     })
 
