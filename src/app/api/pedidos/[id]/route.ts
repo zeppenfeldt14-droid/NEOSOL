@@ -56,8 +56,8 @@ export async function PATCH(request: Request, { params }: Params) {
     let aprobadoPor: Partial<typeof pedido> = {}
 
     if (accion === 'enviar') {
-      if (pedido.estado !== 'borrador')
-        return NextResponse.json({ error: 'Solo se puede enviar un pedido en borrador.' }, { status: 400 })
+      if (pedido.estado !== 'borrador' && pedido.estado !== 'presupuesto')
+        return NextResponse.json({ error: 'Solo se puede enviar un pedido en borrador o presupuesto.' }, { status: 400 })
       nuevoEstado = 'pendiente_supervisor'
     } else if (accion === 'aprobar') {
       if (session.nivel > 2)
@@ -225,8 +225,8 @@ export async function PUT(request: Request, { params }: Params) {
     if (!existing) return NextResponse.json({ error: 'Pedido no encontrado.' }, { status: 404 })
 
     // Check if the order is in borrador state
-    if (existing.estado !== 'borrador') {
-      return NextResponse.json({ error: 'Solo se pueden editar pedidos en estado borrador.' }, { status: 400 })
+    if (existing.estado !== 'borrador' && existing.estado !== 'presupuesto') {
+      return NextResponse.json({ error: 'Solo se pueden editar pedidos en estado borrador o presupuesto.' }, { status: 400 })
     }
 
     const body = await request.json()
