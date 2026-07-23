@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import SharedPeriodFilter from '@/components/SharedPeriodFilter'
 import { 
   PieChart, 
@@ -35,6 +36,16 @@ import {
   Legend
 } from 'recharts'
 
+// Dynamic import to avoid SSR issues with Leaflet
+const ZoneHeatMap = dynamic(
+  () => import('@/components/ZoneHeatMap').then(m => m.ZoneHeatMap),
+  { ssr: false, loading: () => (
+    <div style={{ height: '560px', background: 'rgba(15,23,42,0.8)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: '#64748b', fontSize: '0.875rem' }}>Cargando mapa...</div>
+    </div>
+  )}
+)
+
 // Colors for Recharts
 const COLORS_PIE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
 const COLORS_PROMOS = ['#ec4899', '#f59e0b', '#8b5cf6', '#10b981', '#3b82f6']
@@ -42,7 +53,7 @@ const COLOR_PRIMARY = '#3b82f6'
 const COLOR_SUCCESS = '#10b981'
 
 export function InicioPageClient({ data, currentUser }: { data: any, currentUser: any }) {
-  const { kpis, recentActivity, charts, availableZones, selectedZones } = data
+  const { kpis, recentActivity, charts, heatmap, availableZones, selectedZones } = data
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -299,6 +310,22 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           </div>
         </div>
 
+      </div>
+
+      {/* MAPA DE CALOR DE ZONA */}
+      <div className="mb-10 w-full">
+        {/* Leaflet CSS — required for the map to render correctly */}
+        <link 
+          rel="stylesheet" 
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          crossOrigin=""
+        />
+        <ZoneHeatMap 
+          visitas={heatmap?.visitas || []} 
+          ventas={heatmap?.ventas || []} 
+          totalEmpresas={heatmap?.totalEmpresas || 0}
+          selectedZones={selectedZones}
+        />
       </div>
 
       {/* CUADRÍCULA DE GRÁFICOS (6 Gráficos en 2 filas) */}

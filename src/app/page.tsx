@@ -327,13 +327,14 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     .sort((a, b) => b.value - a.value)
 
   // D. Promotions in Sales (Horizontal Bar Chart - Boxes)
+  // Includes cajasBonus (regalo de promo) in the count
   const promos = await prisma.promocion.findMany()
   const promoMap = new Map(promos.map(p => [p.id, p.nombre]))
   const promoSalesMap: Record<string, number> = {}
   for (const p of targetPedidos) {
     if (p.promocionId) {
       const promoName = promoMap.get(p.promocionId) || `Promo #${p.promocionId}`
-      const totalCajas = p.detalles.reduce((acc, d) => acc + d.cantidadCajas, 0)
+      const totalCajas = p.detalles.reduce((acc, d) => acc + d.cantidadCajas + (d.cajasBonus || 0), 0)
       promoSalesMap[promoName] = (promoSalesMap[promoName] || 0) + totalCajas
     }
   }
@@ -341,11 +342,12 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  // E. Snacks Sales (Vertical Bar Chart)
+  // E. Snacks Sales (Vertical Bar Chart) — case-insensitive linea filter
   const snacksMap: Record<string, number> = {}
   for (const p of targetPedidos) {
     for (const d of p.detalles) {
-      if (d.producto && d.producto.linea === 'snacks') {
+      const linea = d.producto?.linea?.toLowerCase() || ''
+      if (linea.includes('snack')) {
         snacksMap[d.productoNombre] = (snacksMap[d.productoNombre] || 0) + d.cantidadCajas
       }
     }
@@ -354,11 +356,12 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  // F. Tripacks Sales (Vertical Bar Chart)
+  // F. Tripacks Sales (Vertical Bar Chart) — case-insensitive linea filter
   const tripacksMap: Record<string, number> = {}
   for (const p of targetPedidos) {
     for (const d of p.detalles) {
-      if (d.producto && d.producto.linea === 'tripack') {
+      const linea = d.producto?.linea?.toLowerCase() || ''
+      if (linea.includes('tripack')) {
         tripacksMap[d.productoNombre] = (tripacksMap[d.productoNombre] || 0) + d.cantidadCajas
       }
     }
@@ -366,6 +369,65 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const chartTripacks = Object.entries(tripacksMap)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
+
+  // G. Heatmap Data — Empresas con coordenadas + conteo de visitas y ventas
+  // Obtiene empresas de las zonas seleccionadas que tienen coordenadas cargadas
+  const empresasGeo = await prisma.empresa.findMany({
+    where: {
+      zona: zoneFilter,
+      NOT: [
+        { latitud: null },
+        { longitud: null }
+      ]
+    },
+    select: {
+      id: true,
+      nombre: true,
+      direccion: true,
+      latitud: true,
+      longitud: true,
+      zona: true,
+      estado: true,
+      _count: {
+        select: {
+          visitas: {
+            where: isPeriodFiltered ? {
+              OR: dateFilters.map((f: any) => ({ creadoEn: f }))
+            } : undefined
+          },
+          pedidos: {
+            where: {
+              estado: 'aprobado',
+              ...(isPeriodFiltered ? {
+                OR: dateFilters.map((f: any) => ({ creadoEn: f }))
+              } : {})
+            }
+          }
+        }
+      }
+    }
+  })
+
+  // Format heatmap points: [lat, lng, intensity]
+  const heatmapVisitas = empresasGeo
+    .filter(e => e._count.visitas > 0)
+    .map(e => ({
+      lat: e.latitud!,
+      lng: e.longitud!,
+      weight: e._count.visitas,
+      nombre: e.nombre,
+      zona: e.zona
+    }))
+
+  const heatmapVentas = empresasGeo
+    .filter(e => e._count.pedidos > 0)
+    .map(e => ({
+      lat: e.latitud!,
+      lng: e.longitud!,
+      weight: e._count.pedidos,
+      nombre: e.nombre,
+      zona: e.zona
+    }))
 
   const dashboardData = {
     kpis: {
@@ -392,6 +454,11 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       snacks: chartSnacks,
       tripacks: chartTripacks,
       cobranzaZonas: chartCobranzaZonas
+    },
+    heatmap: {
+      visitas: heatmapVisitas,
+      ventas: heatmapVentas,
+      totalEmpresas: empresasGeo.length
     },
     availableZones,
     selectedZones
