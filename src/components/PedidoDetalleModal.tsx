@@ -46,7 +46,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
         <div style="border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between;">
           <div>
             <div style="font-size: 20px; font-weight: 900; color: #444;">NEOSOL</div>
-            <p><strong>Pedido:</strong> ${pedido.numeroPedido}</p>
+            <p><strong>${pedido.estado === 'presupuesto' ? 'Presupuesto' : 'Pedido'}:</strong> ${pedido.numeroPedido}</p>
             <p><strong>Cliente:</strong> ${pedido.empresa?.nombre || ''} ${pedido.empresa?.cuit ? `(CUIT: ${pedido.empresa.cuit})` : ''}</p>
             <p><strong>Vendedor:</strong> ${pedido.vendedorAlias || ''} | <strong>Zona:</strong> ${pedido.zona || ''}</p>
           </div>
@@ -108,7 +108,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`Pedido_${pedido.numeroPedido}.pdf`)
+      pdf.save(`${pedido.estado === 'presupuesto' ? 'Presupuesto' : 'Pedido'}_${pedido.numeroPedido}.pdf`)
     } finally {
       document.body.removeChild(div)
     }
@@ -121,7 +121,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
         <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <ShoppingCart className="text-primary" size={20} />
-            <h3 className="text-white font-bold text-lg">Pedido {pedido.numeroPedido}</h3>
+            <h3 className="text-white font-bold text-lg">{pedido.estado === 'presupuesto' ? 'Presupuesto' : 'Pedido'} {pedido.numeroPedido}</h3>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${ESTADO_BADGES[pedido.estado] || ''}`}>
               {ESTADO_LABELS[pedido.estado] || pedido.estado}
             </span>

@@ -249,7 +249,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
 
   const counts = {
     todos:                pedidos.length,
-    borrador:             pedidos.filter(p => p.estado === 'borrador').length,
+    borrador:             pedidos.filter(p => p.(estado === 'borrador' || estado === 'presupuesto')).length,
     pendiente_supervisor: pedidos.filter(p => p.estado === 'pendiente_supervisor').length,
     aprobado:             pedidos.filter(p => p.estado === 'aprobado').length,
     cancelado:            pedidos.filter(p => p.estado === 'cancelado').length,
@@ -446,7 +446,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         </button>
 
                         {/* Editar borrador */}
-                        {p.estado === 'borrador' && (
+                        {p.(estado === 'borrador' || estado === 'presupuesto') && (
                           <button
                             onClick={() => router.push(`/pedidos/nuevo?edit=${p.id}`)}
                             className="btn-action text-yellow-400 border-yellow-400/20 hover:bg-yellow-400/10"
@@ -482,7 +482,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         )}
 
                         {/* Enviar */}
-                        {p.estado === 'borrador' && (
+                        {p.(estado === 'borrador' || estado === 'presupuesto') && (
                           <button
                             onClick={() => handleAction(p.id, 'enviar')}
                             disabled={actionId === p.id}
@@ -494,7 +494,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         )}
 
                         {/* Cancelar */}
-                        {(p.estado === 'borrador' || (p.estado === 'pendiente_supervisor' && userNivel < 3)) && (
+                        {(p.(estado === 'borrador' || estado === 'presupuesto') || (p.estado === 'pendiente_supervisor' && userNivel < 3)) && (
                           <button
                             onClick={() => { if (confirm('¿Cancelar este pedido?')) handleAction(p.id, 'cancelar') }}
                             disabled={actionId === p.id}
@@ -506,7 +506,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         )}
 
                         {/* Borrar (Delete) */}
-                        {((p.estado === 'borrador' || p.estado === 'cancelado') || userNivel < 3) && (
+                        {((p.(estado === 'borrador' || estado === 'presupuesto') || p.estado === 'cancelado') || userNivel < 3) && (
                           <button
                             onClick={() => { if (confirm('¿ELIMINAR DEFINITIVAMENTE este pedido del sistema? Esta acción no se puede deshacer.')) handleDelete(p.id) }}
                             disabled={actionId === p.id}
@@ -582,7 +582,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                 </button>
 
                 <div className="flex gap-2">
-                  {p.estado === 'borrador' && (
+                  {p.(estado === 'borrador' || estado === 'presupuesto') && (
                     <>
                       <button
                         onClick={() => router.push(`/pedidos/nuevo?edit=${p.id}`)}
@@ -623,7 +623,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     </button>
                   )}
 
-                  {(p.estado === 'borrador' || (p.estado === 'pendiente_supervisor' && userNivel < 3)) && (
+                  {(p.(estado === 'borrador' || estado === 'presupuesto') || (p.estado === 'pendiente_supervisor' && userNivel < 3)) && (
                     <button
                       onClick={() => { if (confirm('¿Cancelar este pedido?')) handleAction(p.id, 'cancelar') }}
                       disabled={actionId === p.id}
@@ -633,7 +633,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     </button>
                   )}
                   
-                  {((p.estado === 'borrador' || p.estado === 'cancelado') || userNivel < 3) && (
+                  {((p.(estado === 'borrador' || estado === 'presupuesto') || p.estado === 'cancelado') || userNivel < 3) && (
                     <button
                       onClick={() => { if (confirm('¿ELIMINAR DEFINITIVAMENTE este pedido del sistema? Esta acción no se puede deshacer.')) handleDelete(p.id) }}
                       disabled={actionId === p.id}

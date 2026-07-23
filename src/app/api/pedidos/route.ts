@@ -137,46 +137,79 @@ export async function POST(request: Request) {
     })
 
     // Financial calculations
-    const pctA = (porcentajePagoA || 20) / 100
+    const pctA = (porcentajePagoA ?? 20) / 100
     const montoIVA = subtotalSinIVA * pctA * 0.21   // 21% IVA sobre la parte A
     const montoFinanciera = aplicaFinanciera
       ? (subtotalSinIVA + montoIVA) * 0.03
       : 0
     const totalGeneral = subtotalSinIVA + montoIVA + montoFinanciera
 
-    // Auto-generate order number: PED-YYYY-NNNN
-    const count = await prisma.pedido.count()
-    const numeroPedido = `PED-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`
+    // Auto-generate order number with retry to avoid race conditions
+    const currentYear = new Date().getFullYear();
+    let nextNumber = 1;
+    
+    // Find highest order number for current year
+    const lastPedido = await prisma.pedido.findFirst({
+      where: { numeroPedido: { startsWith: `PED-${currentYear}-` } },
+      orderBy: { id: 'desc' }
+    });
+    
+    if (lastPedido) {
+      const parts = lastPedido.numeroPedido.split('-');
+      if (parts.length === 3) {
+        nextNumber = parseInt(parts[2], 10) + 1;
+      }
+    }
 
-    const pedido = await prisma.pedido.create({
-      data: {
-        numeroPedido,
-        empresaId,
-        vendedorId: session.id,
-        vendedorAlias: session.alias,
-        zona: empresa.zona || session.zona || 'Sin Zona',
-        estado: 'borrador',
-        tienePrecioNegociado,
-        tieneTarifaNegociada: tieneTarifaNegociada || false,
-        condicionPago: condicionPago || `${porcentajePagoA || 20}/${porcentajePagoB || 80}`,
-        porcentajePagoA: porcentajePagoA || 20,
-        porcentajePagoB: porcentajePagoB || 80,
-        aplicaFinanciera: aplicaFinanciera || false,
-        plazosPago: plazosPago || null,
-        observaciones: observaciones || null,
-        acuerdosComerciales: acuerdosComerciales || null,
-        requierePresupuesto: requierePresupuesto || false,
-        turnoEntrega: turnoEntrega || null,
-        metodoPagoA: metodoPagoA || null,
-        fechaPagoA: fechaPagoA ? new Date(fechaPagoA).toISOString() : null,
-        subtotalSinIVA,
-        montoIVA,
-        montoFinanciera,
-        totalGeneral,
-        detalles: { create: detallesConCalculo },
-      },
-      include: { detalles: true },
-    })
+    let pedido = null;
+    let attempts = 0;
+    
+    while (!pedido && attempts < 5) {
+      const numeroPedido = `PED-${currentYear}-${String(nextNumber).padStart(4, '0')}`
+      
+      try {
+        pedido = await prisma.pedido.create({
+          data: {
+            numeroPedido,
+            empresaId,
+            vendedorId: session.id,
+            vendedorAlias: session.alias,
+            zona: empresa.zona || session.zona || 'Sin Zona',
+            estado: requierePresupuesto ? 'presupuesto' : 'borrador',
+            tienePrecioNegociado,
+            tieneTarifaNegociada: tieneTarifaNegociada || false,
+            condicionPago: condicionPago || `${porcentajePagoA ?? 20}/${porcentajePagoB ?? 80}`,
+            porcentajePagoA: porcentajePagoA ?? 20,
+            porcentajePagoB: porcentajePagoB ?? 80,
+            aplicaFinanciera: aplicaFinanciera || false,
+            plazosPago: plazosPago || null,
+            observaciones: observaciones || null,
+            acuerdosComerciales: acuerdosComerciales || null,
+            requierePresupuesto: requierePresupuesto || false,
+            turnoEntrega: turnoEntrega || null,
+            metodoPagoA: metodoPagoA || null,
+            fechaPagoA: fechaPagoA ? new Date(fechaPagoA).toISOString() : null,
+            subtotalSinIVA,
+            montoIVA,
+            montoFinanciera,
+            totalGeneral,
+            detalles: { create: detallesConCalculo },
+          },
+          include: { detalles: true },
+        })
+      } catch (err: any) {
+        if (err.code === 'P2002') { // Unique constraint failed
+          nextNumber++;
+          attempts++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (!pedido) {
+      throw new Error('No se pudo generar un número de pedido único. Intente nuevamente.');
+    }
 
     await registrarAccion(session.id, session.alias, 'CREATE_PEDIDO', `Pedido ${pedido.numeroPedido} creado para empresa ID ${empresaId}`)
 
