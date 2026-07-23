@@ -6,19 +6,39 @@ type Props = {
   planificadas: number
   atendidas: number
   reprogramadas: number
+  breakdown?: {
+    visitas: number
+    whatsapp: number
+    correo: number
+    llamada: number
+  }
 }
 
-export function DailyRouteChart({ planificadas, atendidas, reprogramadas }: Props) {
+export function DailyRouteChart({ planificadas, atendidas, reprogramadas, breakdown }: Props) {
   const pendientes = planificadas - atendidas - reprogramadas
-  const data = [
-    { name: 'Pendientes', value: pendientes > 0 ? pendientes : 0, color: '#3b82f6' }, // blue-500
-    { name: 'Atendidas', value: atendidas, color: '#22c55e' },       // green-500
-    { name: 'Reprogramadas', value: reprogramadas, color: '#f59e0b' } // amber-500
-  ].filter(d => d.value > 0)
+  
+  let data = []
+  
+  if (breakdown) {
+    data = [
+      { name: 'Pendientes', value: pendientes > 0 ? pendientes : 0, color: '#4b5563' }, // gray
+      { name: 'Reprogramadas', value: reprogramadas, color: '#f59e0b' }, // amber
+      { name: 'Visitas', value: breakdown.visitas, color: '#3b82f6' }, // blue
+      { name: 'WhatsApp', value: breakdown.whatsapp, color: '#22c55e' }, // green
+      { name: 'Correos', value: breakdown.correo, color: '#f97316' }, // orange
+      { name: 'Llamadas', value: breakdown.llamada, color: '#8b5cf6' } // purple
+    ].filter(d => d.value > 0)
+  } else {
+    data = [
+      { name: 'Pendientes', value: pendientes > 0 ? pendientes : 0, color: '#4b5563' }, // gray
+      { name: 'Atendidas', value: atendidas, color: '#22c55e' },       // green
+      { name: 'Reprogramadas', value: reprogramadas, color: '#f59e0b' } // amber
+    ].filter(d => d.value > 0)
+  }
 
   // Fallback for empty data
   if (data.length === 0) {
-    data.push({ name: 'Sin visitas', value: 1, color: '#4b5563' }) // gray
+    data.push({ name: 'Sin visitas', value: 1, color: '#374151' }) // dark gray
   }
 
   return (

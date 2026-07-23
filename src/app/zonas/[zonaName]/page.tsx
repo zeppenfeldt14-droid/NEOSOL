@@ -264,6 +264,13 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const reprogramadasCount = visitasEjecutadasHoy.filter(v => v.resultado.toLowerCase().includes('reprogram')).length
   const atendidasCount = visitasEjecutadasHoy.length - reprogramadasCount
 
+  const dailyBreakdown = {
+    visitas: visitasEjecutadasHoy.filter(v => v.tipo === 'visita' || v.tipo === 'visita_programada' || !v.tipo).length,
+    whatsapp: visitasEjecutadasHoy.filter(v => v.tipo === 'whatsapp').length,
+    correo: visitasEjecutadasHoy.filter(v => v.tipo === 'correo').length,
+    llamada: visitasEjecutadasHoy.filter(v => v.tipo === 'llamada').length
+  }
+
   // Obtener visitas del año en curso para el gráfico mensual
   const startOfYear = new Date(today.getFullYear(), 0, 1)
   const visitasEsteAño = await prisma.visita.findMany({
@@ -304,11 +311,17 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const weeklyData = daysOfWeek.map((dayName, idx) => {
     const d = new Date(startOfWeek)
     d.setDate(d.getDate() + idx)
-    const count = visitasSemana.filter(v => {
+    const dayVisitas = visitasSemana.filter(v => {
       const vf = new Date(v.fecha)
       return vf.getDate() === d.getDate() && vf.getMonth() === d.getMonth() && vf.getFullYear() === d.getFullYear()
-    }).length
-    return { name: dayName, visitas: count }
+    })
+    return { 
+      name: dayName, 
+      visitas: dayVisitas.filter(v => v.tipo === 'visita' || v.tipo === 'visita_programada' || !v.tipo).length,
+      whatsapp: dayVisitas.filter(v => v.tipo === 'whatsapp').length,
+      correo: dayVisitas.filter(v => v.tipo === 'correo').length,
+      llamada: dayVisitas.filter(v => v.tipo === 'llamada').length
+    }
   })
 
   // ── Nuevos: primer venta en ese mes (este año)
@@ -621,6 +634,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
               planificadas={visitasDeHoy.length} 
               atendidas={atendidasCount} 
               reprogramadas={reprogramadasCount} 
+              breakdown={dailyBreakdown}
             />
           </div>
         </div>
