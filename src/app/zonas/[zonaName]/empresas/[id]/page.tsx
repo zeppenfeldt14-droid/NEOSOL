@@ -72,17 +72,22 @@ function InfoGeneral({ empresa }: { empresa: any }) {
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{empresa.barrio || ''}</div>
           </div>
         </div>
-        {empresa.direccion && (
-          <a 
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${empresa.direccion}, ${empresa.barrio || ''}, ${empresa.partido || ''}`)}`}
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="btn btn-secondary !p-2 !rounded-full text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-            title="Abrir en Google Maps"
-          >
-            <Navigation size={18} />
-          </a>
-        )}
+        {empresa.direccion && (() => {
+          const mapsQuery = (empresa.latitud && empresa.longitud) 
+            ? `${empresa.latitud},${empresa.longitud}`
+            : encodeURIComponent([empresa.direccion, empresa.barrio, empresa.partido].filter(Boolean).join(', '))
+          return (
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn btn-secondary !p-2 !rounded-full text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+              title="Abrir en Google Maps"
+            >
+              <Navigation size={18} />
+            </a>
+          )
+        })()}
       </div>
 
       <div className="flex items-center justify-between gap-3 w-full">

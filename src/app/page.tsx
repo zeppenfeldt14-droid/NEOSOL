@@ -390,20 +390,22 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       zona: true,
       estado: true,
       motivoBaja: true,
-      _count: {
+      visitas: {
+        where: isPeriodFiltered ? {
+          OR: dateFilters.map((f: any) => ({ creadoEn: f }))
+        } : {},
+        select: { tipo: true }
+      },
+      pedidos: {
+        where: {
+          estado: 'aprobado',
+          ...(isPeriodFiltered ? {
+            OR: dateFilters.map((f: any) => ({ creadoEn: f }))
+          } : {})
+        },
         select: {
-          visitas: {
-            where: isPeriodFiltered ? {
-              OR: dateFilters.map((f: any) => ({ creadoEn: f }))
-            } : {}
-          },
-          pedidos: {
-            where: {
-              estado: 'aprobado',
-              ...(isPeriodFiltered ? {
-                OR: dateFilters.map((f: any) => ({ creadoEn: f }))
-              } : {})
-            }
+          detalles: {
+            select: { cantidadCajas: true, cajasBonus: true }
           }
         }
       }
@@ -412,24 +414,36 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
 
   // Format heatmap points: [lat, lng, intensity]
   const heatmapVisitas = empresasGeo
-    .filter(e => e._count.visitas > 0)
-    .map(e => ({
-      lat: e.latitud!,
-      lng: e.longitud!,
-      weight: e._count.visitas,
-      nombre: e.nombre,
-      zona: e.zona
-    }))
+    .filter(e => e.visitas.length > 0)
+    .map(e => {
+      const weight = e.visitas.reduce((acc, v) => {
+        if (v.tipo === 'visita' || v.tipo === 'visita_programada' || v.tipo === 'presencial') return acc + 3
+        return acc + 1
+      }, 0)
+      return {
+        lat: e.latitud!,
+        lng: e.longitud!,
+        weight,
+        nombre: e.nombre,
+        zona: e.zona
+      }
+    })
 
   const heatmapVentas = empresasGeo
-    .filter(e => e._count.pedidos > 0)
-    .map(e => ({
-      lat: e.latitud!,
-      lng: e.longitud!,
-      weight: e._count.pedidos,
-      nombre: e.nombre,
-      zona: e.zona
-    }))
+    .filter(e => e.pedidos.length > 0)
+    .map(e => {
+      const weight = e.pedidos.reduce((acc, p) => {
+        const cajas = p.detalles.reduce((sum, d) => sum + d.cantidadCajas + d.cajasBonus, 0)
+        return acc + (cajas > 0 ? cajas : 1) // Fallback to 1 point if order has 0 boxes
+      }, 0)
+      return {
+        lat: e.latitud!,
+        lng: e.longitud!,
+        weight,
+        nombre: e.nombre,
+        zona: e.zona
+      }
+    })
 
   const dashboardData = {
     kpis: {

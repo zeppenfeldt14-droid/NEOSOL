@@ -15,6 +15,8 @@ interface Empresa {
   barrio: string | null
   telefono: string | null
   estado: string
+  latitud?: number | null
+  longitud?: number | null
 }
 
 interface AccionVisita {
@@ -47,9 +49,14 @@ export default function VisitasHoyCabaClient({ initialVisitas }: Props) {
     return d.toISOString().split('T')[0]
   })
 
-  const openGoogleMaps = (direccion: string | null, barrio: string | null) => {
-    const query = encodeURIComponent(`${direccion || ''}, ${barrio || ''}, CABA`)
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+  const openGoogleMaps = (emp: any) => {
+    if (emp.latitud && emp.longitud) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${emp.latitud},${emp.longitud}`, '_blank')
+    } else {
+      const addressStr = [emp.direccion, emp.barrio, 'CABA'].filter(Boolean).join(', ')
+      const query = encodeURIComponent(addressStr)
+      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+    }
   }
 
   const handleCompletar = async () => {
@@ -179,7 +186,7 @@ export default function VisitasHoyCabaClient({ initialVisitas }: Props) {
                   
                   {/* Botón Navegar */}
                   <button
-                    onClick={() => openGoogleMaps(emp.direccion, emp.barrio)}
+                    onClick={() => openGoogleMaps(emp)}
                     className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/25 active:bg-green-500/20 transition-all cursor-pointer"
                   >
                     <Navigation size={15} />

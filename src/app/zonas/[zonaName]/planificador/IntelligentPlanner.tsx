@@ -336,7 +336,15 @@ export default function IntelligentPlanner({
     if (accion.tipo === 'visita_programada' || accion.tipo === 'visita') {
       return (
         <button
-          onClick={e => { e.stopPropagation(); const q = encodeURIComponent(`${emp.direccion||''}, ${emp.barrio||''}, CABA`); window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank') }}
+          onClick={e => { 
+            e.stopPropagation()
+            if (emp.latitud && emp.longitud) {
+              window.open(`https://www.google.com/maps/search/?api=1&query=${emp.latitud},${emp.longitud}`,'_blank')
+            } else {
+              const q = encodeURIComponent([emp.direccion, emp.barrio, 'CABA'].filter(Boolean).join(', '))
+              window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank')
+            }
+          }}
           style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: 'pointer', backgroundColor: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           title="Navegar"
         >

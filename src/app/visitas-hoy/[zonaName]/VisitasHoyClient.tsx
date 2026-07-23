@@ -16,6 +16,8 @@ interface Empresa {
   telefono: string | null
   email: string | null
   estado: string
+  latitud?: number | null
+  longitud?: number | null
 }
 
 interface Accion {
@@ -106,8 +108,13 @@ export default function VisitasHoyClient({ initialAcciones, zonaName }: Props) {
   const openContextualLink = (accion: Accion) => {
     const emp = accion.empresa
     if (accion.tipo === 'visita_programada') {
-      const q = encodeURIComponent(`${emp.direccion || ''}, ${emp.barrio || ''}, ${zonaName}`)
-      window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank')
+      if (emp.latitud && emp.longitud) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${emp.latitud},${emp.longitud}`, '_blank')
+      } else {
+        const addressStr = [emp.direccion, emp.barrio, zonaName].filter(Boolean).join(', ')
+        const q = encodeURIComponent(addressStr)
+        window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank')
+      }
     } else if (accion.tipo === 'whatsapp') {
       const phone = emp.telefono?.replace(/\D/g, '') || ''
       if (phone) window.open(`https://wa.me/${phone}`, '_blank')
