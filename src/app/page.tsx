@@ -462,7 +462,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       totalEmpresas: empresasGeo.length,
       userNivel: user.nivel,
       userZona: user.zona || null,
-      allPoints: empresasGeo.map(e => ({ lat: e.latitud!, lng: e.longitud!, zona: e.zona }))
+      allPoints: empresasGeo.map(e => ({ lat: e.latitud!, lng: e.longitud!, zona: e.zona, nombre: e.nombre, estado: e.estado }))
     },
     availableZones,
     selectedZones
