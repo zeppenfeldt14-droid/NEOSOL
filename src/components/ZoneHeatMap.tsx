@@ -31,12 +31,11 @@ type Props = {
 
 // Color and label per estado
 const ESTADO_CONFIG: Record<string, { color: string; glow: string; label: string; emoji: string }> = {
-  activo:    { color: '#22c55e', glow: '#22c55e80', label: 'Cliente Activo', emoji: '✅' },
-  prospecto: { color: '#f59e0b', glow: '#f59e0b80', label: 'Prospecto',      emoji: '🟡' },
-  baja:      { color: '#ef4444', glow: '#ef444480', label: 'Baja',           emoji: '🔴' },
-  inactivo:  { color: '#6b7280', glow: '#6b728080', label: 'Inactivo',       emoji: '⚫' },
+  activo:     { color: '#22c55e', glow: '#22c55e80', label: 'Cliente Activo', emoji: '✅' },
+  prospecto:  { color: '#f59e0b', glow: '#f59e0b80', label: 'Prospecto',      emoji: '🟡' },
+  descartada: { color: '#6b7280', glow: '#6b728080', label: 'Descartada',     emoji: '⚫' },
+  baja:       { color: '#ef4444', glow: '#ef444480', label: 'Baja',           emoji: '🔴' },
 }
-const ESTADO_DEFAULT = { color: '#8b5cf6', glow: '#8b5cf680', label: 'Otro', emoji: '🟣' }
 
 // GBA default center — wide view
 const GBA_CENTER: [number, number] = [-34.65, -58.55]
@@ -105,7 +104,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
     const group = L.layerGroup()
 
     allPoints.forEach((point: AllPoint) => {
-      const cfg = ESTADO_CONFIG[point.estado?.toLowerCase() || ''] || ESTADO_DEFAULT
+      const cfg = ESTADO_CONFIG[point.estado?.toLowerCase() || ''] || ESTADO_CONFIG.prospecto
       const icon = L.divIcon({
         html: `<div title="${point.nombre || ''}" style="
           position:relative;
@@ -368,10 +367,6 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
             {cfg.label}
           </span>
         ))}
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: ESTADO_DEFAULT.color }}>
-          <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: ESTADO_DEFAULT.color, display: 'inline-block' }} />
-          {ESTADO_DEFAULT.label}
-        </span>
       </div>
 
       {/* Geocode message */}
