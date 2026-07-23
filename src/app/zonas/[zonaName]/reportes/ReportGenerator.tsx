@@ -18,13 +18,16 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
         position: 'relative', 
         width: '210mm', 
         minHeight: '297mm', 
-        fontFamily: 'Arial, Helvetica, sans-serif' 
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        letterSpacing: 'normal',
+        fontVariantLigatures: 'none',
+        textRendering: 'auto'
       }} 
       ref={containerRef}
     >
       {/* Header - Navy Blue */}
       <div style={{ backgroundColor: '#1e3a5f', color: 'white', padding: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', letterSpacing: '-0.5px' }}>Reporte de Visitas de Terreno</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>Reporte de Visitas de Terreno</h1>
         <div style={{ color: '#a5c0e1', fontSize: '14px', fontWeight: '500', display: 'flex', gap: '8px' }}>
           <span style={{ color: '#e2e8f0' }}>Fecha:</span> {data.fecha} | 
           <span style={{ color: '#e2e8f0' }}>Para:</span> Gerencia Comercial | 
@@ -94,7 +97,7 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <h3 style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{index + 1}. {v.empresaNombre}</h3>
-                      <span style={{ backgroundColor: pillBg, color: pillText, padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <span style={{ backgroundColor: pillBg, color: pillText, padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                         {v.resultado.replace('_', ' ')}
                       </span>
                     </div>
