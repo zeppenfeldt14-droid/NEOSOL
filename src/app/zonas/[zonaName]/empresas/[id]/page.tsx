@@ -7,6 +7,7 @@ import { addVisita, addAccion, addAlerta } from './actions'
 import { QuickActionsClient } from './QuickActionsClient'
 import { getSessionUser } from '@/lib/auth'
 import { HistorialComprasClient } from './HistorialComprasClient'
+import { NuevoContactoForm } from './NuevoContactoForm'
 import { RespuestaObtenidaButton } from './RespuestaObtenidaButton'
 import { NuevaAccionForm } from './NuevaAccionForm'
 
@@ -156,56 +157,6 @@ function InfoGeneral({ empresa }: { empresa: any }) {
         </div>
       )}
     </div>
-  )
-}
-
-function RegistroContacto({ empresaId, addVisitaAction }: { empresaId: number, addVisitaAction: any }) {
-  return (
-    <form action={addVisitaAction} className="grid grid-cols-2 gap-4">
-      <div className="form-group">
-        <label className="form-label">Fecha</label>
-        <input type="date" name="fecha" required defaultValue={new Date().toISOString().split('T')[0]} className="form-input" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Tipo de Contacto</label>
-        <select name="tipo" className="form-input">
-          <option value="visita">🚗 Visita Presencial</option>
-          <option value="correo">📧 Correo Electrónico</option>
-          <option value="whatsapp">💬 WhatsApp</option>
-        </select>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Resultado</label>
-        <select name="resultado" required className="form-input">
-          <option value="muestra_dejada">Muestra Dejada</option>
-          <option value="venta">Cierre de Venta ✅</option>
-          <option value="negativo">Rechazo ❌</option>
-          <option value="neutro">En Evaluación 🔄</option>
-          <option value="contacto_obtenido">Contacto Obtenido 📋</option>
-          <option value="sin_respuesta">Sin Respuesta 📵</option>
-          <option value="reprogramado">Reprogramado 📅</option>
-        </select>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Persona de Contacto</label>
-        <input type="text" name="contacto" placeholder="Nombre (ej. Alberto)" className="form-input" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Cargo</label>
-        <input type="text" name="cargo" placeholder="Encargado de compras, etc." className="form-input" />
-      </div>
-      <div className="form-group" style={{ gridColumn: 'span 2' }}>
-        <label className="form-label">Notas / Observaciones</label>
-        <textarea name="notas" rows={3} placeholder="Detalles de la visita..." className="form-input" spellCheck="true" lang="es-AR" autoCorrect="on"></textarea>
-      </div>
-      <div className="form-group" style={{ gridColumn: 'span 2' }}>
-        <label className="form-label">Próxima Acción Recomendada</label>
-        <input type="text" name="proximaAccion" placeholder="Ej. Enviar lista de precios por correo" className="form-input" spellCheck="true" lang="es-AR" autoCorrect="on" />
-      </div>
-      <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
-        <button type="submit" className="btn btn-primary">Registrar Visita</button>
-      </div>
-    </form>
   )
 }
 
@@ -398,7 +349,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="glass-panel card delay-100" style={{ gridColumn: 'span 2' }}>
             <h3 className="card-title border-b pb-4 mb-4" style={{ borderBottom: '1px solid var(--border-light)' }}>Registrar Nuevo Contacto</h3>
-            <RegistroContacto empresaId={empresaId} addVisitaAction={addVisita.bind(null, empresaId)} />
+            <NuevoContactoForm empresaId={empresaId} addVisitaAction={addVisita.bind(null, empresaId)} />
           </div>
         </div>
 
@@ -442,7 +393,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
             <span className="text-secondary group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <div className="p-4 pt-2 border-t border-white/5 mt-2">
-            <RegistroContacto empresaId={empresaId} addVisitaAction={addVisita.bind(null, empresaId)} />
+            <NuevoContactoForm empresaId={empresaId} addVisitaAction={addVisita.bind(null, empresaId)} />
           </div>
         </details>
 

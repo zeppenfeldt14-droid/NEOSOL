@@ -19,7 +19,8 @@ function ReportContent({ data, containerRef }: { data: any, containerRef?: React
         width: '210mm', 
         minHeight: '297mm', 
         fontFamily: 'Arial, Helvetica, sans-serif',
-        letterSpacing: 'normal',
+        letterSpacing: '0.1px',
+        wordSpacing: '0.1px',
         fontVariantLigatures: 'none',
         textRendering: 'auto'
       }} 
