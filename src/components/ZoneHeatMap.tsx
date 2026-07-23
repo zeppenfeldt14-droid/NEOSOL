@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Flame, Eye, RefreshCw, AlertCircle } from 'lucide-react'
+import { Flame, Eye, RefreshCw, AlertCircle, Maximize2, Minimize2 } from 'lucide-react'
 
 type HeatPoint = {
   lat: number
@@ -58,6 +58,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
   const heatLayerRef = useRef<any>(null)
   const markersLayerRef = useRef<any>(null)
   const companyMarkersRef = useRef<any>(null)
+  const territoryLayerRef = useRef<any>(null)
 
   // Default mode → ventas
   const [mode, setMode] = useState<'visitas' | 'ventas'>('ventas')
@@ -65,6 +66,9 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
   const [isLoaded, setIsLoaded] = useState(false)
   const [isGeocoding, setIsGeocoding] = useState(false)
   const [geocodeMsg, setGeocodeMsg] = useState('')
+  const [territories, setTerritories] = useState<any[]>([])
+  const [visibleEstados, setVisibleEstados] = useState<string[]>(['activo', 'prospecto', 'descartada', 'baja'])
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const activeData = mode === 'visitas' ? visitas : ventas
   const hasData = activeData.length > 0
@@ -105,8 +109,11 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
     const group = L.layerGroup()
 
     allPoints.forEach((point: AllPoint) => {
-      const cfg = ESTADO_CONFIG[point.estado?.toLowerCase() || ''] || ESTADO_CONFIG.prospecto
-      const isBajaOrDescartada = ['baja', 'descartada'].includes(point.estado?.toLowerCase() || '')
+      const estadoKey = point.estado?.toLowerCase() || ''
+      if (visibleEstados.length > 0 && !visibleEstados.includes(estadoKey)) return
+
+      const cfg = ESTADO_CONFIG[estadoKey] || ESTADO_CONFIG.prospecto
+      const isBajaOrDescartada = ['baja', 'descartada'].includes(estadoKey)
       const motivoHtml = isBajaOrDescartada && point.motivoBaja 
         ? `<div style="margin-top:6px;padding:4px 6px;background:rgba(0,0,0,0.05);border-left:2px solid ${cfg.color};font-size:10px;color:#475569;font-style:italic;">Motivo: ${point.motivoBaja}</div>` 
         : ''
@@ -143,7 +150,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
 
     group.addTo(map)
     companyMarkersRef.current = group
-  }, [showCompanies, allPoints])
+  }, [showCompanies, allPoints, visibleEstados])
 
   // Init map
   useEffect(() => {
@@ -179,11 +186,25 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       setIsLoaded(true)
     })
 
+    // Fetch territories
+    fetch('/api/zonas').then(r=>r.json()).then(data => {
+      if (Array.isArray(data)) setTerritories(data)
+    }).catch(e => console.error(e))
+
     return () => {
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Handle map resize on fullscreen toggle
+  useEffect(() => {
+    if (mapInstanceRef.current && isLoaded) {
+      setTimeout(() => {
+        mapInstanceRef.current.invalidateSize()
+      }, 300)
+    }
+  }, [isFullscreen, isLoaded])
 
   // Update heat layer on mode/data change
   useEffect(() => {
@@ -194,13 +215,38 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
 
       if (heatLayerRef.current) { heatLayerRef.current.remove(); heatLayerRef.current = null }
       if (markersLayerRef.current) { markersLayerRef.current.remove(); markersLayerRef.current = null }
+      if (territoryLayerRef.current) { territoryLayerRef.current.remove(); territoryLayerRef.current = null }
+
+      // Build territories
+      if (territories.length > 0) {
+        const tGroup = L.layerGroup()
+        territories.forEach(zona => {
+          if (zona.geojson) {
+            L.geoJSON(zona.geojson, {
+              style: {
+                color: zona.color || '#3b82f6',
+                weight: 2,
+                opacity: 0.4,
+                fillColor: zona.color || '#3b82f6',
+                fillOpacity: 0.15
+              }
+            }).addTo(tGroup)
+          }
+        })
+        tGroup.addTo(map)
+        territoryLayerRef.current = tGroup
+      }
 
       // Build company markers
       await buildCompanyMarkers(L, map)
 
       if (activeData.length === 0) return
 
-      try { await import('leaflet.heat') } catch {}
+      const Lany = L as any
+      if (typeof window !== 'undefined') {
+        (window as any).L = L
+      }
+      try { await import('leaflet.heat') } catch (e) { console.error('Error loading leaflet.heat', e) }
 
       const maxWeight = Math.max(...activeData.map(p => p.weight), 1)
       const heatPoints = activeData.map(p => [
@@ -208,13 +254,16 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       ] as [number, number, number])
 
       const gradient = mode === 'visitas'
-        ? { 0.2: '#fca5a5', 0.5: '#ef4444', 0.8: '#dc2626', 1.0: '#991b1b' }
-        : { 0.2: '#fca5a5', 0.5: '#ef4444', 0.8: '#dc2626', 1.0: '#991b1b' }
+        ? { 0.2: '#1d4ed8', 0.5: '#38bdf8', 0.8: '#fbbf24', 1.0: '#ef4444' } // Blue to Red for visits
+        : { 0.2: '#14532d', 0.5: '#22c55e', 0.8: '#fbbf24', 1.0: '#ef4444' } // Green to Red for sales
 
-      const Lany = L as any
       if (Lany.heatLayer) {
         heatLayerRef.current = Lany.heatLayer(heatPoints, {
-          radius: 35, blur: 2, maxZoom: 17, max: 1.0, gradient
+          radius: 35, blur: 15, maxZoom: 17, max: 1.0, gradient
+        }).addTo(map)
+      } else if ((window as any).L?.heatLayer) {
+         heatLayerRef.current = (window as any).L.heatLayer(heatPoints, {
+          radius: 35, blur: 15, maxZoom: 17, max: 1.0, gradient
         }).addTo(map)
       }
 
@@ -232,7 +281,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
               <strong style="color:#0f172a">${point.nombre}</strong><br/>
               <span style="color:#64748b;font-size:11px">${point.zona || ''}</span><br/>
               <span style="color:${dotColor};font-weight:bold;font-size:14px">
-                ${point.weight} ${mode === 'visitas' ? 'visita(s)' : 'venta(s)'}
+                ${point.weight} ${mode === 'visitas' ? 'visita(s)' : 'cajas vendidas'}
               </span>
             </div>
           `, { closeButton: false })
@@ -250,7 +299,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
         map.setView([activeData[0].lat, activeData[0].lng], 14)
       }
     })
-  }, [mode, isLoaded, visitas, ventas, buildCompanyMarkers])
+  }, [mode, isLoaded, visitas, ventas, buildCompanyMarkers, territories])
 
   // Toggle company markers without rebuilding heat
   useEffect(() => {
@@ -263,12 +312,19 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
 
   return (
     <div style={{
-      width: '100%',
-      background: 'rgba(15,23,42,0.8)',
-      borderRadius: '16px',
-      border: '1px solid rgba(255,255,255,0.08)',
+      width: isFullscreen ? '100vw' : '100%',
+      height: isFullscreen ? '100vh' : 'auto',
+      position: isFullscreen ? 'fixed' : 'relative',
+      top: isFullscreen ? 0 : 'auto',
+      left: isFullscreen ? 0 : 'auto',
+      zIndex: isFullscreen ? 9999 : 1,
+      background: 'rgba(15,23,42,0.95)',
+      borderRadius: isFullscreen ? '0px' : '16px',
+      border: isFullscreen ? 'none' : '1px solid rgba(255,255,255,0.08)',
       overflow: 'hidden',
-      boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+      boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       {/* Header */}
       <div style={{
@@ -354,6 +410,21 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
               <Flame size={12} /> Ventas
             </button>
           </div>
+
+          {/* Fullscreen toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '32px', height: '32px', borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#94a3b8', cursor: 'pointer', transition: 'all 0.2s'
+            }}
+            title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
         </div>
       </div>
 
@@ -363,13 +434,39 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
         borderBottom: '1px solid rgba(255,255,255,0.04)',
         display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap'
       }}>
-        <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Empresas:</span>
-        {estadoEntries.map(([key, cfg]) => (
-          <span key={key} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: cfg.color }}>
-            <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: cfg.color, display: 'inline-block', boxShadow: `0 0 5px ${cfg.glow}` }} />
-            {cfg.label}
-          </span>
-        ))}
+        <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Filtro Empresas:</span>
+        {estadoEntries.map(([key, cfg]) => {
+          const isActive = visibleEstados.includes(key)
+          return (
+            <button 
+              key={key} 
+              onClick={() => {
+                if (isActive) {
+                  setVisibleEstados(visibleEstados.filter(k => k !== key))
+                } else {
+                  setVisibleEstados([...visibleEstados, key])
+                }
+              }}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: '5px', 
+                fontSize: '0.7rem', color: isActive ? cfg.color : '#475569',
+                background: isActive ? `${cfg.color}15` : 'transparent',
+                border: `1px solid ${isActive ? `${cfg.color}30` : 'rgba(255,255,255,0.05)'}`,
+                padding: '4px 8px', borderRadius: '12px',
+                cursor: 'pointer', transition: 'all 0.2s',
+                textDecoration: isActive ? 'none' : 'line-through'
+              }}
+            >
+              <span style={{ 
+                width: '9px', height: '9px', borderRadius: '50%', 
+                background: isActive ? cfg.color : '#475569', 
+                display: 'inline-block', 
+                boxShadow: isActive ? `0 0 5px ${cfg.glow}` : 'none' 
+              }} />
+              {cfg.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Geocode message */}
@@ -384,7 +481,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       )}
 
       {/* Map Container */}
-      <div style={{ position: 'relative', width: '100%', height: '480px' }}>
+      <div style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '480px', flex: isFullscreen ? 1 : 'none' }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
         {/* No activity overlay */}

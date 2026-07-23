@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); async function main() { const emp = await prisma.empresa.findMany({ where: { OR: [{ cuit: { contains: '30612825749' } }, { nombre: { contains: 'Max' } }, { vendedorAsignado: { contains: 'Ernesto' } }] } }); console.log(emp); } main().catch(console.error).finally(() => prisma.$disconnect());

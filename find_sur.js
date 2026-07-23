@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); async function main() { const emps = await prisma.empresa.findMany({ where: { zona: 'Zona SUR' } }); console.log(JSON.stringify(emps, null, 2)); } main().catch(console.error).finally(() => prisma.$disconnect());

@@ -42,10 +42,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [activeTab, setActiveTab] = useState<'lista' | 'zonas' | 'promos' | 'config' | 'simulacion'>('lista')
 
   // Zones management state
-  const [zonas, setZonas] = useState<{ id: number; nombre: string }[]>([])
+  const [zonas, setZonas] = useState<any[]>([])
   const [newZonaName, setNewZonaName] = useState('')
   const [editingZonaId, setEditingZonaId] = useState<number | null>(null)
   const [editingZonaName, setEditingZonaName] = useState('')
+  const [editingZonaColor, setEditingZonaColor] = useState('#3b82f6')
+  const [editingZonaBarrios, setEditingZonaBarrios] = useState<string[]>([])
+  const [newBarrioInput, setNewBarrioInput] = useState('')
+  const [isFetchingTerritory, setIsFetchingTerritory] = useState(false)
   const [isLoadingZonas, setIsLoadingZonas] = useState(false)
 
   // Fetch current user level on mount
@@ -383,15 +387,45 @@ export function ConfigPageClient({ currentLogo }: Props) {
         body: JSON.stringify({ id, nombre: editingZonaName.trim().toUpperCase() })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al modificar zona')
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar zona')
+      alert('Zona actualizada correctamente.')
       setEditingZonaId(null)
-      alert('Zona modificada correctamente.')
       fetchZonas()
     } catch (err: any) {
       alert(err.message)
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleUpdateTerritorio = async (id: number, zonaName: string) => {
+    setIsFetchingTerritory(true)
+    try {
+      const res = await fetch(`/api/zonas/${encodeURIComponent(zonaName)}/territorio`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color: editingZonaColor, barrios: editingZonaBarrios })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar territorio')
+      alert('Territorio actualizado correctamente y mapa delimitado.')
+      fetchZonas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsFetchingTerritory(false)
+    }
+  }
+
+  const addBarrio = () => {
+    if (newBarrioInput.trim() && !editingZonaBarrios.includes(newBarrioInput.trim())) {
+      setEditingZonaBarrios([...editingZonaBarrios, newBarrioInput.trim()])
+      setNewBarrioInput('')
+    }
+  }
+  
+  const removeBarrio = (barrio: string) => {
+    setEditingZonaBarrios(editingZonaBarrios.filter(b => b !== barrio))
   }
 
   const handleDeleteZona = async (id: number, name: string) => {
@@ -624,40 +658,105 @@ export function ConfigPageClient({ currentLogo }: Props) {
                 ) : (
                   <div className="flex flex-col gap-2">
                     {zonas.map(z => (
-                      <div key={z.id} className="flex justify-between items-center p-3 rounded-lg border border-white/5 bg-black/10">
-                        {editingZonaId === z.id ? (
-                          <div className="flex gap-2 flex-1 mr-4">
-                            <input 
-                              type="text" 
-                              className="form-input !py-1" 
-                              value={editingZonaName} 
-                              onChange={(e) => setEditingZonaName(e.target.value)} 
-                            />
-                            <button onClick={() => handleUpdateZona(z.id)} className="btn btn-primary !py-1 text-xs">
-                              Guardar
-                            </button>
-                            <button onClick={() => setEditingZonaId(null)} className="btn btn-secondary !py-1 text-xs">
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="text-white font-semibold text-sm">{z.nombre}</span>
-                            <div className="flex gap-2">
-                              <button 
-                                onClick={() => { setEditingZonaId(z.id); setEditingZonaName(z.nombre); }} 
-                                className="btn btn-secondary !py-1 !px-2 text-xs"
-                              >
-                                Editar
+                      <div key={z.id} className="flex flex-col gap-2 p-3 rounded-lg border border-white/5 bg-black/10">
+                        <div className="flex justify-between items-center">
+                          {editingZonaId === z.id ? (
+                            <div className="flex gap-2 flex-1 mr-4">
+                              <input 
+                                type="text" 
+                                className="form-input !py-1" 
+                                value={editingZonaName} 
+                                onChange={(e) => setEditingZonaName(e.target.value)} 
+                              />
+                              <button onClick={() => handleUpdateZona(z.id)} className="btn btn-primary !py-1 text-xs">
+                                Guardar Nombre
                               </button>
-                              <button 
-                                onClick={() => handleDeleteZona(z.id, z.nombre)} 
-                                className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs"
-                              >
-                                Borrar
+                              <button onClick={() => setEditingZonaId(null)} className="btn btn-secondary !py-1 text-xs">
+                                Cancelar
                               </button>
                             </div>
-                          </>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-3">
+                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: z.color || '#3b82f6' }} />
+                                <span className="text-white font-semibold text-sm">{z.nombre}</span>
+                                {z.barrios && z.barrios.length > 0 && (
+                                  <span className="text-xs text-secondary">({z.barrios.length} barrios delimitados)</span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => { 
+                                    setEditingZonaId(z.id); 
+                                    setEditingZonaName(z.nombre);
+                                    setEditingZonaColor(z.color || '#3b82f6');
+                                    setEditingZonaBarrios(z.barrios || []);
+                                  }} 
+                                  className="btn btn-secondary !py-1 !px-2 text-xs"
+                                >
+                                  Editar / Territorio
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteZona(z.id, z.nombre)} 
+                                  className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs"
+                                >
+                                  Borrar
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        
+                        {editingZonaId === z.id && (
+                          <div className="mt-3 pt-3 border-t border-white/10 flex flex-col gap-4 animate-fade-in">
+                            <h4 className="text-sm font-semibold text-primary">Delimitación Territorial</h4>
+                            
+                            <div className="form-group mb-0">
+                              <label className="form-label">Color de la Zona (Mapa)</label>
+                              <input 
+                                type="color" 
+                                className="w-12 h-8 bg-transparent border-0 cursor-pointer"
+                                value={editingZonaColor} 
+                                onChange={(e) => setEditingZonaColor(e.target.value)} 
+                              />
+                            </div>
+
+                            <div className="form-group mb-0">
+                              <label className="form-label">Barrios / Municipios</label>
+                              <div className="flex gap-2 mb-2">
+                                <input 
+                                  type="text" 
+                                  className="form-input flex-1" 
+                                  placeholder="Ej. Lanús, CABA, Recoleta..."
+                                  value={newBarrioInput}
+                                  onChange={(e) => setNewBarrioInput(e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBarrio())}
+                                />
+                                <button onClick={addBarrio} className="btn btn-secondary px-4 text-xs">Añadir</button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {editingZonaBarrios.map(b => (
+                                  <span key={b} className="badge badge-primary flex items-center gap-1">
+                                    {b}
+                                    <Trash2 size={12} className="cursor-pointer hover:text-error" onClick={() => removeBarrio(b)} />
+                                  </span>
+                                ))}
+                                {editingZonaBarrios.length === 0 && (
+                                  <span className="text-xs text-secondary">No hay barrios. La zona no se delimitará en el mapa.</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-end mt-2">
+                              <button 
+                                onClick={() => handleUpdateTerritorio(z.id, z.nombre)} 
+                                className="btn btn-primary"
+                                disabled={isFetchingTerritory}
+                              >
+                                {isFetchingTerritory ? 'Obteniendo polígonos...' : 'Actualizar Territorio Geográfico'}
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))}

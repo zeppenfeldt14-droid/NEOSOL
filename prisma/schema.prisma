@@ -172,6 +172,9 @@ model SolicitudEliminacion {
 model Zona {
   id       Int      @id @default(autoincrement())
   nombre   String   @unique
+  color    String?  @default("#3b82f6")
+  barrios  String[] @default([])
+  geojson  Json?
   creadoEn DateTime @default(now())
 }
 
