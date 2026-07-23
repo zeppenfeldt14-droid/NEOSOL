@@ -325,6 +325,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           ventas={heatmap?.ventas || []} 
           totalEmpresas={heatmap?.totalEmpresas || 0}
           selectedZones={selectedZones}
+          userNivel={heatmap?.userNivel}
+          userZona={heatmap?.userZona}
+          allPoints={heatmap?.allPoints || []}
         />
       </div>
 

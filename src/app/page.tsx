@@ -372,12 +372,13 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
 
   // G. Heatmap Data — Empresas con coordenadas + conteo de visitas y ventas
   // Obtiene empresas de las zonas seleccionadas que tienen coordenadas cargadas
+  // NOTA: Prisma requiere AND con NOT separados para campos nullable
   const empresasGeo = await prisma.empresa.findMany({
     where: {
       zona: zoneFilter,
-      NOT: [
-        { latitud: null },
-        { longitud: null }
+      AND: [
+        { NOT: { latitud: null } },
+        { NOT: { longitud: null } }
       ]
     },
     select: {
@@ -393,7 +394,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
           visitas: {
             where: isPeriodFiltered ? {
               OR: dateFilters.map((f: any) => ({ creadoEn: f }))
-            } : undefined
+            } : {}
           },
           pedidos: {
             where: {
@@ -458,7 +459,10 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     heatmap: {
       visitas: heatmapVisitas,
       ventas: heatmapVentas,
-      totalEmpresas: empresasGeo.length
+      totalEmpresas: empresasGeo.length,
+      userNivel: user.nivel,
+      userZona: user.zona || null,
+      allPoints: empresasGeo.map(e => ({ lat: e.latitud!, lng: e.longitud!, zona: e.zona }))
     },
     availableZones,
     selectedZones
