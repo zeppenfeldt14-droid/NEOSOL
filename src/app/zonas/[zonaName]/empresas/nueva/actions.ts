@@ -58,6 +58,31 @@ export async function createEmpresa(formData: FormData) {
     throw new Error(`La empresa "${nombre}" ya existe en el sistema (Estado actual: ${existing.estado.toUpperCase()}).`)
   }
 
+  // Automatic geocoding
+  let latitud = null
+  let longitud = null
+  try {
+    if (direccion && direccion.trim().length > 3) {
+      let q = direccion.trim()
+      if (barrio) q += `, ${barrio}`
+      if (!q.toLowerCase().includes('buenos aires') && !q.toLowerCase().includes('caba')) {
+        q += zona === 'CABA' ? ', CABA, Argentina' : ', Buenos Aires, Argentina'
+      }
+      q = q.replace(/(\d+)\/\d+/, '$1')
+
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`, {
+        headers: { 'User-Agent': 'NeosolCRM-Geocoding-Create' }
+      })
+      const data = await res.json()
+      if (data && data.length > 0) {
+        latitud = parseFloat(data[0].lat)
+        longitud = parseFloat(data[0].lon)
+      }
+    }
+  } catch (e) {
+    console.error('Error auto-geocoding on create', e)
+  }
+
   const empresa = await prisma.empresa.create({
     data: {
       nombre,
@@ -87,6 +112,8 @@ export async function createEmpresa(formData: FormData) {
       bancoInstitucion: formData.get('bancoInstitucion') as string,
       bancoSucursal: formData.get('bancoSucursal') as string,
       bancoCuenta: formData.get('bancoCuenta') as string,
+      latitud,
+      longitud,
     }
   })
 

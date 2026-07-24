@@ -215,6 +215,38 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     throw new Error('El nombre de la empresa es obligatorio')
   }
 
+  // Automatic geocoding if address changed or coordinates are missing
+  try {
+    const currentEmpresa = await prisma.empresa.findUnique({ where: { id: empresaId } })
+    const oldAddress = currentEmpresa?.direccion || ''
+    const oldBarrio = currentEmpresa?.barrio || ''
+    
+    // Only fetch if address or barrio changed, or if it doesn't have coordinates
+    if (direccion !== oldAddress || barrio !== oldBarrio || !currentEmpresa?.latitud || !currentEmpresa?.longitud) {
+      if (direccion && direccion.trim().length > 3) {
+        let q = direccion.trim()
+        if (barrio) q += `, ${barrio}`
+        if (!q.toLowerCase().includes('buenos aires') && !q.toLowerCase().includes('caba')) {
+          const isCaba = (updateData.zona || currentEmpresa?.zona) === 'CABA'
+          q += isCaba ? ', CABA, Argentina' : ', Buenos Aires, Argentina'
+        }
+        // Basic cleanup for Nominatim
+        q = q.replace(/(\d+)\/\d+/, '$1')
+
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`, {
+          headers: { 'User-Agent': 'NeosolCRM-Geocoding-Update' }
+        })
+        const data = await res.json()
+        if (data && data.length > 0) {
+          updateData.latitud = parseFloat(data[0].lat)
+          updateData.longitud = parseFloat(data[0].lon)
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error auto-geocoding on update', e)
+  }
+
   if (estado === 'baja' && !motivoBaja?.trim()) {
     throw new Error('El motivo de baja es obligatorio')
   }
