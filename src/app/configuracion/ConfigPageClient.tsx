@@ -738,9 +738,9 @@ export function ConfigPageClient({ currentLogo }: Props) {
                                 />
                                 <button onClick={addBarrio} className="btn btn-secondary px-4 text-xs">Añadir</button>
                               </div>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 bg-slate-800/50 border border-slate-700/50 rounded-lg">
                                 {editingZonaBarrios.map(b => (
-                                  <span key={b} className="badge badge-primary flex items-center gap-1">
+                                  <span key={b} className="badge badge-primary flex items-center gap-1 mb-1">
                                     {b}
                                     <Trash2 size={12} className="cursor-pointer hover:text-error" onClick={() => removeBarrio(b)} />
                                   </span>

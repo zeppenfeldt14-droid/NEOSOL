@@ -8,61 +8,58 @@ datasource db {
 }
 
 model Empresa {
-  id               Int      @id @default(autoincrement())
-  zona             String?
-  subZona          String?
-  rubro            String?
-  ocultarVendedor  Boolean  @default(false)
-  nombre           String   // Institución / Empresa
-  cuit             String?
-  direccion        String?  // Dirección de Entrega
-  direccionFiscal  String?
-  barrio           String?  // Localidad
-  partido          String?
-  telefono         String?  // TEL / Celular
-  telefono2        String?  // Teléfono alternativo
-  email            String?
-  responsable      String?  // Contacto principal
+  id                Int                @id @default(autoincrement())
+  zona              String?
+  nombre            String
+  cuit              String?
+  direccion         String?
+  direccionFiscal   String?
+  barrio            String?
+  partido           String?
+  telefono          String?
+  email             String?
+  responsable       String?
   contactoCobranzas String?
-  diasPago         String?
-  vendedorAsignado String?
-  actividad        String?
-  productosInteres String?
-  transporte       String?
-  url              String?
-  bancoInstitucion String?
-  bancoSucursal    String?
-  bancoCuenta      String?
-  googleMaps       String?
-  notas            String?
-  estado           String   @default("prospecto")  // 'prospecto' | 'activo' | 'descartada' | 'baja'
-  motivoBaja       String?  // Obligatorio cuando estado = 'baja'
-  fechaBaja        DateTime?
-  frecuenciaVisita Int?
-  cicloVentaDias   Int?
-  creadoEn         DateTime @default(now())
-  actualizadoEn    DateTime @updatedAt
-
-  // ── Plan Maestro: Customer 360 & Inteligencia Predictiva ──────────────────
-  sentimentScore   Int?     // 0-100: umbral < 40 = alerta de churn (Zigpoll)
-  latitud          Float?   // Coordenada para ruteo y geofencing
-  longitud         Float?
-  frecuenciaCompra Int?     // Compras/mes calculado — para alertas de upsell
-  limiteCreditoARs Float?   // Límite de crédito aprobado en ARS
-  saldoDeudorARs   Float?   @default(0) // Saldo deudor actual
-
-  visitas         Visita[]
-  acciones        Accion[]
-  alertas         Alerta[]
-  pedidos         Pedido[]
-  ticketsSoporte  TicketSoporte[]
+  diasPago          String?
+  vendedorAsignado  String?
+  actividad         String?
+  productosInteres  String?
+  transporte        String?
+  url               String?
+  googleMaps        String?
+  notas             String?
+  estado            String             @default("prospecto")
+  motivoBaja        String?
+  fechaBaja         DateTime?
+  frecuenciaVisita  Int?
+  cicloVentaDias    Int?
+  creadoEn          DateTime           @default(now())
+  actualizadoEn     DateTime           @updatedAt
+  ocultarVendedor   Boolean            @default(false)
+  subZona           String?
+  frecuenciaCompra  Int?
+  latitud           Float?
+  limiteCreditoARs  Float?
+  longitud          Float?
+  saldoDeudorARs    Float?             @default(0)
+  sentimentScore    Int?
+  rubro             String?
+  bancoCuenta       String?
+  bancoInstitucion  String?
+  bancoSucursal     String?
+  telefono2         String?
+  acciones          Accion[]
+  alertas           Alerta[]
   notasPlanificador NotaPlanificador[]
+  pedidos           Pedido[]
+  ticketsSoporte    TicketSoporte[]
+  visitas           Visita[]
 }
 
 model SubZona {
   id     Int    @id @default(autoincrement())
-  zona   String // CABA, Zona SUR, Zona OESTE, Zona NORTE
-  nombre String // CABA 1, CABA 2, OESTE 1, OESTE 2, etc.
+  zona   String
+  nombre String
 
   @@unique([zona, nombre])
 }
@@ -73,31 +70,28 @@ model Rubro {
 }
 
 model Visita {
-  id            Int      @id @default(autoincrement())
-  empresaId     Int
-  empresa       Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  fecha         DateTime @default(now())
-  tipo          String   @default("visita")   // 'visita' | 'correo' | 'whatsapp'
-  resultado     String
-  contacto      String?
-  cargo         String?
-  notas         String?
-  proximaAccion String?
-  creadoEn      DateTime @default(now())
-
-  // ── Plan Maestro: Check-in/out Georeferenciado ────────────────────────────
-  latitudCheckIn   Float?   // GPS del preventista al momento del check-in
-  longitudCheckIn  Float?
+  id                Int      @id @default(autoincrement())
+  empresaId         Int
+  fecha             DateTime @default(now())
+  tipo              String   @default("visita")
+  resultado         String
+  contacto          String?
+  cargo             String?
+  notas             String?
+  proximaAccion     String?
+  creadoEn          DateTime @default(now())
+  exhibicion        String?
+  latitudCheckIn    Float?
+  longitudCheckIn   Float?
+  usuarioAlias      String?
   whatsappEnviado   Boolean  @default(false)
   respuestaObtenida Boolean  @default(false)
-  exhibicion       String?  // Cualitativo: 'buena' | 'regular' | 'mala' | null
-  usuarioAlias     String?  // Alias del vendedor que registró la visita
+  empresa           Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 }
 
 model Accion {
   id               Int       @id @default(autoincrement())
   empresaId        Int
-  empresa          Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   tipo             String
   descripcion      String
   fechaVencimiento DateTime?
@@ -106,273 +100,230 @@ model Accion {
   orden            Int       @default(0)
   completadaEn     DateTime?
   creadoEn         DateTime  @default(now())
+  empresa          Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 }
 
 model Alerta {
   id                Int       @id @default(autoincrement())
   empresaId         Int
-  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   tipo              String
   mensaje           String?
   diasConfiguracion Int?
   fechaActivacion   DateTime?
   activa            Boolean   @default(true)
   creadoEn          DateTime  @default(now())
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 }
 
 model ConfiguracionSistema {
-  id          Int    @id @default(autoincrement())
-  clave       String @unique
+  id          Int     @id @default(autoincrement())
+  clave       String  @unique
   valor       String
   descripcion String?
 }
 
 model Usuario {
-  id                    Int      @id @default(autoincrement())
-  nombre                String
-  alias                 String   @unique
-  email                 String   @unique
-  passwordHash          String
-  nivel                 Int      @default(3) // 1 = Gerencia/Admin, 2 = Supervisión, 3 = Ventas/Vendedores
-  rol                   String   @default("Vendedor")
-  foto                  String?  // Avatar en Base64 o URL
-  activo                Boolean  @default(true)
-  modulos               Json     @default("{}") // Mapeo de permisos por módulo
-  limitesEstado         Json     @default("{}") // Límites de tiempo para pausas
-  mustChangePassword    Boolean  @default(false)
-  loginCount            Int      @default(0)
-  connectionLogs        Json     @default("[]") // Historial de últimas 20 conexiones
-  zona                  String?  @default("CABA") // Zona asignada para Nivel 3
-  zonasHabilitadas      Json     @default("[]")   // Zonas permitidas para Nivel 2/1
-  passwordUpdatedAt     DateTime?
-  creadoEn              DateTime @default(now())
-  actualizadoEn         DateTime @updatedAt
+  id                 Int       @id @default(autoincrement())
+  nombre             String
+  alias              String    @unique
+  email              String    @unique
+  passwordHash       String
+  nivel              Int       @default(3)
+  rol                String    @default("Vendedor")
+  foto               String?
+  activo             Boolean   @default(true)
+  modulos            Json      @default("{}")
+  limitesEstado      Json      @default("{}")
+  mustChangePassword Boolean   @default(false)
+  loginCount         Int       @default(0)
+  connectionLogs     Json      @default("[]")
+  passwordUpdatedAt  DateTime?
+  creadoEn           DateTime  @default(now())
+  actualizadoEn      DateTime  @updatedAt
+  zona               String?   @default("CABA")
+  zonasHabilitadas   Json      @default("[]")
 }
 
 model LogBitacora {
   id           Int      @id @default(autoincrement())
   usuarioId    Int?
   usuarioAlias String   @default("Sistema")
-  tipoAccion   String   // LOGIN, LOGOUT, CREATE_USER, etc.
+  tipoAccion   String
   detalles     String
   creadoEn     DateTime @default(now())
 }
 
 model SolicitudEliminacion {
   id            Int      @id @default(autoincrement())
-  tipo          String   // 'EMPRESA' | 'ACCION'
+  tipo          String
   targetId      Int
   nombreTarget  String
   solicitadoPor String
   motivo        String
   creadoEn      DateTime @default(now())
-  estado        String   @default("pendiente") // 'pendiente' | 'aprobado' | 'rechazado'
+  estado        String   @default("pendiente")
 }
 
 model Zona {
   id       Int      @id @default(autoincrement())
   nombre   String   @unique
-  color    String?  @default("#3b82f6")
-  barrios  String[] @default([])
-  geojson  Json?
   creadoEn DateTime @default(now())
+  barrios  String[] @default([])
+  color    String?  @default("#3b82f6")
+  geojson  Json?
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MÓDULO COMERCIAL: Productos, Pedidos, Ventas y Cobranzas
-// ─────────────────────────────────────────────────────────────────────────────
-
 model Producto {
-  id              Int      @id @default(autoincrement())
-  codigoInterno   String   @unique
-  nombre          String
-  linea           String?  // 'pack_individual' | 'tripack' | 'minis' | 'snacks'
-  precioPaquete   Float    // Precio x paquete (sin IVA)
-  paqPorCaja      Int      // Paquetes por caja
-  precioCaja      Float    // Precio x caja (sin IVA)
-  activo          Boolean  @default(true)
-  creadoEn        DateTime @default(now())
-  actualizadoEn   DateTime @updatedAt
-
-  detallesPedido DetallePedido[]
+  id                Int                @id @default(autoincrement())
+  codigoInterno     String             @unique
+  nombre            String
+  linea             String?
+  precioPaquete     Float
+  paqPorCaja        Int
+  precioCaja        Float
+  activo            Boolean            @default(true)
+  creadoEn          DateTime           @default(now())
+  actualizadoEn     DateTime           @updatedAt
+  detallesPedido    DetallePedido[]
   detallesPromocion DetallePromocion[]
 }
 
 model Promocion {
-  id          Int      @id @default(autoincrement())
-  nombre      String   // Ej: "10x1 Sándwich"
-  descripcion String?
-  tipo        String   @default("bonificacion") // 'bonificacion' | 'descuento_porcentaje' | 'precio_especial'
-  // Para 10x1: compraMinima=10, bonificacion=1
-  compraMinima    Int?   // Cantidad mínima para aplicar la promo
-  bonificacion    Int?   // Unidades obsequiadas
-  descuento       Float? // Porcentaje de descuento si aplica
-  activa          Boolean  @default(true)
-  vigenciaDesde   DateTime?
-  vigenciaHasta   DateTime?
-  creadoEn        DateTime @default(now())
-  actualizadoEn   DateTime @updatedAt
-
+  id                Int                @id @default(autoincrement())
+  nombre            String
+  descripcion       String?
+  tipo              String             @default("bonificacion")
+  compraMinima      Int?
+  bonificacion      Int?
+  descuento         Float?
+  activa            Boolean            @default(true)
+  vigenciaDesde     DateTime?
+  vigenciaHasta     DateTime?
+  creadoEn          DateTime           @default(now())
+  actualizadoEn     DateTime           @updatedAt
   detallesPromocion DetallePromocion[]
 }
 
 model DetallePromocion {
-  id         Int      @id @default(autoincrement())
-  promocion  Promocion @relation(fields: [promocionId], references: [id])
+  id          Int       @id @default(autoincrement())
   promocionId Int
-  producto   Producto  @relation(fields: [productoId], references: [id])
   productoId  Int
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  promocion   Promocion @relation(fields: [promocionId], references: [id])
 }
 
 model Pedido {
-  id              Int      @id @default(autoincrement())
-  numeroPedido    String   @unique // Generado automáticamente, ej: PED-2026-001
-  empresaId       Int
-  empresa         Empresa  @relation(fields: [empresaId], references: [id])
-  vendedorId      Int
-  vendedorAlias   String
-  zona            String
-  
-  // Estado del flujo
-  estado          String   @default("borrador")
-  // 'borrador' | 'pendiente_supervisor' | 'aprobado' | 'cancelado'
-  
-  tienePrecioNegociado Boolean @default(false)
-  tieneTarifaNegociada Boolean @default(false)
-  
-  // Condiciones de negociación
-  porcentajePagoA Float    @default(20)  // % que va con IVA (Factura A)
-  porcentajePagoB Float    @default(80)  // % que va sin IVA (Factura B / Remito)
-  aplicaFinanciera Boolean @default(false)
-  // Plazos de pago (texto libre, ej: "30 días / 60 días")
-  plazosPago      String?
-  condicionPago   String?  // Ej: "20/80", "50/50", "100% A", personalizada
-
-  metodoPagoA     String?  // 'cheque' | 'transferencia'
-  fechaPagoA      DateTime?
-  metodoPagoB     String?  // 'efectivo' | 'transferencia'
-  
-  // Totales calculados
-  subtotalSinIVA  Float    @default(0)
-  montoIVA        Float    @default(0)  // 21% sobre la parte A
-  montoFinanciera Float    @default(0)  // 3% sobre la parte que aplica
-  totalGeneral    Float    @default(0)
-  
-  // Promoción aplicada
-  promocionId     Int?
-  
-  observaciones   String?
-  acuerdosComerciales String?
-  requierePresupuesto Boolean @default(false)
-  turnoEntrega    String?  // 'SI' | 'NO'
-  fechaEntrega    String?  // Fecha/Día de entrega acordado
-  
-  // Auditoría
-  aprobadoPorId   Int?
-  aprobadoPorAlias String?
-  aprobadoEn      DateTime?
-  creadoEn        DateTime @default(now())
-  actualizadoEn   DateTime @updatedAt
-  
-  detalles    DetallePedido[]
-  facturas    Factura[]
-  cobranzas   Cobranza[]
-  notasPlanificador NotaPlanificador[]
+  id                   Int                @id @default(autoincrement())
+  numeroPedido         String             @unique
+  empresaId            Int
+  vendedorId           Int
+  vendedorAlias        String
+  zona                 String
+  estado               String             @default("borrador")
+  porcentajePagoA      Float              @default(20)
+  porcentajePagoB      Float              @default(80)
+  aplicaFinanciera     Boolean            @default(false)
+  plazosPago           String?
+  condicionPago        String?
+  subtotalSinIVA       Float              @default(0)
+  montoIVA             Float              @default(0)
+  montoFinanciera      Float              @default(0)
+  totalGeneral         Float              @default(0)
+  promocionId          Int?
+  observaciones        String?
+  acuerdosComerciales  String?
+  requierePresupuesto  Boolean            @default(false)
+  turnoEntrega         String?
+  aprobadoPorId        Int?
+  aprobadoPorAlias     String?
+  aprobadoEn           DateTime?
+  creadoEn             DateTime           @default(now())
+  actualizadoEn        DateTime           @updatedAt
+  tienePrecioNegociado Boolean            @default(false)
+  tieneTarifaNegociada Boolean            @default(false)
+  fechaEntrega         String?
+  fechaPagoA           DateTime?
+  metodoPagoA          String?
+  metodoPagoB          String?
+  cobranzas            Cobranza[]
+  detalles             DetallePedido[]
+  facturas             Factura[]
+  notasPlanificador    NotaPlanificador[]
+  empresa              Empresa            @relation(fields: [empresaId], references: [id])
 }
 
 model DetallePedido {
-  id          Int      @id @default(autoincrement())
-  pedidoId    Int
-  pedido      Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  productoId  Int
-  producto    Producto @relation(fields: [productoId], references: [id])
-  
-  // Snapshot de precios al momento del pedido
-  productoNombre    String
+  id                 Int      @id @default(autoincrement())
+  pedidoId           Int
+  productoId         Int
+  productoNombre     String
   precioCajaSnapshot Float
   precioPaqSnapshot  Float
   paqPorCajaSnapshot Int
-  precioCajaOriginal Float @default(0)
-  
-  cantidadCajas   Int      @default(0)
-  subtotal        Float    @default(0) // cantidadCajas * precioCajaSnapshot
-  
-  // Bonificación 10x1 u otro tipo
-  cajasBonus      Int      @default(0)
-  descripcionBonus String?
+  cantidadCajas      Int      @default(0)
+  subtotal           Float    @default(0)
+  cajasBonus         Int      @default(0)
+  descripcionBonus   String?
+  precioCajaOriginal Float    @default(0)
+  pedido             Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto           Producto @relation(fields: [productoId], references: [id])
 }
 
 model Factura {
-  id            Int      @id @default(autoincrement())
-  pedidoId      Int
-  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
-  numeroFactura String   @unique // Ej: FAC-A-2026-001
-  tipo          String   // 'A' | 'B' | 'remito'
-  
-  // Archivo PDF / Imagen adjunto
-  archivoBase64 String?  // Base64 text of the uploaded PDF or image
-  archivoMimeType String? // e.g., 'application/pdf', 'image/jpeg'
-
-  // Montos
-  subtotal      Float
-  iva           Float    @default(0)  // Solo si tipo='A'
-  recargo       Float    @default(0)  // 3% financiera si aplica
-  total         Float
-  
-  estado        String   @default("pendiente") // 'pendiente' | 'pagada' | 'parcial' | 'anulada'
-  
-  creadoEn      DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
-  
-  pagos         Pago[]
+  id                Int                @id @default(autoincrement())
+  pedidoId          Int
+  numeroFactura     String             @unique
+  tipo              String
+  subtotal          Float
+  iva               Float              @default(0)
+  recargo           Float              @default(0)
+  total             Float
+  estado            String             @default("pendiente")
+  creadoEn          DateTime           @default(now())
+  actualizadoEn     DateTime           @updatedAt
+  archivoBase64     String?
+  archivoMimeType   String?
+  pedido            Pedido             @relation(fields: [pedidoId], references: [id])
   notasPlanificador NotaPlanificador[]
+  pagos             Pago[]
 }
 
 model Cobranza {
-  id              Int      @id @default(autoincrement())
-  pedidoId        Int
-  pedido          Pedido   @relation(fields: [pedidoId], references: [id])
-  empresaId       Int
-  empresaNombre   String
-  vendedorAlias   String
-  zona            String
-  
-  // Montos
-  montoOriginal   Float
-  saldoPendiente  Float
-  
-  // Plazos
-  cuota           Int      @default(1)  // Número de cuota
-  totalCuotas     Int      @default(1)
-  estado          String   @default("pendiente") // 'pendiente' | 'pagada' | 'vencida' | 'parcial'
-  fechaVencimiento DateTime?
-  tipoFactura    String?  // 'A' o 'B'
-  metodoPago     String?  // 'cheque', 'transferencia', 'efectivo'
-  
-  creadoEn        DateTime @default(now())
-  actualizadoEn   DateTime @updatedAt
-  
-  pagos           Pago[]
+  id                Int                @id @default(autoincrement())
+  pedidoId          Int
+  empresaId         Int
+  empresaNombre     String
+  vendedorAlias     String
+  zona              String
+  montoOriginal     Float
+  saldoPendiente    Float
+  cuota             Int                @default(1)
+  totalCuotas       Int                @default(1)
+  fechaVencimiento  DateTime?
+  estado            String             @default("pendiente")
+  creadoEn          DateTime           @default(now())
+  actualizadoEn     DateTime           @updatedAt
+  metodoPago        String?
+  tipoFactura       String?
+  pedido            Pedido             @relation(fields: [pedidoId], references: [id])
   notasPlanificador NotaPlanificador[]
+  pagos             Pago[]
 }
 
 model Pago {
-  id            Int      @id @default(autoincrement())
-  cobranzaId    Int?
-  cobranza      Cobranza? @relation(fields: [cobranzaId], references: [id])
-  facturaId     Int?
-  factura       Factura?  @relation(fields: [facturaId], references: [id])
-  
-  monto         Float
-  metodoPago    String   // 'efectivo' | 'transferencia' | 'cheque' | 'financiera'
-  recargoAplicado Float  @default(0) // 3% si es financiera
-  montoFinal    Float    // monto + recargoAplicado
-  
-  referencia    String?  // Número de cheque, comprobante, etc.
-  notas         String?
+  id                 Int       @id @default(autoincrement())
+  cobranzaId         Int?
+  facturaId          Int?
+  monto              Float
+  metodoPago         String
+  recargoAplicado    Float     @default(0)
+  montoFinal         Float
+  referencia         String?
+  notas              String?
   registradoPorAlias String
-  
-  creadoEn      DateTime @default(now())
+  creadoEn           DateTime  @default(now())
+  cobranza           Cobranza? @relation(fields: [cobranzaId], references: [id])
+  factura            Factura?  @relation(fields: [facturaId], references: [id])
 }
 
 model ListaPrecio {
@@ -381,84 +332,68 @@ model ListaPrecio {
   vigenteDesde DateTime
   activa       Boolean          @default(true)
   creadoEn     DateTime         @default(now())
-  
   precios      PrecioProducto[]
 }
 
 model PrecioProducto {
   id               Int         @id @default(autoincrement())
   listaId          Int
-  lista            ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Cascade)
   productoId       Int
-  productoCodigo   String      // For fast matching
-  
-  // Pricing for under 300 boxes
+  productoCodigo   String
   precioPaqueteMin Float
   precioCajaMin    Float
-  
-  // Pricing for 300 boxes or more
   precioPaqueteMax Float
   precioCajaMax    Float
-  
   creadoEn         DateTime    @default(now())
+  lista            ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Cascade)
 
   @@unique([listaId, productoId])
 }
 
 model ReporteVisitas {
   id            Int      @id @default(autoincrement())
-  fecha         String   // Formato 'DD-MM-YYYY'
-  zona          String   // Ej: 'CABA'
-  vendedorAlias String   // Ej: 'Ernesto Lares'
-  datosJSON     String   // Instantánea estructurada de visitas y notas del día (JSON String)
+  fecha         String
+  zona          String
+  vendedorAlias String
+  datosJSON     String
   creadoEn      DateTime @default(now())
 
   @@unique([fecha, zona])
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MÓDULO CRM 360: Tickets de Soporte y Engagement Tracking
-// ─────────────────────────────────────────────────────────────────────────────
-
 model TicketSoporte {
-  id          Int       @id @default(autoincrement())
-  empresaId   Int
-  empresa     Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-
-  tipo        String    // 'entrega' | 'calidad' | 'facturacion' | 'otro'
-  prioridad   String    @default("media")  // 'alta' | 'media' | 'baja'
-  estado      String    @default("abierto") // 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado'
-
-  asunto      String
-  descripcion String
-  resolucion  String?
-
+  id                Int       @id @default(autoincrement())
+  empresaId         Int
+  tipo              String
+  prioridad         String    @default("media")
+  estado            String    @default("abierto")
+  asunto            String
+  descripcion       String
+  resolucion        String?
   reportadoPorAlias String?
-  asignadoA         String?  // Alias del responsable interno
-
-  creadoEn    DateTime  @default(now())
-  cerradoEn   DateTime?
-  actualizadoEn DateTime @updatedAt
+  asignadoA         String?
+  creadoEn          DateTime  @default(now())
+  cerradoEn         DateTime?
+  actualizadoEn     DateTime  @updatedAt
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 }
-model NotaPlanificador {
-  id               Int       @id @default(autoincrement())
-  texto            String
-  empresaId        Int?
-  empresa          Empresa?  @relation(fields: [empresaId], references: [id], onDelete: SetNull)
-  
-  pedidoId         Int?
-  pedido           Pedido?   @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
-  facturaId        Int?
-  factura          Factura?  @relation(fields: [facturaId], references: [id], onDelete: SetNull)
-  cobranzaId       Int?
-  cobranza         Cobranza? @relation(fields: [cobranzaId], references: [id], onDelete: SetNull)
 
-  destinatario     String    @default("personal") // 'personal' | 'gerencia' | 'asistente' o alias
-  estado           String    @default("pendiente") // 'pendiente' | 'completada'
-  zona             String
-  creadoPor        String?
-  creadoEn         DateTime  @default(now())
-  
-  fechaRecordatorio DateTime? // Si tiene recordatorio programado
-  recordatorioVisto Boolean   @default(false) // Si el usuario ya vio la alerta
+model NotaPlanificador {
+  id                Int       @id @default(autoincrement())
+  texto             String
+  empresaId         Int?
+  destinatario      String    @default("personal")
+  estado            String    @default("pendiente")
+  zona              String
+  creadoPor         String?
+  creadoEn          DateTime  @default(now())
+  fechaRecordatorio DateTime?
+  recordatorioVisto Boolean   @default(false)
+  cobranzaId        Int?
+  facturaId         Int?
+  pedidoId          Int?
+  cobranza          Cobranza? @relation(fields: [cobranzaId], references: [id])
+  empresa           Empresa?  @relation(fields: [empresaId], references: [id])
+  factura           Factura?  @relation(fields: [facturaId], references: [id])
+  pedido            Pedido?   @relation(fields: [pedidoId], references: [id])
 }
