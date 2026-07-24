@@ -29,7 +29,7 @@ export async function POST() {
     const passwordHash = await bcrypt.hash('123456', 10)
 
     // Ensure Zones exist
-    const zones = ['Zona SUR', 'Zona OESTE', 'Zona NORTE', 'Tucumán']
+    const zones = ['Zona OESTE', 'Tucumán']
     for (const z of zones) {
       await prisma.zona.upsert({
         where: { nombre: z },
@@ -45,10 +45,8 @@ export async function POST() {
     }
 
     const configs = [
-      { zona: 'Zona SUR', empCount: 33, multiplier: 1.5 },
-      { zona: 'Zona OESTE', empCount: 20, multiplier: 1.2 },
-      { zona: 'Zona NORTE', empCount: 13, multiplier: 0.8 },
-      { zona: 'Tucumán', empCount: 13, multiplier: 0.8 },
+      { zona: 'Zona OESTE', empCount: 25, multiplier: 1.2 },
+      { zona: 'Tucumán', empCount: 15, multiplier: 0.8 },
     ]
 
     let totalUsuarios = 0
@@ -78,11 +76,24 @@ export async function POST() {
 
       // 2. Create Companies
       for (let i = 1; i <= conf.empCount; i++) {
+        // Coordenadas geográficas ficticias
+        let lat = null;
+        let lng = null;
+        if (conf.zona === 'Zona OESTE') {
+          lat = -34.6 - (Math.random() * 0.1);
+          lng = -58.5 - (Math.random() * 0.2);
+        } else if (conf.zona === 'Tucumán') {
+          lat = -26.7 - (Math.random() * 0.2);
+          lng = -65.1 - (Math.random() * 0.2);
+        }
+
         const empresa = await prisma.empresa.create({
           data: {
             nombre: `${prefix} Empresa ${i} - ${conf.zona}`,
             zona: conf.zona,
             direccion: `Calle Ficticia ${randomInt(100, 9999)}`,
+            latitud: lat,
+            longitud: lng,
             telefono: `11${randomInt(10000000, 99999999)}`,
             responsable: `Contacto ${i}`,
             vendedorAsignado: vendedor.alias,
