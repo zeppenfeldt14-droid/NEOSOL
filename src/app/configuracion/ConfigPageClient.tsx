@@ -418,10 +418,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
   }
 
   const addBarrio = () => {
-    if (newBarrioInput.trim() && !editingZonaBarrios.includes(newBarrioInput.trim())) {
-      setEditingZonaBarrios([...editingZonaBarrios, newBarrioInput.trim()])
-      setNewBarrioInput('')
+    if (!newBarrioInput.trim()) return
+    const inputParts = newBarrioInput.split(',').map(b => b.trim()).filter(Boolean)
+    const uniqueNew = inputParts.filter(b => !editingZonaBarrios.includes(b))
+    
+    if (uniqueNew.length > 0) {
+      setEditingZonaBarrios([...editingZonaBarrios, ...uniqueNew])
     }
+    setNewBarrioInput('')
   }
   
   const removeBarrio = (barrio: string) => {
