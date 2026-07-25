@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ShoppingCart, Search, ChevronDown, Plus, Minus, Trash2,
   CheckCircle2, AlertCircle, Info, Send, Save, X, Package,
-  Calculator, FileText, Banknote, Percent, Gift
+  Calculator, FileText, Banknote, Percent, Gift, BadgeDollarSign, Tag
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -88,6 +88,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const [showEmpresaDropdown, setShowEmpresaDropdown] = useState(false)
   const [lineasPedido, setLineasPedido]               = useState<LineaPedido[]>([])
   const [productoBusqueda, setProductoBusqueda]       = useState('')
+  const [showMobilePrices, setShowMobilePrices]       = useState(false)
+  const [showMobilePromos, setShowMobilePromos]       = useState(false)
 
   // Negociación
   const [condicionIdx, setCondicionIdx]       = useState(0)
@@ -834,9 +836,23 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
             {editId ? 'Modificando Nota de Pedido' : 'Nota de Pedido'} · NEOSOL
           </p>
         </div>
-        <button onClick={() => router.back()} className="btn btn-secondary text-xs flex items-center gap-2">
-          <X size={14} /> Cancelar
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowMobilePrices(!showMobilePrices)}
+            className={`md:hidden btn text-xs flex items-center justify-center p-2 rounded-lg ${showMobilePrices ? 'bg-primary text-white' : 'bg-white/5 text-secondary hover:bg-white/10'}`}
+          >
+            <BadgeDollarSign size={16} />
+          </button>
+          <button 
+            onClick={() => setShowMobilePromos(!showMobilePromos)}
+            className={`md:hidden btn text-xs flex items-center justify-center p-2 rounded-lg ${showMobilePromos ? 'bg-primary text-white' : 'bg-white/5 text-secondary hover:bg-white/10'}`}
+          >
+            <Tag size={16} />
+          </button>
+          <button onClick={() => router.back()} className="btn btn-secondary text-xs flex items-center gap-2">
+            <X size={14} /> Cancelar
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -1363,6 +1379,35 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
           )}
         </div>
 
+        {showMobilePromos && (
+          <div className="glass-panel card border border-white/5 p-4 flex flex-col gap-3">
+            <h2 className="text-white font-bold text-sm flex items-center gap-2">
+              <Package size={15} className="text-primary" />
+              Promociones Activas
+            </h2>
+            {promosActivas.length > 0 ? (
+              <div className="flex flex-col gap-2 bg-black/20 p-3 rounded-lg border border-white/5">
+                <p className="text-[10px] font-black uppercase text-secondary tracking-wider">Seleccioná para aplicar</p>
+                <div className="flex flex-wrap gap-x-6 gap-y-2 mt-1">
+                  {promosActivas.map(p => (
+                    <label key={p.id} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={!!promosSeleccionadas[p.id]}
+                        onChange={() => setPromosSeleccionadas(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                        className="form-checkbox bg-black/40 border-white/20 text-primary rounded focus:ring-primary/50"
+                      />
+                      <span className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">{p.nombre}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-secondary text-xs">No hay promociones activas actualmente.</p>
+            )}
+          </div>
+        )}
+
         {/* Productos */}
         <div className="glass-panel p-4 rounded-xl flex flex-col gap-4">
           <div className="relative">
@@ -1383,13 +1428,14 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                 const linea = lineasPedido.find(l => l.producto.id === prod.id)
                 const cantidad = linea ? linea.cantidadCajas : 0
                 return (
-                  <div key={prod.id} className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
-                    <div className="flex flex-col flex-1 pr-2">
-                      <span className="text-[10px] text-primary font-bold">{prod.codigoInterno}</span>
-                      <span className="text-white text-xs font-semibold leading-tight">{prod.nombre}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button 
+                  <div key={prod.id} className="flex flex-col bg-black/20 p-3 rounded-xl border border-white/5">
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col flex-1 pr-2">
+                        <span className="text-[10px] text-primary font-bold">{prod.codigoInterno}</span>
+                        <span className="text-white text-xs font-semibold leading-tight">{prod.nombre}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button 
                         onClick={() => setCantidadDirecta(prod.id, cantidad - 1)}
                         className="bg-white/10 p-2 rounded-full text-white active:bg-white/20"
                       >
@@ -1434,6 +1480,62 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                         <Plus size={14} />
                       </button>
                     </div>
+                  </div>
+                  {showMobilePrices && linea && (
+                      <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-secondary font-bold uppercase">Precio Negociado ($):</span>
+                        <div className="flex items-center gap-1">
+                          <select
+                            className="bg-black/50 border border-white/20 rounded-md text-xs text-white px-1 py-1 outline-none focus:border-primary"
+                            value={
+                              (() => {
+                                const listPrice = getListPriceForProduct(prod, totalCajas >= 300 || negociarTarifaVolumen);
+                                const currentVal = linea.precioCajaNegociado;
+                                const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                if (Math.abs(currentVal - priceA) < 0.01) return 'A';
+                                if (Math.abs(currentVal - priceB) < 0.01) return 'B';
+                                return 'C';
+                              })()
+                            }
+                            onChange={e => {
+                              const listPrice = getListPriceForProduct(prod, totalCajas >= 300 || negociarTarifaVolumen);
+                              const { priceA, priceB } = getAllListPricesForProduct(prod);
+                              let newVal = linea.precioCajaNegociado;
+                              if (e.target.value === 'A') newVal = priceA;
+                              if (e.target.value === 'B') newVal = priceB;
+                              actualizarPrecioNegociado(prod.id, newVal);
+                            }}
+                          >
+                            <option value="A">Lista A</option>
+                            <option value="B">Lista B</option>
+                            {(() => {
+                              const currentVal = linea.precioCajaNegociado;
+                              const { priceA, priceB } = getAllListPricesForProduct(prod);
+                              if (Math.abs(currentVal - priceA) >= 0.01 && Math.abs(currentVal - priceB) >= 0.01) {
+                                return <option value="C">C (Manual)</option>;
+                              }
+                              return null;
+                            })()}
+                          </select>
+                          <input
+                            type="number"
+                            value={linea.precioCajaNegociado || ''}
+                            onChange={(e) => actualizarPrecioNegociado(prod.id, Number(e.target.value))}
+                            className={`bg-black/50 border rounded-md text-right text-sm text-white px-2 py-1 w-20 outline-none focus:border-primary ${
+                              (() => {
+                                const currentVal = linea.precioCajaNegociado;
+                                const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                if (Math.abs(currentVal - priceA) >= 0.01 && Math.abs(currentVal - priceB) >= 0.01) {
+                                  return 'border-red-400/50 text-red-400 font-bold bg-red-400/[0.03]';
+                                }
+                                return 'border-white/20';
+                              })()
+                            }`}
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}
