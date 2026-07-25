@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   ShoppingCart,
   Download,
@@ -38,6 +39,20 @@ const ESTADO_BADGES: Record<string, string> = {
 export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFacturar, userNivel = 3 }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
+
+  const [activeList, setActiveList] = useState<any>(null)
+  
+  useEffect(() => {
+    fetch('/api/configuracion/tarifas')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const list = data.find(l => l.activa)
+          if (list) setActiveList(list)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const handlePrintPedido = async () => {
     const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -196,8 +211,32 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                 </thead>
                 <tbody>
                   {pedido.detalles.map((d: any) => {
-                    const isDifferent = Math.abs(d.precioCajaSnapshot - d.precioCajaOriginal) > 0.01;
-                    const isCustom = pedido.tienePrecioNegociado;
+                    const priceRecords = activeList?.precios || [];
+                    const pRecord = priceRecords.find((pr: any) => pr.productoId === d.productoId);
+                    const priceA = pRecord ? pRecord.precioCajaMax : (d.producto?.precioCaja || d.precioCajaOriginal);
+                    const priceB = pRecord ? pRecord.precioCajaMin : (d.producto?.precioCaja || d.precioCajaOriginal);
+                    const val = parseFloat(d.precioCajaSnapshot);
+                    
+                    const isListA = Math.abs(val - priceA) < 0.01;
+                    const isListB = Math.abs(val - priceB) < 0.01;
+                    const isCustom = !isListA && !isListB && Math.abs(val - d.precioCajaOriginal) > 0.01;
+                    
+                    let tagText = '';
+                    let tagColor = '';
+                    
+                    if (isCustom || pedido.tienePrecioNegociado) {
+                      tagText = 'Cambio de Tarifa';
+                      tagColor = 'text-red-500';
+                    } else if (isListA) {
+                      tagText = 'Lista A';
+                      tagColor = 'text-green-400';
+                    } else if (isListB) {
+                      tagText = 'Lista B';
+                      tagColor = 'text-yellow-400';
+                    } else if (Math.abs(val - d.precioCajaOriginal) > 0.01) {
+                      tagText = 'Negociada';
+                      tagColor = 'text-yellow-400';
+                    }
 
                     return (
                       <tr key={d.id} className="border-b border-white/5 text-white/90">
@@ -206,9 +245,9 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                         <td className="px-4 py-3 text-center text-secondary">{d.producto?.paqPorCaja || '—'}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           {fmt(d.precioCajaSnapshot)}
-                          {isDifferent && (
-                            <span className={`block text-[8px] font-bold uppercase mt-0.5 ${isCustom ? 'text-red-500' : 'text-yellow-400'}`}>
-                              {isCustom ? 'Cambio de Tarifa' : 'Negociado'}
+                          {tagText && (
+                            <span className={`block text-[9px] font-bold uppercase mt-0.5 ${tagColor}`}>
+                              [{tagText}]
                             </span>
                           )}
                         </td>
