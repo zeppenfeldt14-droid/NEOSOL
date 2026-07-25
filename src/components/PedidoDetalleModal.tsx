@@ -135,6 +135,26 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
     }
   }
 
+  // Determinar motivo de aprobación si es necesario
+  let approvalReason = '';
+  if (pedido.estado === 'pendiente_supervisor' && pedido.tienePrecioNegociado) {
+    let hasCustomPrice = false;
+    for (const d of pedido.detalles) {
+      const priceRecords = activeList?.precios || [];
+      const pRecord = priceRecords.find((pr: any) => pr.productoId === d.productoId);
+      const priceA = pRecord ? pRecord.precioCajaMax : (d.producto?.precioCaja || d.precioCajaOriginal);
+      const priceB = pRecord ? pRecord.precioCajaMin : (d.producto?.precioCaja || d.precioCajaOriginal);
+      const val = parseFloat(d.precioCajaSnapshot);
+      
+      const isListA = Math.abs(val - priceA) < 0.01;
+      const isListB = Math.abs(val - priceB) < 0.01;
+      const isCustom = !isListA && !isListB && Math.abs(val - d.precioCajaOriginal) > 0.01;
+      
+      if (isCustom) hasCustomPrice = true;
+    }
+    approvalReason = hasCustomPrice ? '(Precio individual modificado)' : '(Excede límite tarifa volumen)';
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-[#0B0F19] border border-white/10 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
@@ -152,6 +172,11 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                 ? (pedido.tienePrecioNegociado ? 'Pend. Aprob.' : 'Pend. Factura')
                 : ESTADO_LABELS[pedido.estado] || pedido.estado}
             </span>
+            {approvalReason && (
+              <span className="text-orange-400/80 text-[10px] italic font-semibold ml-1">
+                {approvalReason}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
