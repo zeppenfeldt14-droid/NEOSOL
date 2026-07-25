@@ -145,11 +145,11 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
             <h3 className="text-white font-bold text-lg">{pedido.estado === 'presupuesto' ? 'Presupuesto' : 'Pedido'} {pedido.numeroPedido}</h3>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
               pedido.estado === 'pendiente_supervisor' 
-                ? (pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada ? 'bg-orange-400/10 text-orange-400 border-orange-400/20' : 'bg-purple-400/10 text-purple-400 border-purple-400/20')
+                ? (pedido.tienePrecioNegociado ? 'bg-orange-400/10 text-orange-400 border-orange-400/20' : 'bg-purple-400/10 text-purple-400 border-purple-400/20')
                 : ESTADO_BADGES[pedido.estado] || ''
             }`}>
               {pedido.estado === 'pendiente_supervisor' 
-                ? (pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada ? 'Pend. Aprob.' : 'Pend. Factura')
+                ? (pedido.tienePrecioNegociado ? 'Pend. Aprob.' : 'Pend. Factura')
                 : ESTADO_LABELS[pedido.estado] || pedido.estado}
             </span>
           </div>
@@ -382,7 +382,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
           <div className="flex gap-2">
             {pedido.estado === 'pendiente_supervisor' && userNivel < 3 && onStateChange && (
               <>
-                {pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada ? (
+                {pedido.tienePrecioNegociado ? (
                   <button
                     onClick={() => {
                       if (userNivel === 1) {
