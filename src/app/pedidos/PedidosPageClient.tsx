@@ -477,8 +477,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           <button
                             onClick={() => {
                               const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada;
-                              if (requiresNivel1 && userNivel === 2) {
-                                alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
+                              if (requiresNivel1) {
+                                if (userNivel === 1) {
+                                  if (confirm('¿Aprobar Tarifa Negociada para este pedido? El pedido pasará a Pendiente de Factura.')) {
+                                    handleAction(p.id, 'aprobar_precio');
+                                  }
+                                } else {
+                                  alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
+                                }
                                 return;
                               }
                               setPedidoAprobar(p)
@@ -491,7 +497,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                                 ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                                 : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
                             }`}
-                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar/Facturar pedido'}
+                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) ? (userNivel === 1 ? 'Aprobar Tarifa' : 'Requiere aprobación de Gerencia (Nivel 1)') : 'Aprobar/Facturar pedido'}
                           >
                             <ThumbsUp size={12} />
                           </button>
@@ -620,8 +626,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     <button
                       onClick={() => {
                         const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada;
-                        if (requiresNivel1 && userNivel === 2) {
-                          alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
+                        if (requiresNivel1) {
+                          if (userNivel === 1) {
+                            if (confirm('¿Aprobar Tarifa Negociada para este pedido? El pedido pasará a Pendiente de Factura.')) {
+                              handleAction(p.id, 'aprobar_precio');
+                            }
+                          } else {
+                            alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
+                          }
                           return;
                         }
                         setPedidoAprobar(p)
@@ -634,7 +646,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                           ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                           : 'bg-green-400/10 text-green-400 border-green-400/20 hover:bg-green-400/20 transition-all'
                       }`}
-                      title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar/Facturar pedido'}
+                      title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) ? (userNivel === 1 ? 'Aprobar Tarifa' : 'Requiere aprobación de Gerencia (Nivel 1)') : 'Aprobar/Facturar pedido'}
                     >
                       <ThumbsUp size={16} />
                     </button>
@@ -672,6 +684,12 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
           pedido={selectedPedido} 
           onClose={() => setSelectedPedido(null)} 
           onStateChange={handleAction}
+          onRequestFacturar={() => {
+            setSelectedPedido(null)
+            setPedidoAprobar(selectedPedido)
+            setFechaEntrega('')
+            setMetodoPagoB((selectedPedido.metodoPagoB as any) || '')
+          }}
           userNivel={userNivel}
         />
       )}

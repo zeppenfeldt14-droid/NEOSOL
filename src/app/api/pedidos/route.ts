@@ -113,9 +113,14 @@ export async function POST(request: Request) {
         ? (priceRecord ? priceRecord.precioPaqueteMax : prod.precioPaquete)
         : (priceRecord ? priceRecord.precioPaqueteMin : prod.precioPaquete)
 
+      const priceA = priceRecord ? priceRecord.precioCajaMax : prod.precioCajaVolumen
+      const priceB = priceRecord ? priceRecord.precioCajaMin : prod.precioCaja
+
       const customPrice = parseFloat(d.precioCajaSnapshot)
-      const hasCustomPrice = !isNaN(customPrice) && Math.abs(customPrice - defaultCajaPrice) > 0.01
-      const priceToUse = hasCustomPrice ? customPrice : defaultCajaPrice
+      const isListA = Math.abs(customPrice - priceA) < 0.01
+      const isListB = Math.abs(customPrice - priceB) < 0.01
+      const hasCustomPrice = !isNaN(customPrice) && !isListA && !isListB
+      const priceToUse = (!isNaN(customPrice) && customPrice > 0) ? customPrice : defaultCajaPrice
       if (hasCustomPrice) {
         tienePrecioNegociado = true
       }

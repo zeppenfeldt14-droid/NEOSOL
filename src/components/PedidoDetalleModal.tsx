@@ -16,7 +16,8 @@ import html2canvas from 'html2canvas'
 interface Props {
   pedido: any
   onClose: () => void
-  onStateChange?: (id: number, newState: string) => void
+  onStateChange?: (id: number, action: string) => void
+  onRequestFacturar?: () => void
   userNivel?: number
 }
 
@@ -34,7 +35,7 @@ const ESTADO_BADGES: Record<string, string> = {
   cancelado: 'bg-red-500/10 text-red-500 border-red-500/20',
 }
 
-export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel = 3 }: Props) {
+export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFacturar, userNivel = 3 }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
@@ -328,12 +329,35 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
           <div className="flex gap-2">
             {pedido.estado === 'pendiente_supervisor' && userNivel < 3 && onStateChange && (
               <>
-                <button
-                  onClick={() => onStateChange(pedido.id, 'aprobar')}
-                  className="btn btn-primary text-xs bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30 font-bold"
-                >
-                  Aprobar Pedido
-                </button>
+                {pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada ? (
+                  <button
+                    onClick={() => {
+                      if (userNivel === 1) {
+                        if (confirm('¿Aprobar Tarifa Negociada para este pedido? El pedido pasará a Pendiente de Factura.')) {
+                          onStateChange(pedido.id, 'aprobar_precio');
+                        }
+                      } else {
+                        alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
+                      }
+                    }}
+                    className="btn btn-primary text-xs bg-orange-500/20 text-orange-400 border-orange-500/30 hover:bg-orange-500/30 font-bold"
+                  >
+                    Aprobar Tarifa
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (onRequestFacturar) {
+                        onRequestFacturar();
+                      } else {
+                        onStateChange(pedido.id, 'aprobar');
+                      }
+                    }}
+                    className="btn btn-primary text-xs bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30 font-bold"
+                  >
+                    Asignar Fecha y Facturar
+                  </button>
+                )}
                 <button
                   onClick={() => onStateChange(pedido.id, 'cancelar')}
                   className="btn btn-outline border-red-500/30 text-red-500 hover:bg-red-500/20 text-xs font-bold"

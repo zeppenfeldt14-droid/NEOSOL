@@ -59,6 +59,25 @@ export async function PATCH(request: Request, { params }: Params) {
       if (pedido.estado !== 'borrador' && pedido.estado !== 'presupuesto')
         return NextResponse.json({ error: 'Solo se puede enviar un pedido en borrador o presupuesto.' }, { status: 400 })
       nuevoEstado = 'pendiente_supervisor'
+    } else if (accion === 'aprobar_precio') {
+      if (session.nivel !== 1)
+        return NextResponse.json({ error: 'Solo Gerencia (Nivel 1) puede aprobar tarifas negociadas.' }, { status: 403 })
+      if (pedido.estado !== 'pendiente_supervisor')
+        return NextResponse.json({ error: 'El pedido no está pendiente.' }, { status: 400 })
+      
+      const updated = await prisma.pedido.update({
+        where: { id: Number(id) },
+        data: {
+          tienePrecioNegociado: false,
+          tieneTarifaNegociada: false
+        }
+      })
+      await registrarAccion(
+        session.id, session.alias,
+        `PEDIDO_TARIFA_APROBADA`,
+        `Tarifa negociada aprobada para el pedido ${pedido.numeroPedido}`
+      )
+      return NextResponse.json({ success: true, pedido: updated })
     } else if (accion === 'aprobar') {
       if (session.nivel > 2)
         return NextResponse.json({ error: 'Sin permisos para aprobar.' }, { status: 403 })
@@ -290,9 +309,14 @@ export async function PUT(request: Request, { params }: Params) {
         ? (priceRecord ? priceRecord.precioPaqueteMax : prod.precioPaquete)
         : (priceRecord ? priceRecord.precioPaqueteMin : prod.precioPaquete)
 
+      const priceA = priceRecord ? priceRecord.precioCajaMax : prod.precioCajaVolumen
+      const priceB = priceRecord ? priceRecord.precioCajaMin : prod.precioCaja
+
       const customPrice = parseFloat(d.precioCajaSnapshot)
-      const hasCustomPrice = !isNaN(customPrice) && Math.abs(customPrice - defaultCajaPrice) > 0.01
-      const priceToUse = hasCustomPrice ? customPrice : defaultCajaPrice
+      const isListA = Math.abs(customPrice - priceA) < 0.01
+      const isListB = Math.abs(customPrice - priceB) < 0.01
+      const hasCustomPrice = !isNaN(customPrice) && !isListA && !isListB
+      const priceToUse = (!isNaN(customPrice) && customPrice > 0) ? customPrice : defaultCajaPrice
       if (hasCustomPrice) {
         tienePrecioNegociado = true
       }
