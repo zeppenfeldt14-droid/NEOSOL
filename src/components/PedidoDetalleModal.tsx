@@ -41,6 +41,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
 
   const [activeList, setActiveList] = useState<any>(null)
+  const [loadingList, setLoadingList] = useState(true)
   
   useEffect(() => {
     fetch('/api/configuracion/tarifas')
@@ -50,8 +51,12 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
           const list = data.find(l => l.activa)
           if (list) setActiveList(list)
         }
+        setLoadingList(false)
       })
-      .catch(console.error)
+      .catch((e) => {
+        console.error(e)
+        setLoadingList(false)
+      })
   }, [])
 
   const handlePrintPedido = async () => {
@@ -245,10 +250,16 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                         <td className="px-4 py-3 text-center text-secondary">{d.producto?.paqPorCaja || '—'}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           {fmt(d.precioCajaSnapshot)}
-                          {tagText && (
-                            <span className={`block text-[9px] font-bold uppercase mt-0.5 ${tagColor}`}>
-                              [{tagText}]
+                          {loadingList ? (
+                            <span className="block text-[9px] font-bold uppercase mt-0.5 text-secondary">
+                              [Cargando Tarifa...]
                             </span>
+                          ) : (
+                            tagText && (
+                              <span className={`block text-[9px] font-bold uppercase mt-0.5 ${tagColor}`}>
+                                [{tagText}]
+                              </span>
+                            )
                           )}
                         </td>
                         <td className="px-4 py-3 text-center font-bold text-white">{d.cantidadCajas}</td>
