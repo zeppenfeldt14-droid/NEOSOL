@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         ? (priceRecord ? priceRecord.precioPaqueteMax : prod.precioPaquete)
         : (priceRecord ? priceRecord.precioPaqueteMin : prod.precioPaquete)
 
-      const priceA = priceRecord ? priceRecord.precioCajaMax : prod.precioCajaVolumen
+      const priceA = priceRecord ? priceRecord.precioCajaMax : prod.precioCaja
       const priceB = priceRecord ? priceRecord.precioCajaMin : prod.precioCaja
 
       const customPrice = parseFloat(d.precioCajaSnapshot)
