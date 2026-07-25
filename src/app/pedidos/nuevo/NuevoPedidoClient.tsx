@@ -616,7 +616,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                     setShowEmpresaDropdown(true)
                   }}
                   onFocus={() => setShowEmpresaDropdown(true)}
-                  className="form-input bg-black/40 border border-white/10 rounded-xl pl-9"
+                  className="form-input bg-black/40 border border-white/10 rounded-xl !pl-10"
                 />
                 {empresaSeleccionada && (
                   <button
