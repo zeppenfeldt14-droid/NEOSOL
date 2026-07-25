@@ -90,7 +90,7 @@ const ESTADO_LABELS: Record<string, string> = {
 export function PedidosPageClient({ userNivel, userAlias, userZona, availableZones }: Props) {
   const getEstadoLabel = (p: Pedido) => {
     if (p.estado === 'pendiente_supervisor') {
-      if (p.tienePrecioNegociado || p.tieneTarifaNegociada) return 'Pend. Aprob.';
+      if (p.tienePrecioNegociado) return 'Pend. Aprob.';
       return 'Pend. Factura';
     }
     return ESTADO_LABELS[p.estado] || p.estado;
@@ -98,7 +98,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
 
   const getEstadoBadge = (p: Pedido) => {
     if (p.estado === 'pendiente_supervisor') {
-      if (p.tienePrecioNegociado || p.tieneTarifaNegociada) return 'bg-orange-400/10 text-orange-400 border-orange-400/20';
+      if (p.tienePrecioNegociado) return 'bg-orange-400/10 text-orange-400 border-orange-400/20';
       return 'bg-purple-400/10 text-purple-400 border-purple-400/20';
     }
     return ESTADO_BADGES[p.estado] || '';
