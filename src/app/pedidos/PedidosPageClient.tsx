@@ -96,6 +96,14 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
     return ESTADO_LABELS[p.estado] || p.estado;
   }
 
+  const getEstadoBadge = (p: Pedido) => {
+    if (p.estado === 'pendiente_supervisor') {
+      if (p.tienePrecioNegociado || p.tieneTarifaNegociada) return 'bg-orange-400/10 text-orange-400 border-orange-400/20';
+      return 'bg-purple-400/10 text-purple-400 border-purple-400/20';
+    }
+    return ESTADO_BADGES[p.estado] || '';
+  }
+
   const router = useRouter()
   const [selectedZone, setSelectedZone] = useState<string>(
     userNivel === 3 ? (userZona || '') : 'todas'
@@ -435,7 +443,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     <td className="px-4 py-3 text-white font-black text-xs">{fmt(p.totalGeneral)}</td>
                     <td className="px-4 py-3 text-secondary text-xs">{p.condicionPago || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-black border ${ESTADO_BADGES[p.estado] || ''}`}>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-black border ${getEstadoBadge(p)}`}>
                         {getEstadoLabel(p)}
                       </span>
                     </td>
@@ -559,7 +567,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     {p.tienePrecioNegociado && <span className="text-yellow-400 ml-1" title="Precio Negociado">⚠️</span>}
                   </span>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${ESTADO_BADGES[p.estado] || ''} whitespace-nowrap`}>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${getEstadoBadge(p)} whitespace-nowrap`}>
                   {getEstadoLabel(p)}
                 </span>
               </div>

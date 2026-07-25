@@ -122,8 +122,14 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
           <div className="flex items-center gap-3">
             <ShoppingCart className="text-primary" size={20} />
             <h3 className="text-white font-bold text-lg">{pedido.estado === 'presupuesto' ? 'Presupuesto' : 'Pedido'} {pedido.numeroPedido}</h3>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${ESTADO_BADGES[pedido.estado] || ''}`}>
-              {ESTADO_LABELS[pedido.estado] || pedido.estado}
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+              pedido.estado === 'pendiente_supervisor' 
+                ? (pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada ? 'bg-orange-400/10 text-orange-400 border-orange-400/20' : 'bg-purple-400/10 text-purple-400 border-purple-400/20')
+                : ESTADO_BADGES[pedido.estado] || ''
+            }`}>
+              {pedido.estado === 'pendiente_supervisor' 
+                ? (pedido.tienePrecioNegociado || pedido.tieneTarifaNegociada ? 'Pend. Aprob.' : 'Pend. Factura')
+                : ESTADO_LABELS[pedido.estado] || pedido.estado}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -189,7 +195,10 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
                 </thead>
                 <tbody>
                   {pedido.detalles.map((d: any) => {
-                    const isCustom = Math.abs(d.precioCajaSnapshot - d.precioCajaOriginal) > 0.01
+                    const isListB = Math.abs(d.precioCajaSnapshot - (d.producto?.precioCaja || d.precioCajaOriginal)) < 0.01;
+                    const isListA = Math.abs(d.precioCajaSnapshot - (d.producto?.precioCajaVolumen || d.precioCajaOriginal)) < 0.01;
+                    const isCustom = !isListA && !isListB;
+
                     return (
                       <tr key={d.id} className="border-b border-white/5 text-white/90">
                         <td className="px-4 py-3 text-primary font-bold">{d.producto?.codigoInterno || '—'}</td>
@@ -197,7 +206,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, userNivel =
                         <td className="px-4 py-3 text-center text-secondary">{d.producto?.paqPorCaja || '—'}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           {fmt(d.precioCajaSnapshot)}
-                          {isCustom && <span className="block text-[8px] text-yellow-400 font-bold">Negociado</span>}
+                          {isCustom && <span className="block text-[8px] text-red-500 font-bold uppercase mt-0.5">Cambio de Tarifa</span>}
                         </td>
                         <td className="px-4 py-3 text-center font-bold text-white">{d.cantidadCajas}</td>
                         <td className="px-4 py-3 text-center">

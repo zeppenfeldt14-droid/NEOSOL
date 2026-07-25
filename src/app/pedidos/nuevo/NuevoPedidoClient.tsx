@@ -552,6 +552,14 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     acc[linea].push(p)
     return acc
   }, {} as Record<string, Producto[]>)
+  const getListCodeForLine = (l: LineaPedido) => {
+    const { priceA, priceB } = getAllListPricesForProduct(l.producto);
+    if (Math.abs(l.precioCajaNegociado - priceA) < 0.01) return 'A';
+    if (Math.abs(l.precioCajaNegociado - priceB) < 0.01) return 'B';
+    return 'C';
+  };
+  const uniqueListsUsed = new Set(lineasPedido.filter(l => l.cantidadCajas > 0).map(getListCodeForLine));
+  const hasMixedLists = uniqueListsUsed.size > 1;
 
   if (loading) {
     return (
@@ -793,7 +801,17 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                             <td className="px-2 py-2 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <select 
-                                  className="bg-black/40 border border-white/10 rounded px-1 py-1 text-[9px] text-white focus:outline-none"
+                                  className={`bg-black/40 border border-white/10 rounded px-1 py-1 text-[9px] focus:outline-none ${
+                                    (() => {
+                                      if (hasMixedLists && linea_ && linea_.cantidadCajas > 0) {
+                                        const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                        if (Math.abs(linea_.precioCajaNegociado - priceA) < 0.01) return 'text-green-400 font-bold';
+                                        if (Math.abs(linea_.precioCajaNegociado - priceB) < 0.01) return 'text-blue-400 font-bold';
+                                        return 'text-red-400 font-bold';
+                                      }
+                                      return 'text-white';
+                                    })()
+                                  }`}
                                   value={
                                     (() => {
                                       const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
@@ -882,7 +900,17 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                                     setCantidadDirecta(prod.id, parseInt(e.target.value) || 0)
                                   }}
                                   onFocus={() => !linea_ && agregarProducto(prod)}
-                                  className="w-10 text-center bg-black/40 border border-white/10 rounded-lg py-0.5 text-[10px] text-white font-bold focus:border-primary focus:outline-none"
+                                  className={`w-10 text-center bg-black/40 border border-white/10 rounded-lg py-0.5 text-[10px] font-bold focus:border-primary focus:outline-none ${
+                                    (() => {
+                                      if (hasMixedLists && linea_ && linea_.cantidadCajas > 0) {
+                                        const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                        if (Math.abs(linea_.precioCajaNegociado - priceA) < 0.01) return 'text-green-400';
+                                        if (Math.abs(linea_.precioCajaNegociado - priceB) < 0.01) return 'text-blue-400';
+                                        return 'text-red-400';
+                                      }
+                                      return 'text-white';
+                                    })()
+                                  }`}
                                 />
                                 <button
                                   onClick={() => {
@@ -1092,8 +1120,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
             {/* Plazos y Parte A */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="form-group mb-0">
-                <label className="form-label text-[10px] uppercase font-black text-secondary">Plazos de Pago</label>
+              <div className="flex flex-col gap-1">
+                <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Plazos de Pago</label>
                 <input
                   type="text"
                   value={plazosPago}
@@ -1105,8 +1133,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
 
               {pctA > 0 && (
                 <>
-                  <div className="form-group mb-0">
-                    <label className="form-label text-[10px] uppercase font-black text-secondary">Método de Pago (Parte A) *</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Método de Pago (Parte A) *</label>
                     <select
                       value={metodoPagoA}
                       onChange={e => setMetodoPagoA(e.target.value as any)}
@@ -1117,8 +1145,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                       <option value="transferencia" className="bg-black text-white">Transferencia</option>
                     </select>
                   </div>
-                  <div className="form-group mb-0">
-                    <label className="form-label text-[10px] uppercase font-black text-secondary">Fecha Vencimiento (Parte A) *</label>
+                  <div className="flex flex-col gap-1">
+                    <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Fecha Venc. (Parte A) *</label>
                     <input
                       type="date"
                       value={fechaPagoA}
@@ -1341,7 +1369,17 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                       >
                         <Minus size={14} />
                       </button>
-                      <span className="text-white font-bold w-6 text-center">{cantidad}</span>
+                      <span className={`font-bold w-6 text-center ${
+                        (() => {
+                          if (hasMixedLists && cantidad > 0 && linea) {
+                            const { priceA, priceB } = getAllListPricesForProduct(prod);
+                            if (Math.abs(linea.precioCajaNegociado - priceA) < 0.01) return 'text-green-400';
+                            if (Math.abs(linea.precioCajaNegociado - priceB) < 0.01) return 'text-blue-400';
+                            return 'text-red-400';
+                          }
+                          return 'text-white';
+                        })()
+                      }`}>{cantidad}</span>
                       <button 
                         onClick={() => {
                           if (!linea) {
