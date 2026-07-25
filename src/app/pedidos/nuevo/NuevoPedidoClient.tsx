@@ -774,7 +774,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                           { label: 'Subtotal', align: 'text-right' },
                           { label: '', align: 'text-center' }
                         ].map((col, idx) => (
-                          <th key={idx} className={`px-2 py-1.5 text-[8px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap ${col.align}`}>
+                          <th key={idx} className={`px-1 py-1.5 text-[7px] font-black uppercase text-white/30 tracking-wider whitespace-nowrap ${col.align}`}>
                             {col.label}
                           </th>
                         ))}
