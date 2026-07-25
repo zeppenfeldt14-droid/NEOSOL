@@ -10,7 +10,10 @@ async function main() {
   console.log(`Encontrados ${pedidos.length} pedidos pendientes de supervisor.`);
 
   const activeList = await prisma.listaPrecio.findFirst({
-    where: { activa: true },
+    where: { 
+      activa: true,
+      vigenteDesde: { lte: new Date() }
+    },
     orderBy: { vigenteDesde: 'desc' },
     include: { precios: true }
   });

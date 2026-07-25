@@ -1,23 +1,22 @@
 const { PrismaClient } = require('@prisma/client');
-const p = new PrismaClient();
-async function run() {
-  const prod = await p.producto.findFirst({where: {nombre: {contains: 'SANDW. 176'}}});
-  console.log('Producto:', prod);
-  
-  const list = await p.listaPrecio.findFirst({
-    where: {activa: true, vigenteDesde: {lte: new Date()}},
-    orderBy: {vigenteDesde: 'desc'},
-    include: {precios: true}
+const prisma = new PrismaClient();
+
+async function main() {
+  const productos = await prisma.producto.findMany({
+    where: { codigoInterno: { in: ['66034', '99001'] } }
   });
   
-  const pr = list.precios.find(x => x.productoId === prod.id);
-  console.log('Max (A):', pr ? pr.precioCajaMax : 'Not found');
-  console.log('Min (B):', pr ? pr.precioCajaMin : 'Not found');
-  console.log('Original prod.precioCaja:', prod.precioCaja);
+  const activeList = await prisma.listaPrecio.findFirst({
+    where: { activa: true },
+    orderBy: { vigenteDesde: 'desc' },
+    include: { precios: true }
+  });
   
-  const d = await p.pedido.findFirst({where: {numeroPedido: 'PED-2026-0044'}, include: {detalles: true}});
-  const det = d.detalles.find(x => x.productoId === prod.id);
-  console.log('PED-0044 SANDW. 176 snapshot:', det.precioCajaSnapshot);
-  console.log('PED-0044 SANDW. 176 original:', det.precioCajaOriginal);
+  for (const prod of productos) {
+    const priceRecord = activeList.precios.find(pr => pr.productoId === prod.id);
+    console.log(prod.codigoInterno + ' ' + prod.nombre);
+    console.log(' -> Lista A (Max): ' + (priceRecord ? priceRecord.precioCajaMax : prod.precioCaja));
+    console.log(' -> Lista B (Min): ' + (priceRecord ? priceRecord.precioCajaMin : prod.precioCaja));
+  }
 }
-run().finally(() => p.$disconnect());
+main().catch(console.error).finally(() => prisma.$disconnect());

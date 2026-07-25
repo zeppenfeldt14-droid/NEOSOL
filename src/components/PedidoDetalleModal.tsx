@@ -48,7 +48,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const list = data.find(l => l.activa)
+          const list = data.find((l: any) => l.activa && new Date(l.vigenteDesde) <= new Date())
           if (list) setActiveList(list)
         }
         setLoadingList(false)
