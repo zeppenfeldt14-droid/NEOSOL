@@ -249,10 +249,10 @@ export async function PUT(request: Request, { params }: Params) {
     }
 
     const body = await request.json()
-    const {
+    let {
       empresaId,
-      tieneTarifaNegociada,
-      detalles, // [{ productoId, cantidadCajas, cajasBonus, descripcionBonus, precioCajaSnapshot }]
+      tieneTarifaNegociada: tieneTarifaNegociadaBody,
+      detalles,
       condicionPago,
       porcentajePagoA,
       porcentajePagoB,
@@ -283,6 +283,8 @@ export async function PUT(request: Request, { params }: Params) {
       orderBy: { vigenteDesde: 'desc' },
       include: { precios: true }
     })
+
+    let tieneTarifaNegociada = tieneTarifaNegociadaBody || false
 
     // Fetch products
     const productoIds = detalles.map((d: any) => d.productoId)

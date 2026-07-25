@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const {
       empresaId,
-      tieneTarifaNegociada,
+      tieneTarifaNegociada: tieneTarifaNegociadaBody,
       detalles, // [{ productoId, cantidadCajas, cajasBonus, descripcionBonus }]
       condicionPago,
       porcentajePagoA,
@@ -88,7 +88,9 @@ export async function POST(request: Request) {
       include: { precios: true }
     })
 
-    // Fetch all products for price snapshots
+    let tieneTarifaNegociada = tieneTarifaNegociadaBody || false
+
+    // Fetch the products related to detailsnapshots
     const productoIds = detalles.map((d: any) => d.productoId)
     const productos = await prisma.producto.findMany({ where: { id: { in: productoIds } } })
     const productoMap = Object.fromEntries(productos.map(p => [p.id, p]))
