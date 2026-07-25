@@ -96,10 +96,11 @@ export async function POST(request: Request) {
     // Check volume tier
     const totalCajas = detalles.reduce((sum: number, d: any) => sum + (d.cantidadCajas || 0), 0)
     const isVolume = totalCajas >= 300 || tieneTarifaNegociada
-
-    // Calculate totals
+    
+    let allListA = true
     let subtotalSinIVA = 0
     let tienePrecioNegociado = false
+    
     const detallesConCalculo = detalles.map((d: any) => {
       const prod = productoMap[d.productoId]
       if (!prod) throw new Error(`Producto ${d.productoId} no encontrado`)
@@ -120,6 +121,8 @@ export async function POST(request: Request) {
       const isListA = Math.abs(customPrice - priceA) < 0.01
       const isListB = Math.abs(customPrice - priceB) < 0.01
       const hasCustomPrice = !isNaN(customPrice) && !isListA && !isListB
+      if (!isListA) allListA = false
+
       const priceToUse = (!isNaN(customPrice) && customPrice > 0) ? customPrice : defaultCajaPrice
       if (hasCustomPrice) {
         tienePrecioNegociado = true
@@ -140,6 +143,10 @@ export async function POST(request: Request) {
         descripcionBonus: d.descripcionBonus || null,
       }
     })
+
+    if (allListA && totalCajas < 300) {
+      tieneTarifaNegociada = true
+    }
 
     // Financial calculations
     const pctA = (porcentajePagoA ?? 20) / 100

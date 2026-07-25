@@ -293,6 +293,7 @@ export async function PUT(request: Request, { params }: Params) {
     const totalCajas = detalles.reduce((sum: number, d: any) => sum + (d.cantidadCajas || 0), 0)
     const isVolume = totalCajas >= 300 || tieneTarifaNegociada
 
+    let allListA = true
     let subtotalSinIVA = 0
     let tienePrecioNegociado = false
 
@@ -316,6 +317,8 @@ export async function PUT(request: Request, { params }: Params) {
       const isListA = Math.abs(customPrice - priceA) < 0.01
       const isListB = Math.abs(customPrice - priceB) < 0.01
       const hasCustomPrice = !isNaN(customPrice) && !isListA && !isListB
+      if (!isListA) allListA = false
+
       const priceToUse = (!isNaN(customPrice) && customPrice > 0) ? customPrice : defaultCajaPrice
       if (hasCustomPrice) {
         tienePrecioNegociado = true
@@ -336,6 +339,10 @@ export async function PUT(request: Request, { params }: Params) {
         descripcionBonus: d.descripcionBonus || null,
       }
     })
+
+    if (allListA && totalCajas < 300) {
+      tieneTarifaNegociada = true
+    }
 
     // Financial calculations
     const pctA = (porcentajePagoA || 20) / 100

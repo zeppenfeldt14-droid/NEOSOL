@@ -489,12 +489,18 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       const url = editId ? `/api/pedidos/${editId}` : '/api/pedidos'
       const method = editId ? 'PUT' : 'POST'
 
+      const is100PercentListA = lineasPedido.filter(l => l.cantidadCajas > 0).every(l => {
+        const { priceA } = getAllListPricesForProduct(l.producto);
+        return Math.abs(l.precioCajaNegociado - priceA) < 0.01;
+      });
+      const needsApproval = (negociarTarifaVolumen && totalCajas < 300) || (is100PercentListA && totalCajas < 300) || isSelectedListUpcoming();
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresaId: empresaSeleccionada.id,
-          tieneTarifaNegociada: (negociarTarifaVolumen && totalCajas < 300) || isSelectedListUpcoming(),
+          tieneTarifaNegociada: needsApproval,
           detalles: lineasPedido
             .filter(l => l.cantidadCajas > 0)
             .map(l => ({
