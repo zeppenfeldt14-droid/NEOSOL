@@ -477,7 +477,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
     }
     
     const pctA = condicionIdx === 6 ? pctACustom : CONDICIONES_PAGO[condicionIdx].pA
-    if (pctA > 0) {
+    if (pctA > 0 && enviarAlSupervisor) {
       if (!metodoPagoA) { setError('Selecciona un método de pago para la Parte A'); return }
       if (!fechaPagoA) { setError('Ingresa la fecha de vencimiento para la Parte A'); return }
     }
@@ -577,6 +577,247 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       </div>
     )
   }
+
+  const renderNegociacionBlock = () => (
+          {/* Negociación */}
+          <div className="glass-panel card border border-white/5 p-5 flex flex-col gap-4 sticky top-4">
+            <h2 className="text-white font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-3">
+              <Calculator size={15} className="text-yellow-400" />
+              Negociación y Facturación
+            </h2>
+
+            {/* Condición de pago */}
+            <div className="form-group mb-0">
+              <label className="form-label text-[10px] uppercase font-black text-secondary">
+                Condición de Pago (A% / B%)
+              </label>
+              <div className="flex flex-col gap-2">
+                {CONDICIONES_PAGO.map((c, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCondicionIdx(i)}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold text-left border transition-all flex justify-between items-center ${
+                      condicionIdx === i
+                        ? 'bg-yellow-400/10 border-yellow-400/40 text-yellow-400'
+                        : 'border-white/10 text-secondary hover:text-white hover:border-white/20'
+                    }`}
+                  >
+                    <span>{c.label}</span>
+                    {condicionIdx === i && c.pA >= 0 && (
+                      <span className="text-[10px] font-black">
+                        {c.pA}% A / {c.pB}% B
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom percentages */}
+              {condicion.pA === -1 && (
+                <div className="flex gap-3 mt-3">
+                  <div className="flex-1">
+                    <label className="form-label text-[9px] uppercase font-black text-secondary">% Parte A (con IVA)</label>
+                    <input
+                      type="number" min="0" max="100"
+                      value={pctACustom}
+                      onChange={e => handlePctAChange(parseInt(e.target.value) || 0)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-center text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="form-label text-[9px] uppercase font-black text-secondary">% Parte B (sin IVA)</label>
+                    <input
+                      type="number" min="0" max="100"
+                      value={pctBCustom}
+                      onChange={e => { setPctBCustom(parseInt(e.target.value) || 0); setPctACustom(100 - (parseInt(e.target.value) || 0)) }}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-center text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Financiera toggle */}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/5">
+              <div>
+                <p className="text-white text-xs font-bold">Pago por Financiera</p>
+                <p className="text-secondary text-[10px]">Recargo del 3% sobre el total</p>
+              </div>
+              <div
+                onClick={() => setAplicaFinanciera(!aplicaFinanciera)}
+                className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${aplicaFinanciera ? 'bg-orange-400' : 'bg-white/10'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${aplicaFinanciera ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </div>
+            </div>
+
+            {/* Plazos y Parte A */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Plazos de Pago</label>
+                <input
+                  type="text"
+                  value={plazosPago}
+                  onChange={e => setPlazosPago(e.target.value)}
+                  placeholder="Ej: 30 días / 60 días..."
+                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                />
+              </div>
+
+              {pctA > 0 && (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Método de Pago (Parte A) *</label>
+                    <select
+                      value={metodoPagoA}
+                      onChange={e => setMetodoPagoA(e.target.value as any)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                    >
+                      <option value="" className="bg-black text-white">Seleccionar...</option>
+                      <option value="cheque" className="bg-black text-white">Cheque</option>
+                      <option value="transferencia" className="bg-black text-white">Transferencia</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Fecha Venc. (Parte A) *</label>
+                    <input
+                      type="date"
+                      value={fechaPagoA}
+                      onChange={e => setFechaPagoA(e.target.value)}
+                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Dynamic Volume Tier and Negotiation */}
+            <div className="p-4 rounded-xl border flex flex-col gap-3 bg-black/30 border-white/5">
+              <p className="text-[10px] font-black uppercase text-secondary tracking-wider">Tarifa del Pedido</p>
+              
+              {totalCajas >= 300 ? (
+                <div className="px-3 py-2 rounded-lg bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-semibold flex items-center gap-2">
+                  <Package size={14} />
+                  ¡Tarifa por Volumen Aplicada! (≥ 300 cajas)
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="px-3 py-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-semibold">
+                    Tarifa Estándar activa. Faltan {300 - totalCajas} cajas para descuento por volumen.
+                  </div>
+                  
+                  {/* Negotiated override */}
+                  <label className="flex items-center gap-2 cursor-pointer mt-1 p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-white/10 bg-black/40 text-primary focus:ring-0"
+                      checked={negociarTarifaVolumen}
+                      onChange={(e) => setNegociarTarifaVolumen(e.target.checked)}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-white text-xs font-bold">Negociar Tarifa por Volumen</span>
+                      <span className="text-secondary text-[9px]">Aplica precios de ≥ 300 cajas (Aprobación N1)</span>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* ── Resumen financiero ──────────────────────────────────────── */}
+            <div className="flex flex-col gap-2 p-4 rounded-xl bg-black/30 border border-white/5">
+              <p className="text-[10px] font-black uppercase text-secondary tracking-wider mb-1">Resumen del Pedido</p>
+
+              <div className="flex justify-between text-xs">
+                <span className="text-secondary">Total Cajas</span>
+                <span className="text-white font-bold">{totalCajas} {totalBonus > 0 ? `(+${totalBonus} bonus)` : ''}</span>
+              </div>
+
+              <div className="flex justify-between text-xs border-t border-white/5 pt-2">
+                <span className="text-secondary">Subtotal (sin IVA)</span>
+                <span className="text-white font-bold">{fmt(subtotalSinIVA)}</span>
+              </div>
+
+              {pctA > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-secondary flex items-center gap-1">
+                    <span className="px-1 py-0.5 rounded bg-blue-400/20 text-blue-400 text-[9px] font-black">A</span>
+                    Parte A ({pctA}%)
+                  </span>
+                  <span className="text-blue-300 font-semibold">{fmt(montoParteA)}</span>
+                </div>
+              )}
+
+              {pctB > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-secondary flex items-center gap-1">
+                    <span className="px-1 py-0.5 rounded bg-yellow-400/20 text-yellow-400 text-[9px] font-black">B</span>
+                    Parte B ({pctB}%)
+                  </span>
+                  <span className="text-yellow-300 font-semibold">{fmt(montoParteB)}</span>
+                </div>
+              )}
+
+              {montoIVA > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-secondary flex items-center gap-1">
+                    <Percent size={11} /> IVA 21% (sobre parte A)
+                  </span>
+                  <span className="text-blue-400 font-bold">+ {fmt(montoIVA)}</span>
+                </div>
+              )}
+
+              {aplicaFinanciera && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-secondary flex items-center gap-1">
+                    <Banknote size={11} /> Recargo Financiera 3%
+                  </span>
+                  <span className="text-orange-400 font-bold">+ {fmt(montoFinanciera)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between border-t border-white/10 pt-2 mt-1">
+                <span className="text-white font-black text-sm">TOTAL GENERAL</span>
+                <span className="text-primary font-black text-lg">{fmt(totalGeneral)}</span>
+              </div>
+            </div>
+
+            {/* Warning if price is negotiated */}
+            {(lineasPedido.some(l => l.hasCustomPrice) || (negociarTarifaVolumen && totalCajas < 300) || isSelectedListUpcoming()) && (
+              <div className="p-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20 text-[10px] text-yellow-400 font-semibold flex items-start gap-2">
+                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                <span>
+                  <strong>Atención:</strong> Has seleccionado un tarifario no vigente, o negociado precios o tarifas especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
+                </span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2 mt-2">
+              <button
+                onClick={() => handleGuardar(false)}
+                disabled={submitting}
+                className="btn btn-secondary w-full flex items-center justify-center gap-2 text-sm font-bold border border-white/10 hover:border-white/30"
+              >
+                <Save size={15} />
+                {submitting ? 'Guardando...' : 'Guardar Borrador'}
+              </button>
+              <button
+                onClick={() => handleGuardar(true)}
+                disabled={submitting}
+                className="btn btn-primary w-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 text-sm font-black"
+              >
+                <Send size={15} />
+                {submitting ? 'Enviando...' : 'Enviar al Supervisor'}
+              </button>
+            </div>
+
+            {userNivel < 3 && (
+              <p className="text-[10px] text-secondary text-center">
+                Como Nivel {userNivel}, podés aprobar el pedido directamente
+              </p>
+            )}
+          </div>
+  )
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -1066,244 +1307,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         {/* ── RIGHT: Calculator & Negotiation (1/3) ───────────────────────── */}
         <div className="flex flex-col gap-4">
 
-          {/* Negociación */}
-          <div className="glass-panel card border border-white/5 p-5 flex flex-col gap-4 sticky top-4">
-            <h2 className="text-white font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-3">
-              <Calculator size={15} className="text-yellow-400" />
-              Negociación y Facturación
-            </h2>
-
-            {/* Condición de pago */}
-            <div className="form-group mb-0">
-              <label className="form-label text-[10px] uppercase font-black text-secondary">
-                Condición de Pago (A% / B%)
-              </label>
-              <div className="flex flex-col gap-2">
-                {CONDICIONES_PAGO.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCondicionIdx(i)}
-                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold text-left border transition-all flex justify-between items-center ${
-                      condicionIdx === i
-                        ? 'bg-yellow-400/10 border-yellow-400/40 text-yellow-400'
-                        : 'border-white/10 text-secondary hover:text-white hover:border-white/20'
-                    }`}
-                  >
-                    <span>{c.label}</span>
-                    {condicionIdx === i && c.pA >= 0 && (
-                      <span className="text-[10px] font-black">
-                        {c.pA}% A / {c.pB}% B
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Custom percentages */}
-              {condicion.pA === -1 && (
-                <div className="flex gap-3 mt-3">
-                  <div className="flex-1">
-                    <label className="form-label text-[9px] uppercase font-black text-secondary">% Parte A (con IVA)</label>
-                    <input
-                      type="number" min="0" max="100"
-                      value={pctACustom}
-                      onChange={e => handlePctAChange(parseInt(e.target.value) || 0)}
-                      className="form-input bg-black/40 border border-white/10 rounded-xl text-center text-sm"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="form-label text-[9px] uppercase font-black text-secondary">% Parte B (sin IVA)</label>
-                    <input
-                      type="number" min="0" max="100"
-                      value={pctBCustom}
-                      onChange={e => { setPctBCustom(parseInt(e.target.value) || 0); setPctACustom(100 - (parseInt(e.target.value) || 0)) }}
-                      className="form-input bg-black/40 border border-white/10 rounded-xl text-center text-sm"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Financiera toggle */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/5">
-              <div>
-                <p className="text-white text-xs font-bold">Pago por Financiera</p>
-                <p className="text-secondary text-[10px]">Recargo del 3% sobre el total</p>
-              </div>
-              <div
-                onClick={() => setAplicaFinanciera(!aplicaFinanciera)}
-                className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${aplicaFinanciera ? 'bg-orange-400' : 'bg-white/10'}`}
-              >
-                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${aplicaFinanciera ? 'translate-x-5' : 'translate-x-0.5'}`} />
-              </div>
-            </div>
-
-            {/* Plazos y Parte A */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Plazos de Pago</label>
-                <input
-                  type="text"
-                  value={plazosPago}
-                  onChange={e => setPlazosPago(e.target.value)}
-                  placeholder="Ej: 30 días / 60 días..."
-                  className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-                />
-              </div>
-
-              {pctA > 0 && (
-                <>
-                  <div className="flex flex-col gap-1">
-                    <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Método de Pago (Parte A) *</label>
-                    <select
-                      value={metodoPagoA}
-                      onChange={e => setMetodoPagoA(e.target.value as any)}
-                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-                    >
-                      <option value="" className="bg-black text-white">Seleccionar...</option>
-                      <option value="cheque" className="bg-black text-white">Cheque</option>
-                      <option value="transferencia" className="bg-black text-white">Transferencia</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="form-label text-[8px] uppercase font-black text-secondary tracking-tight">Fecha Venc. (Parte A) *</label>
-                    <input
-                      type="date"
-                      value={fechaPagoA}
-                      onChange={e => setFechaPagoA(e.target.value)}
-                      className="form-input bg-black/40 border border-white/10 rounded-xl text-sm"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Dynamic Volume Tier and Negotiation */}
-            <div className="p-4 rounded-xl border flex flex-col gap-3 bg-black/30 border-white/5">
-              <p className="text-[10px] font-black uppercase text-secondary tracking-wider">Tarifa del Pedido</p>
-              
-              {totalCajas >= 300 ? (
-                <div className="px-3 py-2 rounded-lg bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-semibold flex items-center gap-2">
-                  <Package size={14} />
-                  ¡Tarifa por Volumen Aplicada! (≥ 300 cajas)
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div className="px-3 py-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-semibold">
-                    Tarifa Estándar activa. Faltan {300 - totalCajas} cajas para descuento por volumen.
-                  </div>
-                  
-                  {/* Negotiated override */}
-                  <label className="flex items-center gap-2 cursor-pointer mt-1 p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      className="rounded border-white/10 bg-black/40 text-primary focus:ring-0"
-                      checked={negociarTarifaVolumen}
-                      onChange={(e) => setNegociarTarifaVolumen(e.target.checked)}
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-white text-xs font-bold">Negociar Tarifa por Volumen</span>
-                      <span className="text-secondary text-[9px]">Aplica precios de ≥ 300 cajas (Aprobación N1)</span>
-                    </div>
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {/* ── Resumen financiero ──────────────────────────────────────── */}
-            <div className="flex flex-col gap-2 p-4 rounded-xl bg-black/30 border border-white/5">
-              <p className="text-[10px] font-black uppercase text-secondary tracking-wider mb-1">Resumen del Pedido</p>
-
-              <div className="flex justify-between text-xs">
-                <span className="text-secondary">Total Cajas</span>
-                <span className="text-white font-bold">{totalCajas} {totalBonus > 0 ? `(+${totalBonus} bonus)` : ''}</span>
-              </div>
-
-              <div className="flex justify-between text-xs border-t border-white/5 pt-2">
-                <span className="text-secondary">Subtotal (sin IVA)</span>
-                <span className="text-white font-bold">{fmt(subtotalSinIVA)}</span>
-              </div>
-
-              {pctA > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-secondary flex items-center gap-1">
-                    <span className="px-1 py-0.5 rounded bg-blue-400/20 text-blue-400 text-[9px] font-black">A</span>
-                    Parte A ({pctA}%)
-                  </span>
-                  <span className="text-blue-300 font-semibold">{fmt(montoParteA)}</span>
-                </div>
-              )}
-
-              {pctB > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-secondary flex items-center gap-1">
-                    <span className="px-1 py-0.5 rounded bg-yellow-400/20 text-yellow-400 text-[9px] font-black">B</span>
-                    Parte B ({pctB}%)
-                  </span>
-                  <span className="text-yellow-300 font-semibold">{fmt(montoParteB)}</span>
-                </div>
-              )}
-
-              {montoIVA > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-secondary flex items-center gap-1">
-                    <Percent size={11} /> IVA 21% (sobre parte A)
-                  </span>
-                  <span className="text-blue-400 font-bold">+ {fmt(montoIVA)}</span>
-                </div>
-              )}
-
-              {aplicaFinanciera && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-secondary flex items-center gap-1">
-                    <Banknote size={11} /> Recargo Financiera 3%
-                  </span>
-                  <span className="text-orange-400 font-bold">+ {fmt(montoFinanciera)}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between border-t border-white/10 pt-2 mt-1">
-                <span className="text-white font-black text-sm">TOTAL GENERAL</span>
-                <span className="text-primary font-black text-lg">{fmt(totalGeneral)}</span>
-              </div>
-            </div>
-
-            {/* Warning if price is negotiated */}
-            {(lineasPedido.some(l => l.hasCustomPrice) || (negociarTarifaVolumen && totalCajas < 300) || isSelectedListUpcoming()) && (
-              <div className="p-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20 text-[10px] text-yellow-400 font-semibold flex items-start gap-2">
-                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Atención:</strong> Has seleccionado un tarifario no vigente, o negociado precios o tarifas especiales. Este pedido requerirá la aprobación obligatoria de <strong>Gerencia (Nivel 1)</strong>.
-                </span>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex flex-col gap-2 mt-2">
-              <button
-                onClick={() => handleGuardar(false)}
-                disabled={submitting}
-                className="btn btn-secondary w-full flex items-center justify-center gap-2 text-sm font-bold border border-white/10 hover:border-white/30"
-              >
-                <Save size={15} />
-                {submitting ? 'Guardando...' : 'Guardar Borrador'}
-              </button>
-              <button
-                onClick={() => handleGuardar(true)}
-                disabled={submitting}
-                className="btn btn-primary w-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 text-sm font-black"
-              >
-                <Send size={15} />
-                {submitting ? 'Enviando...' : 'Enviar al Supervisor'}
-              </button>
-            </div>
-
-            {userNivel < 3 && (
-              <p className="text-[10px] text-secondary text-center">
-                Como Nivel {userNivel}, podés aprobar el pedido directamente
-              </p>
-            )}
-          </div>
+          {renderNegociacionBlock()}
         </div>
       </div>
 
@@ -1421,10 +1425,11 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         </div>
       </div>
 
+        <div className="md:hidden mt-4 mb-20">{renderNegociacionBlock()}</div>
       {/* Mobile Fixed Bottom Bar */}
       <div className="md:hidden fixed bottom-16 left-0 w-full bg-dark/95 backdrop-blur-md border-t border-white/10 p-4 z-50 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <div className="flex flex-col">
-          <span className="text-[10px] text-secondary uppercase font-bold">Saldo Aprox.</span>
+          <span className="text-[10px] text-secondary uppercase font-bold">TOTAL CAJAS: {totalCajas} | Saldo Aprox.</span>
           <span className="text-white font-black text-lg">{fmt(totalGeneral)}</span>
         </div>
         <button
