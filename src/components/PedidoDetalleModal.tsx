@@ -196,9 +196,8 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                 </thead>
                 <tbody>
                   {pedido.detalles.map((d: any) => {
-                    const isListB = Math.abs(d.precioCajaSnapshot - (d.producto?.precioCaja || d.precioCajaOriginal)) < 0.01;
-                    const isListA = Math.abs(d.precioCajaSnapshot - (d.producto?.precioCajaVolumen || d.precioCajaOriginal)) < 0.01;
-                    const isCustom = !isListA && !isListB;
+                    const isDifferent = Math.abs(d.precioCajaSnapshot - d.precioCajaOriginal) > 0.01;
+                    const isCustom = pedido.tienePrecioNegociado;
 
                     return (
                       <tr key={d.id} className="border-b border-white/5 text-white/90">
@@ -207,7 +206,11 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                         <td className="px-4 py-3 text-center text-secondary">{d.producto?.paqPorCaja || '—'}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           {fmt(d.precioCajaSnapshot)}
-                          {isCustom && <span className="block text-[8px] text-red-500 font-bold uppercase mt-0.5">Cambio de Tarifa</span>}
+                          {isDifferent && (
+                            <span className={`block text-[8px] font-bold uppercase mt-0.5 ${isCustom ? 'text-red-500' : 'text-yellow-400'}`}>
+                              {isCustom ? 'Cambio de Tarifa' : 'Negociado'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center font-bold text-white">{d.cantidadCajas}</td>
                         <td className="px-4 py-3 text-center">

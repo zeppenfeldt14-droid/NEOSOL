@@ -880,6 +880,20 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                                   </span>
                                 </div>
                               </div>
+                              {/* ALERTS */}
+                              {(() => {
+                                const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                const isCustom = Math.abs(currentVal - priceA) >= 0.01 && Math.abs(currentVal - priceB) >= 0.01;
+                                const isDifferentFromDefault = Math.abs(currentVal - listPrice) >= 0.01;
+
+                                if (isCustom) {
+                                  return <span className="block text-[8px] text-red-500 font-bold uppercase mt-1 text-right">Cambio de Tarifa</span>;
+                                } else if (isDifferentFromDefault) {
+                                  return <span className="block text-[8px] text-yellow-400 font-bold uppercase mt-1 text-right">Negociada</span>;
+                                }
+                                return null;
+                              })()}
                             </td>
 
                             {/* Quantity input */}
