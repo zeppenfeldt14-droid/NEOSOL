@@ -229,7 +229,7 @@ export function PedidoDetalleModal({ pedido, onClose, onStateChange, onRequestFa
                     let tagText = '';
                     let tagColor = '';
                     
-                    if (isCustom || pedido.tienePrecioNegociado) {
+                    if (isCustom) {
                       tagText = 'Cambio de Tarifa';
                       tagColor = 'text-red-500';
                     } else if (isListA) {

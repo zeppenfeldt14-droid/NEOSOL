@@ -148,10 +148,12 @@ export async function POST(request: Request) {
     })
 
     const totalProductos = detalles.length
+    let flag60Rule = false
     if (totalCajas < 300) {
       const porcentajeListaA = (countListaA / totalProductos) * 100
       if (porcentajeListaA >= 60) {
         tienePrecioNegociado = true
+        flag60Rule = true
       } else if (porcentajeListaA > 0) {
         tieneTarifaNegociada = true
       }
@@ -160,7 +162,13 @@ export async function POST(request: Request) {
     // Auto-update observaciones con el total de cajas
     let cleanObs = observaciones || ''
     cleanObs = cleanObs.replace(/^TOTAL CAJAS=\d+( \| )?/, '')
-    const finalObservaciones = `TOTAL CAJAS=${totalCajas}${cleanObs ? ' | ' + cleanObs : ''}`
+    // Remover nota vieja si existiera para evitar duplicados en futuras ediciones
+    cleanObs = cleanObs.replace(/ \| Lista de productos excede límite de tarifa por cantidad de cajas, requiere aprobación\.?/gi, '')
+    
+    let finalObservaciones = `TOTAL CAJAS=${totalCajas}${cleanObs ? ' | ' + cleanObs : ''}`
+    if (flag60Rule) {
+      finalObservaciones += ' | Lista de productos excede límite de tarifa por cantidad de cajas, requiere aprobación.'
+    }
 
     // Financial calculations
     const pctA = (porcentajePagoA ?? 20) / 100
