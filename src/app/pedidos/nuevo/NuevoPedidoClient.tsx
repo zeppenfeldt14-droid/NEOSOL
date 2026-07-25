@@ -1395,7 +1395,21 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                       >
                         <Minus size={14} />
                       </button>
-                      <span className={`font-bold w-6 text-center ${
+                      <input
+                        type="number"
+                        min="0"
+                        value={cantidad === 0 ? '' : cantidad}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0
+                          if (!linea && val > 0) {
+                            agregarProducto(prod)
+                            setTimeout(() => setCantidadDirecta(prod.id, val), 50)
+                          } else {
+                            setCantidadDirecta(prod.id, val)
+                          }
+                        }}
+                        className={`w-12 text-center bg-transparent font-bold outline-none border-b border-white/20 focus:border-primary ${
                         (() => {
                           if (hasMixedLists && cantidad > 0 && linea) {
                             const { priceA, priceB } = getAllListPricesForProduct(prod);
@@ -1405,7 +1419,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                           }
                           return 'text-white';
                         })()
-                      }`}>{cantidad}</span>
+                      }`} />
                       <button 
                         onClick={() => {
                           if (!linea) {
@@ -1427,21 +1441,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         </div>
       </div>
 
-        <div className="md:hidden mt-4 mb-20">{renderNegociacionBlock()}</div>
-      {/* Mobile Fixed Bottom Bar */}
-      <div className="md:hidden fixed bottom-16 left-0 w-full bg-dark/95 backdrop-blur-md border-t border-white/10 p-4 z-50 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-secondary uppercase font-bold">TOTAL CAJAS: {totalCajas} | Saldo Aprox.</span>
-          <span className="text-white font-black text-lg">{fmt(totalGeneral)}</span>
-        </div>
-        <button
-          onClick={() => handleGuardar(false)}
-          disabled={submitting || !empresaSeleccionada || lineasPedido.filter(l=>l.cantidadCajas>0).length===0}
-          className="btn btn-primary shadow-lg shadow-primary/20 !px-6 disabled:opacity-50"
-        >
-          {submitting ? 'Guardando...' : 'Guardar Borrador'}
-        </button>
-      </div>
+        <div className="md:hidden mt-4 pb-12">{renderNegociacionBlock()}</div>
 
     </div>
   )
