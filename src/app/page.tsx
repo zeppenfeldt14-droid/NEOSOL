@@ -408,18 +408,35 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
             select: { cantidadCajas: true, cajasBonus: true }
           }
         }
+      },
+      acciones: {
+        where: isPeriodFiltered ? {
+          OR: dateFilters.map((f: any) => ({ creadoEn: f }))
+        } : {},
+        select: { id: true }
+      },
+      notasPlanificador: {
+        where: isPeriodFiltered ? {
+          OR: dateFilters.map((f: any) => ({ creadoEn: f }))
+        } : {},
+        select: { id: true }
       }
     }
   })
 
   // Format heatmap points: [lat, lng, intensity]
   const heatmapVisitas = empresasGeo
-    .filter(e => e.visitas.length > 0)
+    .filter(e => e.visitas.length > 0 || e.acciones.length > 0 || e.notasPlanificador.length > 0 || e.pedidos.length > 0)
     .map(e => {
-      const weight = e.visitas.reduce((acc, v) => {
+      let weight = e.visitas.reduce((acc, v) => {
         if (v.tipo === 'visita' || v.tipo === 'visita_programada' || v.tipo === 'presencial') return acc + 3
         return acc + 1
       }, 0)
+      
+      weight += e.acciones.length
+      weight += e.notasPlanificador.length
+      weight += e.pedidos.length
+
       return {
         lat: e.latitud!,
         lng: e.longitud!,

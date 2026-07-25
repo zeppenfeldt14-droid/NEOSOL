@@ -271,9 +271,13 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       const group = L.layerGroup()
       const dotColor = mode === 'visitas' ? '#60a5fa' : '#34d399'
       activeData.forEach(point => {
+        const intensity = Math.min(point.weight / maxWeight, 1)
+        const size = 10 + (intensity * 30) // from 10px to 40px based on weight
+        const offset = size / 2
+
         const icon = L.divIcon({
-          html: `<div style="width:10px;height:10px;background:${dotColor};border:2px solid white;border-radius:50%;box-shadow:0 0 8px ${dotColor}"></div>`,
-          className: '', iconSize: [10, 10], iconAnchor: [5, 5]
+          html: `<div style="width:${size}px;height:${size}px;background:${dotColor};border:2px solid white;border-radius:50%;box-shadow:0 0 8px ${dotColor};opacity:0.9"></div>`,
+          className: '', iconSize: [size, size], iconAnchor: [offset, offset]
         })
         L.marker([point.lat, point.lng], { icon })
           .bindPopup(`
@@ -281,7 +285,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
               <strong style="color:#0f172a">${point.nombre}</strong><br/>
               <span style="color:#64748b;font-size:11px">${point.zona || ''}</span><br/>
               <span style="color:${dotColor};font-weight:bold;font-size:14px">
-                ${point.weight} ${mode === 'visitas' ? 'visita(s)' : 'cajas vendidas'}
+                ${point.weight} ${mode === 'visitas' ? 'interacción(es)' : 'caja(s) vendida(s)'}
               </span>
             </div>
           `, { closeButton: false })
