@@ -353,6 +353,11 @@ export async function PUT(request: Request, { params }: Params) {
       }
     }
 
+    // Auto-update observaciones con el total de cajas
+    let cleanObs = observaciones || ''
+    cleanObs = cleanObs.replace(/^TOTAL CAJAS=\d+( \| )?/, '')
+    const finalObservaciones = `TOTAL CAJAS=${totalCajas}${cleanObs ? ' | ' + cleanObs : ''}`
+
     // Financial calculations
     const pctA = (porcentajePagoA || 20) / 100
     const montoIVA = subtotalSinIVA * pctA * 0.21
@@ -373,7 +378,7 @@ export async function PUT(request: Request, { params }: Params) {
         porcentajePagoB: porcentajePagoB || 80,
         aplicaFinanciera: aplicaFinanciera || false,
         plazosPago: plazosPago || null,
-        observaciones: observaciones || null,
+        observaciones: finalObservaciones,
         acuerdosComerciales: acuerdosComerciales || null,
         requierePresupuesto: requierePresupuesto || false,
         turnoEntrega: turnoEntrega || null,

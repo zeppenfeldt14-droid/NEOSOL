@@ -157,6 +157,11 @@ export async function POST(request: Request) {
       }
     }
 
+    // Auto-update observaciones con el total de cajas
+    let cleanObs = observaciones || ''
+    cleanObs = cleanObs.replace(/^TOTAL CAJAS=\d+( \| )?/, '')
+    const finalObservaciones = `TOTAL CAJAS=${totalCajas}${cleanObs ? ' | ' + cleanObs : ''}`
+
     // Financial calculations
     const pctA = (porcentajePagoA ?? 20) / 100
     const montoIVA = subtotalSinIVA * pctA * 0.21   // 21% IVA sobre la parte A
@@ -199,12 +204,12 @@ export async function POST(request: Request) {
             estado: requierePresupuesto ? 'presupuesto' : 'borrador',
             tienePrecioNegociado,
             tieneTarifaNegociada: tieneTarifaNegociada || false,
-            condicionPago: condicionPago || `${porcentajePagoA ?? 20}/${porcentajePagoB ?? 80}`,
+            condicionPago: condicionPago || `${porcentajePagoA || 20}/${porcentajePagoB || 80}`,
             porcentajePagoA: porcentajePagoA ?? 20,
             porcentajePagoB: porcentajePagoB ?? 80,
             aplicaFinanciera: aplicaFinanciera || false,
             plazosPago: plazosPago || null,
-            observaciones: observaciones || null,
+            observaciones: finalObservaciones,
             acuerdosComerciales: acuerdosComerciales || null,
             requierePresupuesto: requierePresupuesto || false,
             turnoEntrega: turnoEntrega || null,
