@@ -579,6 +579,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   }
 
   const renderNegociacionBlock = () => (
+    <>
           {/* Negociación */}
           <div className="glass-panel card border border-white/5 p-5 flex flex-col gap-4 sticky top-4">
             <h2 className="text-white font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-3">
@@ -817,6 +818,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
               </p>
             )}
           </div>
+    </>
   )
 
   return (
