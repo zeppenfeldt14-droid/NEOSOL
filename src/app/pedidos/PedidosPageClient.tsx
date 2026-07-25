@@ -69,7 +69,7 @@ interface Pedido {
 const ESTADOS = [
   { key: 'todos',                label: 'Todos',             color: 'text-secondary' },
   { key: 'borrador',             label: 'Borrador',          color: 'text-yellow-400' },
-  { key: 'pendiente_supervisor', label: 'Pend. Aprobación',  color: 'text-blue-400' },
+  { key: 'pendiente_supervisor', label: 'Pend. Aprob/Fact',  color: 'text-blue-400' },
   { key: 'aprobado',             label: 'Aprobado',          color: 'text-green-400' },
   { key: 'cancelado',            label: 'Cancelado',         color: 'text-red-400' },
 ]
@@ -88,6 +88,14 @@ const ESTADO_LABELS: Record<string, string> = {
 }
 
 export function PedidosPageClient({ userNivel, userAlias, userZona, availableZones }: Props) {
+  const getEstadoLabel = (p: Pedido) => {
+    if (p.estado === 'pendiente_supervisor') {
+      if (p.tienePrecioNegociado || p.tieneTarifaNegociada) return 'Pend. Aprob.';
+      return 'Pend. Factura';
+    }
+    return ESTADO_LABELS[p.estado] || p.estado;
+  }
+
   const router = useRouter()
   const [selectedZone, setSelectedZone] = useState<string>(
     userNivel === 3 ? (userZona || '') : 'todas'
@@ -185,7 +193,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
           </div>
           <div style="text-align: right;">
             <p><strong>Fecha:</strong> ${new Date(p.creadoEn).toLocaleString('es-AR')}</p>
-            <p><strong>Estado:</strong> ${ESTADO_LABELS[p.estado] || p.estado}</p>
+            <p><strong>Estado:</strong> ${getEstadoLabel(p)}</p>
           </div>
         </div>
         <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
@@ -345,7 +353,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Pedidos',    value: counts.todos,                icon: ShoppingCart, color: 'text-primary',   bg: 'bg-primary/10' },
-          { label: 'Pend. Aprobación', value: counts.pendiente_supervisor, icon: Clock,        color: 'text-blue-400',  bg: 'bg-blue-400/10' },
+          { label: 'Pend. Aprob/Fact', value: counts.pendiente_supervisor, icon: Clock,        color: 'text-blue-400',  bg: 'bg-blue-400/10' },
           { label: 'Aprobados',        value: counts.aprobado,             icon: ThumbsUp, color: 'text-green-400', bg: 'bg-green-400/10' },
           { label: 'Cancelados',       value: counts.cancelado,            icon: ThumbsDown,      color: 'text-red-400',   bg: 'bg-red-400/10' },
         ].map(kpi => (
@@ -428,7 +436,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                     <td className="px-4 py-3 text-secondary text-xs">{p.condicionPago || '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-black border ${ESTADO_BADGES[p.estado] || ''}`}>
-                        {ESTADO_LABELS[p.estado] || p.estado}
+                        {getEstadoLabel(p)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-secondary text-xs whitespace-nowrap">
@@ -460,9 +468,9 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                         {userNivel < 3 && p.estado === 'pendiente_supervisor' && (
                           <button
                             onClick={() => {
-                              const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)
+                              const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada;
                               if (requiresNivel1 && userNivel === 2) {
-                                alert('Este pedido contiene precios/tarifas negociadas o pago Parte B, y requiere aprobación de Gerencia (Nivel 1).');
+                                alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
                                 return;
                               }
                               setPedidoAprobar(p)
@@ -471,11 +479,11 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                             }}
                             disabled={actionId === p.id}
                             className={`btn-action ${
-                              (p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2
+                              (p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2
                                 ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
                                 : 'text-green-400 border-green-400/20 hover:bg-green-400/10'
                             }`}
-                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar pedido'}
+                            title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar/Facturar pedido'}
                           >
                             <ThumbsUp size={12} />
                           </button>
@@ -552,7 +560,7 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                   </span>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${ESTADO_BADGES[p.estado] || ''} whitespace-nowrap`}>
-                  {ESTADO_LABELS[p.estado] || p.estado}
+                  {getEstadoLabel(p)}
                 </span>
               </div>
 
@@ -603,9 +611,9 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                   {userNivel < 3 && p.estado === 'pendiente_supervisor' && (
                     <button
                       onClick={() => {
-                        const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)
+                        const requiresNivel1 = p.tienePrecioNegociado || p.tieneTarifaNegociada;
                         if (requiresNivel1 && userNivel === 2) {
-                          alert('Este pedido contiene precios/tarifas negociadas o pago Parte B, y requiere aprobación de Gerencia (Nivel 1).');
+                          alert('Este pedido contiene precios/tarifas negociadas y requiere aprobación de Gerencia (Nivel 1).');
                           return;
                         }
                         setPedidoAprobar(p)
@@ -614,10 +622,11 @@ export function PedidosPageClient({ userNivel, userAlias, userZona, availableZon
                       }}
                       disabled={actionId === p.id}
                       className={`p-2 rounded-lg border ${
-                        (p.tienePrecioNegociado || p.tieneTarifaNegociada || (p.porcentajePagoB > 0)) && userNivel === 2
-                          ? 'bg-white/5 text-white/20 border-white/5'
-                          : 'bg-green-400/10 text-green-400 border-green-400/20'
+                        (p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2
+                          ? 'bg-white/5 text-white/20 border-white/5 cursor-not-allowed'
+                          : 'bg-green-400/10 text-green-400 border-green-400/20 hover:bg-green-400/20 transition-all'
                       }`}
+                      title={(p.tienePrecioNegociado || p.tieneTarifaNegociada) && userNivel === 2 ? 'Requiere aprobación de Gerencia (Nivel 1)' : 'Aprobar/Facturar pedido'}
                     >
                       <ThumbsUp size={16} />
                     </button>

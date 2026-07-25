@@ -341,6 +341,18 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
       : (prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja)
   }, [priceLists, selectedListId])
 
+  const getAllListPricesForProduct = useCallback((prod: Producto) => {
+    const selectedList = priceLists.find(l => l.id === selectedListId)
+    const priceRecord = selectedList?.precios.find((pr: any) => pr.productoId === prod.id)
+    let priceA = prod.precioCajaMax !== undefined ? prod.precioCajaMax : prod.precioCaja
+    let priceB = prod.precioCajaMin !== undefined ? prod.precioCajaMin : prod.precioCaja
+    if (priceRecord) {
+      priceA = priceRecord.precioCajaMax
+      priceB = priceRecord.precioCajaMin
+    }
+    return { priceA, priceB }
+  }, [priceLists, selectedListId])
+
   const isSelectedListUpcoming = useCallback(() => {
     const selectedList = priceLists.find(l => l.id === selectedListId)
     if (!selectedList) return false
@@ -779,25 +791,76 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                             <td className="px-2 py-2 text-secondary text-center">{prod.paqPorCaja}</td>
                             {/* Negotiated Price Input */}
                             <td className="px-2 py-2 text-right">
-                              <div className="inline-block text-right">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={linea_ ? linea_.precioCajaNegociado : listPrice}
+                              <div className="flex items-center justify-end gap-1">
+                                <select 
+                                  className="bg-black/40 border border-white/10 rounded px-1 py-1 text-[9px] text-white focus:outline-none"
+                                  value={
+                                    (() => {
+                                      const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                      const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                      if (Math.abs(currentVal - priceA) < 0.01) return 'A';
+                                      if (Math.abs(currentVal - priceB) < 0.01) return 'B';
+                                      return 'C';
+                                    })()
+                                  }
                                   onChange={e => {
-                                    const val = parseFloat(e.target.value) || 0
-                                    actualizarPrecioNegociado(prod.id, val)
+                                    const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                    let newVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                    if (e.target.value === 'A') newVal = priceA;
+                                    if (e.target.value === 'B') newVal = priceB;
+                                    actualizarPrecioNegociado(prod.id, newVal);
                                   }}
-                                  className={`w-20 bg-black/40 border rounded-lg px-1.5 py-0.5 text-[10px] text-white font-semibold text-right focus:border-primary focus:outline-none ${
-                                    linea_ && linea_.hasCustomPrice
-                                      ? 'border-yellow-400/50 text-yellow-400 font-bold bg-yellow-400/[0.03]'
-                                      : 'border-white/10'
-                                  }`}
-                                />
-                                {linea_ && linea_.hasCustomPrice && (
-                                  <span className="block text-[8px] text-yellow-400 font-bold text-right mt-0.5">Negociado</span>
-                                )}
+                                >
+                                  <option value="A">Lista A</option>
+                                  <option value="B">Lista B</option>
+                                  {(() => {
+                                    const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                    const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                    if (Math.abs(currentVal - priceA) >= 0.01 && Math.abs(currentVal - priceB) >= 0.01) {
+                                      return <option value="C">C (Manual)</option>;
+                                    }
+                                    return null;
+                                  })()}
+                                </select>
+                                <div className="relative inline-block text-right">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={linea_ ? linea_.precioCajaNegociado : listPrice}
+                                    onChange={e => {
+                                      const val = parseFloat(e.target.value) || 0
+                                      actualizarPrecioNegociado(prod.id, val)
+                                    }}
+                                    className={`w-16 bg-black/40 border rounded-lg px-1.5 py-0.5 text-[10px] text-white font-semibold text-right focus:border-primary focus:outline-none pr-3 ${
+                                      (() => {
+                                        const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                        const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                        if (Math.abs(currentVal - priceA) >= 0.01 && Math.abs(currentVal - priceB) >= 0.01) {
+                                          return 'border-red-400/50 text-red-400 font-bold bg-red-400/[0.03]';
+                                        }
+                                        return 'border-white/10';
+                                      })()
+                                    }`}
+                                  />
+                                  <span className={`absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-black ${
+                                    (() => {
+                                      const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                      const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                      if (Math.abs(currentVal - priceA) < 0.01) return 'text-green-400';
+                                      if (Math.abs(currentVal - priceB) < 0.01) return 'text-blue-400';
+                                      return 'text-red-400';
+                                    })()
+                                  }`}>
+                                    {(() => {
+                                      const currentVal = linea_ ? linea_.precioCajaNegociado : listPrice;
+                                      const { priceA, priceB } = getAllListPricesForProduct(prod);
+                                      if (Math.abs(currentVal - priceA) < 0.01) return 'A';
+                                      if (Math.abs(currentVal - priceB) < 0.01) return 'B';
+                                      return 'C';
+                                    })()}
+                                  </span>
+                                </div>
                               </div>
                             </td>
 
