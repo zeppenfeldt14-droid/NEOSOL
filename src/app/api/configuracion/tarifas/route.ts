@@ -165,6 +165,10 @@ export async function POST(request: Request) {
     const vigenteDesdeStr = formData.get('vigenteDesde') as string
     const fileMin = formData.get('fileMin') as File | null // standard / < 300 cajas
     const fileMax = formData.get('fileMax') as File | null // discount / >= 300 cajas
+    
+    // Novedad: reglas de venta por lista
+    const minimoCajasStr = formData.get('minimoCajas') as string
+    const limiteListaAStr = formData.get('limiteListaA') as string
 
     if (!nombre || !vigenteDesdeStr || !fileMin || !fileMax) {
       return NextResponse.json({ error: 'Faltan campos requeridos (nombre, fecha de vigencia y ambos archivos CSV).' }, { status: 400 })
@@ -174,6 +178,9 @@ export async function POST(request: Request) {
     if (isNaN(vigenteDesde.getTime())) {
       return NextResponse.json({ error: 'Fecha de vigencia inválida.' }, { status: 400 })
     }
+
+    const minimoCajas = minimoCajasStr ? parseInt(minimoCajasStr, 10) : 300
+    const limiteListaA = limiteListaAStr ? parseInt(limiteListaAStr, 10) : 60
 
     const contentMin = await fileMin.text()
     const contentMax = await fileMax.text()
@@ -199,7 +206,10 @@ export async function POST(request: Request) {
       data: {
         nombre,
         vigenteDesde,
-        activa: true
+        activa: true,
+        minimoCajas,
+        limiteListaA,
+        usuariosHabilitados: []
       }
     })
 

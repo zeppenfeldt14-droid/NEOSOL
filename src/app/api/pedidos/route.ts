@@ -67,7 +67,8 @@ export async function POST(request: Request) {
       requierePresupuesto,
       turnoEntrega,
       metodoPagoA,
-      fechaPagoA
+      fechaPagoA,
+      listaPrecioId
     } = body
 
     if (!empresaId || !detalles?.length) {
@@ -78,25 +79,30 @@ export async function POST(request: Request) {
     const empresa = await prisma.empresa.findUnique({ where: { id: empresaId } })
     if (!empresa) return NextResponse.json({ error: 'Empresa no encontrada.' }, { status: 404 })
 
-    // Find active price list (vigenteDesde <= hoy)
-    const activeList = await prisma.listaPrecio.findFirst({
-      where: {
-        activa: true,
-        vigenteDesde: { lte: new Date() }
-      },
-      orderBy: { vigenteDesde: 'desc' },
-      include: { precios: true }
-    })
+    // Find the requested price list or fallback to the latest active one
+    let activeList = null
+    if (listaPrecioId) {
+      activeList = await prisma.listaPrecio.findUnique({
+        where: { id: listaPrecioId },
+        include: { precios: true }
+      })
+    }
+    if (!activeList) {
+      activeList = await prisma.listaPrecio.findFirst({
+        where: {
+          activa: true,
+          vigenteDesde: { lte: new Date() }
+        },
+        orderBy: { vigenteDesde: 'desc' },
+        include: { precios: true }
+      })
+    }
 
     let tieneTarifaNegociada = tieneTarifaNegociadaBody || false
 
-    // Load configurable rules from DB (fallback to defaults if not set)
-    const reglasDB = await prisma.configuracionSistema.findMany({
-      where: { clave: { in: ['MINIMO_CAJAS_VOLUMEN', 'LIMITE_LISTA_A_SIN_VOLUMEN'] } }
-    })
-    const reglasMap = Object.fromEntries(reglasDB.map(r => [r.clave, r.valor]))
-    const MINIMO_CAJAS = parseInt(reglasMap['MINIMO_CAJAS_VOLUMEN'] ?? '300')
-    const LIMITE_LISTA_A = parseInt(reglasMap['LIMITE_LISTA_A_SIN_VOLUMEN'] ?? '60')
+    // Load configurable rules from the selected list (fallback to defaults if not set)
+    const MINIMO_CAJAS = activeList?.minimoCajas ?? 300
+    const LIMITE_LISTA_A = activeList?.limiteListaA ?? 60
 
     // Fetch the products related to detailsnapshots
     const productoIds = detalles.map((d: any) => d.productoId)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, Link2, Trash2, Save, Image as ImageIcon } from 'lucide-react'
+import { Upload, Link2, Trash2, Save, Image as ImageIcon, Settings, Users } from 'lucide-react'
 import { saveLogo, deleteLogo } from './actions'
 
 type Props = {
@@ -21,15 +21,20 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [newTarifaVigencia, setNewTarifaVigencia] = useState('')
   const [csvFileMin, setCsvFileMin] = useState<File | null>(null)
   const [csvFileMax, setCsvFileMax] = useState<File | null>(null)
-  const [aumentoPorcentaje, setAumentoPorcentaje] = useState<{ [key: number]: string }>({})
-  const [aumentoTipo, setAumentoTipo] = useState<{ [key: number]: 'min' | 'max' | 'ambas' }>({})
+  const [newListMinimoCajas, setNewListMinimoCajas] = useState('300')
+  const [newListLimiteListaA, setNewListLimiteListaA] = useState('60')
   const [isLoadingTarifas, setIsLoadingTarifas] = useState(false)
+  
+  // Accesos & Reglas Modals State
+  const [showAccesosModal, setShowAccesosModal] = useState(false)
+  const [selectedListForAccesos, setSelectedListForAccesos] = useState<any>(null)
+  const [usuariosSistema, setUsuariosSistema] = useState<any[]>([])
+  const [listUsuariosHabilitados, setListUsuariosHabilitados] = useState<number[]>([])
 
-  // Sales rules state
-  const [minimoCajas, setMinimoCajas] = useState<string>('300')
-  const [limiteListaA, setLimiteListaA] = useState<string>('60')
-  const [isSavingReglas, setIsSavingReglas] = useState(false)
-  const [reglasMsg, setReglasMsg] = useState<{ type: 'ok' | 'err', text: string } | null>(null)
+  const [showReglasModal, setShowReglasModal] = useState(false)
+  const [selectedListForReglas, setSelectedListForReglas] = useState<any>(null)
+  const [editMinimoCajas, setEditMinimoCajas] = useState('')
+  const [editLimiteListaA, setEditLimiteListaA] = useState('')
 
   // Promotions state
   const [promociones, setPromociones] = useState<any[]>([])
@@ -73,15 +78,21 @@ export function ConfigPageClient({ currentLogo }: Props) {
     fetchTarifas()
     fetchPromociones()
     fetchProductos()
-    // Fetch configurable sales rules
-    fetch('/api/configuracion/reglas')
-      .then(r => r.json())
-      .then(d => {
-        if (d.minimoCajas !== undefined) setMinimoCajas(String(d.minimoCajas))
-        if (d.limiteListaA !== undefined) setLimiteListaA(String(d.limiteListaA))
-      })
-      .catch(e => console.error('Error fetching reglas:', e))
+    fetchUsuarios()
   }, [])
+
+  const fetchUsuarios = async () => {
+    try {
+      const res = await fetch('/api/usuarios')
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        // Only level 2 and 3 can be restricted via Listas (Level 1 sees everything)
+        setUsuariosSistema(data.filter(u => u.nivel > 1 && u.activo))
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const fetchTarifas = async () => {
     setIsLoadingTarifas(true)
@@ -121,7 +132,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
 
   const handleUploadTarifas = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTarifaName.trim() || !newTarifaVigencia || !csvFileMin || !csvFileMax) {
+    if (!newTarifaName.trim() || !newTarifaVigencia || !csvFileMin || !csvFileMax || !newListMinimoCajas || !newListLimiteListaA) {
       alert('Por favor completa todos los campos de la tarifa e ingresa ambos archivos CSV.')
       return
     }
@@ -132,6 +143,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
       formData.append('vigenteDesde', newTarifaVigencia)
       formData.append('fileMin', csvFileMin)
       formData.append('fileMax', csvFileMax)
+      formData.append('minimoCajas', newListMinimoCajas)
+      formData.append('limiteListaA', newListLimiteListaA)
 
       const res = await fetch('/api/configuracion/tarifas', {
         method: 'POST',
@@ -145,42 +158,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
       setNewTarifaVigencia('')
       setCsvFileMin(null)
       setCsvFileMax(null)
+      setNewListMinimoCajas('300')
+      setNewListLimiteListaA('60')
       // reset file inputs
       const inputMin = document.getElementById('csv-min') as HTMLInputElement
       const inputMax = document.getElementById('csv-max') as HTMLInputElement
       if (inputMin) inputMin.value = ''
       if (inputMax) inputMax.value = ''
 
-      fetchTarifas()
-    } catch (err: any) {
-      alert(err.message)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleApplyAumento = async (listaId: number) => {
-    const pct = parseFloat(aumentoPorcentaje[listaId] || '')
-    const tipo = aumentoTipo[listaId] || 'ambas'
-    if (isNaN(pct)) {
-      alert('Por favor ingresa un porcentaje de aumento válido.')
-      return
-    }
-    const labelTipo = tipo === 'min' ? 'Menos de 300 cajas' : tipo === 'max' ? 'Más de 300 cajas' : 'Ambas tarifas'
-    if (!confirm(`¿Estás seguro de que deseas aplicar un aumento global del ${pct}% sobre la tarifa [${labelTipo}] de esta lista de precios?`)) {
-      return
-    }
-    setIsSaving(true)
-    try {
-      const res = await fetch('/api/configuracion/tarifas', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'aumento_global', listaId, porcentaje: pct, tarifaTipo: tipo })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al aplicar aumento')
-      alert(`Aumento del ${pct}% aplicado correctamente.`)
-      setAumentoPorcentaje(prev => ({ ...prev, [listaId]: '' }))
       fetchTarifas()
     } catch (err: any) {
       alert(err.message)
@@ -810,31 +795,30 @@ export function ConfigPageClient({ currentLogo }: Props) {
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
-                          {/* Aumento Global */}
-                          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-lg border border-white/5">
-                            <select
-                              value={aumentoTipo[l.id] || 'ambas'}
-                              onChange={(e) => setAumentoTipo(prev => ({ ...prev, [l.id]: e.target.value as any }))}
-                              className="form-input !py-1 !px-2 text-[10px] bg-black/50 border-white/10 text-white rounded-md"
-                              style={{ minWidth: '130px' }}
-                            >
-                              <option value="ambas" className="bg-black text-white">Ambas Tarifas</option>
-                              <option value="min" className="bg-black text-white">Menos de 300 Cajas</option>
-                              <option value="max" className="bg-black text-white">Más de 300 Cajas</option>
-                            </select>
-                            <input 
-                              type="number" 
-                              className="form-input !py-1 !px-2 text-xs w-16 text-center" 
-                              placeholder="+ %"
-                              value={aumentoPorcentaje[l.id] || ''}
-                              onChange={(e) => setAumentoPorcentaje(prev => ({ ...prev, [l.id]: e.target.value }))}
-                            />
+                          {/* Botones de Configuración de Reglas y Accesos */}
+                          <div className="flex gap-2">
                             <button 
-                              onClick={() => handleApplyAumento(l.id)} 
-                              className="btn btn-secondary !py-1 !px-2 text-xs"
-                              title="Aplicar Aumento Porcentual Masivo"
+                              onClick={() => {
+                                setEditMinimoCajas(String(l.minimoCajas ?? 300))
+                                setEditLimiteListaA(String(l.limiteListaA ?? 60))
+                                setSelectedListForReglas(l)
+                                setShowReglasModal(true)
+                              }} 
+                              className="btn btn-secondary !py-1.5 !px-2.5 text-xs flex items-center gap-1"
+                              title="Editar Reglas de Venta para esta lista"
                             >
-                              Aplicar
+                              <Settings size={14} /> Reglas
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setListUsuariosHabilitados(l.usuariosHabilitados || [])
+                                setSelectedListForAccesos(l)
+                                setShowAccesosModal(true)
+                              }} 
+                              className="btn btn-secondary !py-1.5 !px-2.5 text-xs flex items-center gap-1"
+                              title="Configurar usuarios que pueden ver esta lista"
+                            >
+                              <Users size={14} /> Accesos
                             </button>
                           </div>
 
@@ -909,6 +893,29 @@ export function ConfigPageClient({ currentLogo }: Props) {
                     onChange={(e) => setCsvFileMax(e.target.files?.[0] || null)}
                   />
                 </div>
+                <div className="form-group mb-0 mt-2">
+                  <label className="form-label text-xs text-primary">Reglas de Venta para la lista</label>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <span className="text-[10px] text-secondary">Minimo de Cajas</span>
+                      <input 
+                        type="number"
+                        className="form-input !py-1 text-xs"
+                        value={newListMinimoCajas}
+                        onChange={e => setNewListMinimoCajas(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[10px] text-secondary">Limite Lista A (%)</span>
+                      <input 
+                        type="number"
+                        className="form-input !py-1 text-xs"
+                        value={newListLimiteListaA}
+                        onChange={e => setNewListLimiteListaA(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
                 <button type="submit" className="btn btn-primary w-full" disabled={isSaving}>
                   Importar Tarifario
                 </button>
@@ -918,93 +925,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
         </div>
       )}
 
-      {/* Reglas de Ventas — visible inside lista tab for Nivel 1 */}
-      {activeTab === 'lista' && userNivel === 1 && (
-        <div className="glass-panel card animate-fade-in" style={{ marginTop: '1.5rem' }}>
-          <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
-            Reglas de Ventas
-          </h3>
-          <p className="text-secondary text-xs mb-5">
-            Estos parámetros controlan la lógica de aprobación de pedidos. Solo Gerencia (Nivel 1) puede modificarlos.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-2">
-              <label className="form-label">Mínimo de Cajas para Tarifa por Volumen</label>
-              <p className="text-secondary text-xs -mt-1">
-                Pedidos con igual o más cajas acceden a precios de mayor volumen sin aprobación especial.
-                Actual: <strong className="text-white">{minimoCajas} cajas</strong>.
-              </p>
-              <input
-                type="number"
-                min="1"
-                className="form-input"
-                value={minimoCajas}
-                onChange={e => setMinimoCajas(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="form-label">Límite Lista A sin Volumen (%)</label>
-              <p className="text-secondary text-xs -mt-1">
-                Si el % de productos en precio Lista A supera este límite sin alcanzar el mínimo de cajas, el pedido requiere aprobación N1.
-                Actual: <strong className="text-white">{limiteListaA}%</strong>.
-              </p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="form-input"
-                  value={limiteListaA}
-                  onChange={e => setLimiteListaA(e.target.value)}
-                />
-                <span className="text-secondary font-bold text-sm">%</span>
-              </div>
-            </div>
-          </div>
-
-          {reglasMsg && (
-            <div className={`mt-4 p-3 rounded-xl text-sm font-semibold ${reglasMsg.type === 'ok' ? 'bg-green-400/10 border border-green-400/30 text-green-400' : 'bg-red-400/10 border border-red-400/30 text-red-400'}`}>
-              {reglasMsg.text}
-            </div>
-          )}
-
-          <div className="mt-5 flex justify-end">
-            <button
-              className="btn btn-primary"
-              disabled={isSavingReglas}
-              onClick={async () => {
-                setIsSavingReglas(true)
-                setReglasMsg(null)
-                try {
-                  const res = await fetch('/api/configuracion/reglas', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      minimoCajas: parseInt(minimoCajas),
-                      limiteListaA: parseInt(limiteListaA),
-                    }),
-                  })
-                  const data = await res.json()
-                  if (res.ok) {
-                    setReglasMsg({ type: 'ok', text: '✓ Reglas guardadas correctamente.' })
-                  } else {
-                    setReglasMsg({ type: 'err', text: data.error || 'Error al guardar.' })
-                  }
-                } catch {
-                  setReglasMsg({ type: 'err', text: 'Error de conexión.' })
-                } finally {
-                  setIsSavingReglas(false)
-                  setTimeout(() => setReglasMsg(null), 4000)
-                }
-              }}
-            >
-              {isSavingReglas ? 'Guardando...' : 'Guardar Reglas'}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Removed old global Reglas de Ventas panel */}
 
       {/* Dynamic Promotions */}
       {activeTab === 'promos' && userNivel === 1 && (
@@ -1203,6 +1124,98 @@ export function ConfigPageClient({ currentLogo }: Props) {
         </div>
       )}
 
+
+    {/* Modals for Reglas and Accesos */}
+    {showReglasModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl">
+          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+            <h3 className="font-bold text-primary flex items-center gap-2">
+              <Settings size={18} /> Reglas: {selectedListForReglas?.nombre}
+            </h3>
+            <button onClick={() => setShowReglasModal(false)} className="text-secondary hover:text-white">&times;</button>
+          </div>
+          <div className="p-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="form-label text-sm">Mínimo de Cajas para Tarifa por Volumen</label>
+              <input
+                type="number"
+                min="1"
+                className="form-input text-sm"
+                value={editMinimoCajas}
+                onChange={e => setEditMinimoCajas(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="form-label text-sm">Límite Lista A sin Volumen (%)</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="form-input text-sm"
+                  value={editLimiteListaA}
+                  onChange={e => setEditLimiteListaA(e.target.value)}
+                />
+                <span className="text-secondary font-bold text-sm">%</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 border-t border-white/10 bg-black/20 flex justify-end gap-3">
+            <button onClick={() => setShowReglasModal(false)} className="btn btn-secondary text-sm">Cancelar</button>
+            <button onClick={handleSaveReglas} className="btn btn-primary text-sm" disabled={isSaving}>Guardar Reglas</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showAccesosModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl">
+          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+            <h3 className="font-bold text-primary flex items-center gap-2">
+              <Users size={18} /> Accesos: {selectedListForAccesos?.nombre}
+            </h3>
+            <button onClick={() => setShowAccesosModal(false)} className="text-secondary hover:text-white">&times;</button>
+          </div>
+          <div className="p-5">
+            <p className="text-xs text-secondary mb-4">
+              Selecciona los usuarios (Nivel 2 y 3) que podrán utilizar esta lista. Si no seleccionas ninguno, todos tendrán acceso por defecto. Los usuarios Nivel 1 siempre tienen acceso a todas las listas.
+            </p>
+            <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+              {usuariosSistema.length === 0 ? (
+                <p className="text-xs text-secondary italic">No hay usuarios Nivel 2 o 3 activos.</p>
+              ) : (
+                usuariosSistema.map(u => (
+                  <label key={u.id} className="flex items-center gap-3 p-2 rounded hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/5">
+                    <input 
+                      type="checkbox" 
+                      className="form-checkbox h-4 w-4 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-black"
+                      checked={listUsuariosHabilitados.includes(u.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setListUsuariosHabilitados(prev => [...prev, u.id])
+                        } else {
+                          setListUsuariosHabilitados(prev => prev.filter(id => id !== u.id))
+                        }
+                      }}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-white">{u.nombreCompleto} <span className="text-secondary text-xs">({u.alias})</span></span>
+                      <span className="text-[10px] text-secondary">Nivel {u.nivel} {u.zona ? `· Zona: ${u.zona}` : ''}</span>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+          <div className="p-4 border-t border-white/10 bg-black/20 flex justify-end gap-3">
+            <button onClick={() => setShowAccesosModal(false)} className="btn btn-secondary text-sm">Cancelar</button>
+            <button onClick={handleSaveAccesos} className="btn btn-primary text-sm" disabled={isSaving}>Guardar Accesos</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     </div>
   )

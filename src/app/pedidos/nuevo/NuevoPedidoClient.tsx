@@ -509,6 +509,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         body: JSON.stringify({
           empresaId: empresaSeleccionada.id,
           tieneTarifaNegociada: needsApproval,
+          listaPrecioId: selectedListId,
           detalles: lineasPedido
             .filter(l => l.cantidadCajas > 0)
             .map(l => ({

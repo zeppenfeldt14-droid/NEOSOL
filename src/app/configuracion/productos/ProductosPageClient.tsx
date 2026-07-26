@@ -444,11 +444,12 @@ export function ProductosPageClient({ userNivel }: Props) {
           )}
           {userNivel === 1 && (
             <>
-              <button
-                onClick={() => setShowAumentoModal(true)}
-                className="btn btn-secondary flex items-center gap-2 border border-white/10 font-bold text-xs"
+              <button 
+                onClick={() => { setIsNewList(true); setEditListTarget(null); setShowAumentoModal(true); }}
+                className="btn btn-secondary flex items-center justify-center p-2 border border-white/10 text-xs"
+                title="Aumento Masivo"
               >
-                <Percent size={14} /> Aumento Masivo
+                <Percent size={18} />
               </button>
               <button
                 onClick={openCrear}
@@ -461,15 +462,14 @@ export function ProductosPageClient({ userNivel }: Props) {
 
           <button
             onClick={handleCopyPreciosLink}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold transition-all ${
+            className={`flex items-center justify-center p-2 rounded-lg border transition-all text-xs font-bold ${
               copiedPrecios
                 ? 'bg-green-500/20 border-green-500/50 text-green-400'
                 : 'bg-white/5 border-white/10 text-secondary hover:text-white hover:border-white/30'
             }`}
             title="Copiar link público de precios para compartir sin login"
           >
-            {copiedPrecios ? <Check size={14} /> : <Link2 size={14} />}
-            {copiedPrecios ? '¡Link copiado!' : 'Link Público ($)'}
+            {copiedPrecios ? <Check size={18} /> : <Link2 size={18} />}
           </button>
 
           <button

@@ -327,12 +327,15 @@ model Pago {
 }
 
 model ListaPrecio {
-  id           Int              @id @default(autoincrement())
-  nombre       String
-  vigenteDesde DateTime
-  activa       Boolean          @default(true)
-  creadoEn     DateTime         @default(now())
-  precios      PrecioProducto[]
+  id                  Int              @id @default(autoincrement())
+  nombre              String
+  vigenteDesde        DateTime
+  activa              Boolean          @default(true)
+  creadoEn            DateTime         @default(now())
+  minimoCajas         Int              @default(300)
+  limiteListaA        Int              @default(60)
+  usuariosHabilitados Json             @default("[]")
+  precios             PrecioProducto[]
 }
 
 model PrecioProducto {
