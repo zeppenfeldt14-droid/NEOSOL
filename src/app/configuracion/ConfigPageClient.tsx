@@ -470,6 +470,48 @@ export function ConfigPageClient({ currentLogo }: Props) {
     }
   }
 
+  const handleSaveAccesos = async () => {
+    if (!selectedListForAccesos) return
+    setIsSaving(true)
+    try {
+      const res = await fetch(`/api/configuracion/tarifas/${selectedListForAccesos.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_accesos', usuariosHabilitados: listUsuariosHabilitados })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al guardar accesos')
+      alert('Accesos actualizados correctamente.')
+      setShowAccesosModal(false)
+      fetchTarifas()
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveReglas = async () => {
+    if (!selectedListForReglas) return
+    setIsSaving(true)
+    try {
+      const res = await fetch(`/api/configuracion/tarifas/${selectedListForReglas.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_rules', minimoCajas: editMinimoCajas, limiteListaA: editLimiteListaA })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al guardar reglas')
+      alert('Reglas actualizadas correctamente.')
+      setShowReglasModal(false)
+      fetchTarifas()
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* TABS NAVIGATION */}

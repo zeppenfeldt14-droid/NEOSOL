@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSessionUser()
     if (!session || session.nivel !== 1) {
       return NextResponse.json({ error: 'No autorizado. Se requiere nivel 1.' }, { status: 403 })
     }
 
-    const id = parseInt(params.id, 10)
+    const resolvedParams = await params
+    const id = parseInt(resolvedParams.id, 10)
     if (isNaN(id)) {
       return NextResponse.json({ error: 'ID de lista inválido.' }, { status: 400 })
     }
