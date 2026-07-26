@@ -526,7 +526,7 @@ export function ProductosPageClient({ userNivel }: Props) {
                     }}
                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                       selectedUnidadFiltro === un
-                        ? 'bg-primary text-black shadow-md shadow-primary/20'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 border border-blue-500'
                         : 'bg-white/5 text-secondary hover:bg-white/10 hover:text-white border border-white/10'
                     }`}
                   >

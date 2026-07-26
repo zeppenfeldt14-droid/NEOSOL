@@ -957,7 +957,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
                           onClick={() => setSelectedUnidadFiltro(un)}
                           className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                             selectedUnidadFiltro === un 
-                              ? 'bg-primary text-black shadow-lg shadow-primary/30' 
+                              ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 border border-blue-500' 
                               : 'bg-white/5 text-secondary hover:bg-white/10 hover:text-white border border-white/10'
                           }`}
                         >
