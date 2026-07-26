@@ -54,16 +54,14 @@ const ZONE_CENTERS: Record<string, [number, number]> = {
   'OESTE':     [-34.66,   -58.72],
 }
 
-// Dynamic palette for sellers
+// Dynamic palette for sellers (Fluorescent/Neon colors)
 const SELLER_PALETTE = [
-  '#3b82f6', // blue-500
-  '#f97316', // orange-500
-  '#8b5cf6', // violet-500
-  '#06b6d4', // cyan-500
-  '#eab308', // yellow-500
-  '#ec4899', // pink-500
-  '#10b981', // emerald-500
-  '#6366f1', // indigo-500
+  '#00ffff', // Cyan Fluorescente
+  '#ffffff', // Blanco
+  '#ff00ff', // Magenta Fluorescente
+  '#ccff00', // Amarillo Fluorescente
+  '#39ff14', // Verde Neón
+  '#ff0055', // Rosa/Rojo Neón
 ]
 
 export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, userNivel, userZona, allPoints, vendedoresDisponibles = [] }: Props) {
@@ -147,8 +145,8 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
           <defs>
             <linearGradient id="grad-${point.lat.toString().replace('.','')}-${point.lng.toString().replace('.','')}-${index}" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="35%" stop-color="${cfg.color}" />
-              <stop offset="35%" stop-color="${sColor}" />
-              <stop offset="100%" stop-color="${sColor}" />
+              <stop offset="35%" stop-color="${sColor}" stop-opacity="0.4" />
+              <stop offset="100%" stop-color="${sColor}" stop-opacity="0.4" />
             </linearGradient>
           </defs>
         `
@@ -156,7 +154,10 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
         pinColor = sColor // Update base color for border glow
         
         const sellerName = vendedoresDisponibles.find(v => v.alias === point.vendedorAsignado)?.nombre || point.vendedorAsignado
-        sellerInfo = `<div style="display:inline-block;margin-top:4px;margin-left:4px;background:${sColor}20;color:${sColor};border:1px solid ${sColor}50;padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;">👤 ${sellerName}</div>`
+        const textColor = sColor === '#ffffff' ? '#475569' : sColor
+        const bgColor = sColor === '#ffffff' ? '#f1f5f9' : sColor + '20'
+        const borderColor = sColor === '#ffffff' ? '#cbd5e1' : sColor + '50'
+        sellerInfo = `<div style="display:inline-block;margin-top:4px;margin-left:4px;background:${bgColor};color:${textColor};border:1px solid ${borderColor};padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;">👤 ${sellerName}</div>`
       }
 
       const icon = L.divIcon({
