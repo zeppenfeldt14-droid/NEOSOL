@@ -142,6 +142,8 @@ model Usuario {
   actualizadoEn      DateTime  @updatedAt
   zona               String?   @default("CABA")
   zonasHabilitadas   Json      @default("[]")
+  isNivelTodo        Boolean   @default(false)
+  unidadesNegocio    Json      @default("[\"Gerencia Comercial\"]")
 }
 
 model LogBitacora {
@@ -335,6 +337,8 @@ model ListaPrecio {
   minimoCajas         Int              @default(300)
   limiteListaA        Int              @default(60)
   usuariosHabilitados Json             @default("[]")
+  unidadNegocio       String           @default("Gerencia Comercial")
+  subUnidadNegocio    String           @default("Comercial")
   precios             PrecioProducto[]
 }
 

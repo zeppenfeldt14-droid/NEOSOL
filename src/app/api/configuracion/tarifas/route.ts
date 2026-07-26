@@ -18,8 +18,13 @@ export async function GET(request: Request) {
     })
 
     let whereFilter: any = {}
-    // Eliminado el filtro que forzaba vigenteDesde >= activeList.vigenteDesde
-    // para permitir ver el historial y las futuras simultáneamente.
+    
+    // Si no es Nivel TODO y no es Admin, filtramos por las Unidades de Negocio que tiene asignadas
+    if (!session.isNivelTodo && session.alias !== 'admin') {
+      whereFilter.unidadNegocio = {
+        in: session.unidadesNegocio
+      }
+    }
 
     const listas = await prisma.listaPrecio.findMany({
       where: whereFilter,
@@ -166,9 +171,11 @@ export async function POST(request: Request) {
     const fileMin = formData.get('fileMin') as File | null // standard / < 300 cajas
     const fileMax = formData.get('fileMax') as File | null // discount / >= 300 cajas
     
-    // Novedad: reglas de venta por lista
+    // Novedad: reglas de venta por lista y unidades de negocio
     const minimoCajasStr = formData.get('minimoCajas') as string
     const limiteListaAStr = formData.get('limiteListaA') as string
+    const unidadNegocio = (formData.get('unidadNegocio') as string) || 'Gerencia Comercial'
+    const subUnidadNegocio = (formData.get('subUnidadNegocio') as string) || 'Comercial'
 
     if (!nombre || !vigenteDesdeStr || !fileMin || !fileMax) {
       return NextResponse.json({ error: 'Faltan campos requeridos (nombre, fecha de vigencia y ambos archivos CSV).' }, { status: 400 })
@@ -209,7 +216,9 @@ export async function POST(request: Request) {
         activa: true,
         minimoCajas,
         limiteListaA,
-        usuariosHabilitados: []
+        usuariosHabilitados: [],
+        unidadNegocio,
+        subUnidadNegocio
       }
     })
 
@@ -361,6 +370,95 @@ export async function PUT(request: Request) {
       })
 
       return NextResponse.json({ success: true })
+    }
+
+    if (action === 'duplicar_sub_unidad') {
+      const { nuevaSubUnidad } = body
+      if (!nuevaSubUnidad) return NextResponse.json({ error: 'Falta nombre de la nueva sub-unidad' }, { status: 400 })
+
+      // Buscamos todas las listas activas de la unidad/subunidad origen
+      // que estén vigentes o por entrar en vigencia. (Por simplicidad tomamos todas las activas)
+      const origenLista = await prisma.listaPrecio.findUnique({
+        where: { id: Number(listaId) },
+        include: { precios: true }
+      })
+
+      if (!origenLista) return NextResponse.json({ error: 'Lista origen no encontrada' }, { status: 404 })
+
+      const newLista = await prisma.listaPrecio.create({
+        data: {
+          nombre: origenLista.nombre + ` (${nuevaSubUnidad})`,
+          vigenteDesde: origenLista.vigenteDesde,
+          activa: true,
+          minimoCajas: origenLista.minimoCajas,
+          limiteListaA: origenLista.limiteListaA,
+          usuariosHabilitados: origenLista.usuariosHabilitados as any,
+          unidadNegocio: origenLista.unidadNegocio,
+          subUnidadNegocio: nuevaSubUnidad
+        }
+      })
+
+      for (const p of origenLista.precios) {
+        await prisma.precioProducto.create({
+          data: {
+            listaId: newLista.id,
+            productoId: p.productoId,
+            productoCodigo: p.productoCodigo,
+            precioPaqueteMin: p.precioPaqueteMin,
+            precioCajaMin: p.precioCajaMin,
+            precioPaqueteMax: p.precioPaqueteMax,
+            precioCajaMax: p.precioCajaMax
+          }
+        })
+      }
+      return NextResponse.json({ success: true, message: 'Sub-Unidad duplicada correctamente.' })
+    }
+
+    if (action === 'duplicar_unidad_negocio') {
+      if (session.alias !== 'admin' && !session.isNivelTodo) {
+        return NextResponse.json({ error: 'No tienes permiso para duplicar unidades de negocio.' }, { status: 403 })
+      }
+      
+      const { unidadOrigen, nuevaUnidad } = body
+      if (!unidadOrigen || !nuevaUnidad) return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+
+      // Buscamos todas las listas de la unidad origen que estén activas
+      const listasOrigen = await prisma.listaPrecio.findMany({
+        where: { unidadNegocio: unidadOrigen, activa: true },
+        include: { precios: true }
+      })
+
+      let count = 0
+      for (const lista of listasOrigen) {
+        const newLista = await prisma.listaPrecio.create({
+          data: {
+            nombre: lista.nombre,
+            vigenteDesde: lista.vigenteDesde,
+            activa: true,
+            minimoCajas: lista.minimoCajas,
+            limiteListaA: lista.limiteListaA,
+            usuariosHabilitados: lista.usuariosHabilitados as any,
+            unidadNegocio: nuevaUnidad,
+            subUnidadNegocio: lista.subUnidadNegocio
+          }
+        })
+        for (const p of lista.precios) {
+          await prisma.precioProducto.create({
+            data: {
+              listaId: newLista.id,
+              productoId: p.productoId,
+              productoCodigo: p.productoCodigo,
+              precioPaqueteMin: p.precioPaqueteMin,
+              precioCajaMin: p.precioCajaMin,
+              precioPaqueteMax: p.precioPaqueteMax,
+              precioCajaMax: p.precioCajaMax
+            }
+          })
+        }
+        count++
+      }
+
+      return NextResponse.json({ success: true, message: `Unidad de Negocio duplicada correctamente. ${count} listas clonadas.` })
     }
 
     return NextResponse.json({ error: 'Acción no válida.' }, { status: 400 })

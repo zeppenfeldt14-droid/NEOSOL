@@ -29,6 +29,8 @@ export async function GET() {
         zona: true,
         zonasHabilitadas: true,
         passwordUpdatedAt: true,
+        isNivelTodo: true,
+        unidadesNegocio: true,
         creadoEn: true,
         actualizadoEn: true
       }
@@ -64,7 +66,9 @@ export async function POST(request: Request) {
       limitesEstado,
       mustChangePassword,
       zona,
-      zonasHabilitadas
+      zonasHabilitadas,
+      unidadesNegocio,
+      isNivelTodo
     } = body
 
     if (!nombre || !alias || !email) {
@@ -110,7 +114,12 @@ export async function POST(request: Request) {
         limitesEstado: limitesEstado || {},
         mustChangePassword: mustChangePassword === true,
         zona: zona || 'CABA',
-        zonasHabilitadas: zonasHabilitadas || []
+        zonasHabilitadas: zonasHabilitadas || [],
+        unidadesNegocio: unidadesNegocio || ['Gerencia Comercial']
+      }
+
+      if (session.alias === 'admin' && isNivelTodo !== undefined) {
+        updateData.isNivelTodo = isNivelTodo === true
       }
 
       if (password && password.trim() !== '') {
@@ -168,6 +177,8 @@ export async function POST(request: Request) {
         mustChangePassword: mustChangePassword === true,
         zona: zona || 'CABA',
         zonasHabilitadas: zonasHabilitadas || [],
+        unidadesNegocio: unidadesNegocio || ['Gerencia Comercial'],
+        isNivelTodo: session.alias === 'admin' && isNivelTodo === true,
         passwordUpdatedAt: new Date()
       }
     })

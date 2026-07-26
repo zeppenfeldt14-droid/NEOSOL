@@ -17,6 +17,8 @@ export interface UserSession {
   modulos: any
   zona: string | null
   zonasHabilitadas: any
+  unidadesNegocio: string[]
+  isNivelTodo: boolean
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -62,7 +64,9 @@ export async function getSessionUser(): Promise<UserSession | null> {
       rol: dbUser.rol,
       modulos: dbUser.modulos || {},
       zona: dbUser.zona,
-      zonasHabilitadas: dbUser.zonasHabilitadas
+      zonasHabilitadas: dbUser.zonasHabilitadas,
+      unidadesNegocio: Array.isArray(dbUser.unidadesNegocio) ? dbUser.unidadesNegocio as string[] : ['Gerencia Comercial'],
+      isNivelTodo: dbUser.isNivelTodo
     }
   } catch (e) {
     return null

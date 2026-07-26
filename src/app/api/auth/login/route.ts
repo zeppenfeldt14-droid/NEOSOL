@@ -45,6 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Sign JWT Token
+    // Sign JWT Token
     const sessionUser = {
       id: usuario.id,
       alias: usuario.alias,
@@ -54,7 +55,9 @@ export async function POST(request: Request) {
       rol: usuario.rol,
       modulos: usuario.modulos || {},
       zona: usuario.zona,
-      zonasHabilitadas: usuario.zonasHabilitadas
+      zonasHabilitadas: usuario.zonasHabilitadas,
+      unidadesNegocio: (usuario.unidadesNegocio as string[]) || [],
+      isNivelTodo: usuario.isNivelTodo
     }
     const token = signToken(sessionUser)
 

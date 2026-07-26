@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, Link2, Trash2, Save, Image as ImageIcon, Settings, Users } from 'lucide-react'
+import { Upload, Link2, Trash2, Save, Image as ImageIcon, Settings, Users, Power, Edit2 } from 'lucide-react'
 import { saveLogo, deleteLogo } from './actions'
 
 type Props = {
@@ -10,6 +10,9 @@ type Props = {
 
 export function ConfigPageClient({ currentLogo }: Props) {
   const [userNivel, setUserNivel] = useState<number | null>(null)
+  const [userAlias, setUserAlias] = useState<string>('')
+  const [userIsNivelTodo, setUserIsNivelTodo] = useState<boolean>(false)
+  const isAdmin = userAlias === 'admin'
   
   const [logoUrl, setLogoUrl] = useState<string>(currentLogo || '')
   const [isSaving, setIsSaving] = useState(false)
@@ -23,6 +26,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [csvFileMax, setCsvFileMax] = useState<File | null>(null)
   const [newListMinimoCajas, setNewListMinimoCajas] = useState('300')
   const [newListLimiteListaA, setNewListLimiteListaA] = useState('60')
+  const [newUnidadNegocio, setNewUnidadNegocio] = useState('Gerencia Comercial')
+  const [newSubUnidadNegocio, setNewSubUnidadNegocio] = useState('Comercial')
   const [isLoadingTarifas, setIsLoadingTarifas] = useState(false)
   
   // Accesos & Reglas Modals State
@@ -47,6 +52,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [selectedPromoProductos, setSelectedPromoProductos] = useState<number[]>([])
   const [editingPromoId, setEditingPromoId] = useState<number | null>(null)
   const [productos, setProductos] = useState<any[]>([])
+  const [promoProductSearch, setPromoProductSearch] = useState('')
   const [isLoadingPromos, setIsLoadingPromos] = useState(false)
 
   // Tabs State
@@ -70,6 +76,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
       .then(data => {
         if (data.success && data.user) {
           setUserNivel(data.user.nivel)
+          setUserAlias(data.user.alias)
+          setUserIsNivelTodo(data.user.isNivelTodo)
         }
       })
       .catch(e => console.error('Error fetching auth me:', e))
@@ -145,6 +153,8 @@ export function ConfigPageClient({ currentLogo }: Props) {
       formData.append('fileMax', csvFileMax)
       formData.append('minimoCajas', newListMinimoCajas)
       formData.append('limiteListaA', newListLimiteListaA)
+      formData.append('unidadNegocio', newUnidadNegocio.trim())
+      formData.append('subUnidadNegocio', newSubUnidadNegocio.trim())
 
       const res = await fetch('/api/configuracion/tarifas', {
         method: 'POST',
@@ -183,8 +193,50 @@ export function ConfigPageClient({ currentLogo }: Props) {
       })
       if (!res.ok) throw new Error('Error al cambiar estado')
       fetchTarifas()
-    } catch (err: any) {
-      alert(err.message)
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
+  const handleDuplicarUnidad = async (unidadOrigen: string) => {
+    const nuevaUnidad = prompt(`Duplicar Unidad de Negocio "${unidadOrigen}". Ingrese el nuevo nombre (Ej. Supermercados):`, unidadOrigen + ' Copia');
+    if (!nuevaUnidad) return;
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'duplicar_unidad_negocio', unidadOrigen, nuevaUnidad })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al duplicar unidad');
+      alert(data.message || 'Unidad duplicada correctamente.');
+      fetchTarifas();
+    } catch(e:any) {
+      alert(e.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDuplicarSubUnidad = async (listaId: number, nombreBase: string) => {
+    const nuevaSubUnidad = prompt(`Crear nueva sub-unidad a partir de "${nombreBase}". Ingrese el nombre (Ej. Tucumán):`);
+    if (!nuevaSubUnidad) return;
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'duplicar_sub_unidad', listaId, nuevaSubUnidad })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al duplicar sub-unidad');
+      alert(data.message || 'Sub-Unidad creada correctamente.');
+      fetchTarifas();
+    } catch(e:any) {
+      alert(e.message)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -819,69 +871,109 @@ export function ConfigPageClient({ currentLogo }: Props) {
               {isLoadingTarifas ? (
                 <p className="text-secondary text-sm">Cargando tarifas...</p>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {listasTarifas.map(l => {
-                    const actDate = new Date(l.vigenteDesde).toLocaleDateString('es-AR')
-                    return (
-                      <div key={l.id} className="p-4 rounded-lg border border-white/5 bg-black/10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-sm">{l.nombre}</span>
-                            <span className={`badge ${!l.activa ? 'badge-neutral' : (new Date(l.vigenteDesde) > new Date() ? 'badge-info bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'badge-success')}`}>
-                              {!l.activa ? 'Cancelada (Historial)' : (new Date(l.vigenteDesde) > new Date() ? 'Próxima' : 'Vigente')}
-                            </span>
-                          </div>
-                          <div className="text-secondary text-xs mt-1">
-                            Vigente desde: {actDate} · {l.precios?.length || 0} productos
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
-                          {/* Botones de Configuración de Reglas y Accesos */}
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => {
-                                setEditMinimoCajas(String(l.minimoCajas ?? 300))
-                                setEditLimiteListaA(String(l.limiteListaA ?? 60))
-                                setSelectedListForReglas(l)
-                                setShowReglasModal(true)
-                              }} 
-                              className="btn btn-secondary !py-1.5 !px-2.5 text-xs flex items-center gap-1"
-                              title="Editar Reglas de Venta para esta lista"
-                            >
-                              <Settings size={14} /> Reglas
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setListUsuariosHabilitados(l.usuariosHabilitados || [])
-                                setSelectedListForAccesos(l)
-                                setShowAccesosModal(true)
-                              }} 
-                              className="btn btn-secondary !py-1.5 !px-2.5 text-xs flex items-center gap-1"
-                              title="Configurar usuarios que pueden ver esta lista"
-                            >
-                              <Users size={14} /> Accesos
-                            </button>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => handleToggleActivaTarifa(l.id)} 
-                              className="btn btn-secondary !py-1.5 !px-2.5 text-xs"
-                            >
-                              {l.activa ? 'Desactivar' : 'Activar'}
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteTarifa(l.id, l.nombre)} 
-                              className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1.5 !px-2.5 text-xs"
-                            >
-                              Borrar
-                            </button>
-                          </div>
-                        </div>
+                <div className="flex flex-col gap-6">
+                  {Object.entries(
+                    listasTarifas.reduce((acc: any, lista: any) => {
+                      const un = lista.unidadNegocio || 'Gerencia Comercial';
+                      const sub = lista.subUnidadNegocio || 'Comercial';
+                      if (!acc[un]) acc[un] = {};
+                      if (!acc[un][sub]) acc[un][sub] = [];
+                      acc[un][sub].push(lista);
+                      return acc;
+                    }, {})
+                  ).map(([un, subUnidades]: [string, any]) => (
+                    <div key={un} className="border border-white/10 rounded-lg overflow-hidden">
+                      <div className="bg-primary/20 text-primary font-bold px-4 py-2 flex justify-between items-center border-b border-white/10">
+                        <span>Unidad de Negocio: {un}</span>
+                        {isAdmin && (
+                          <button onClick={() => handleDuplicarUnidad(un)} className="btn btn-primary !py-1 text-xs">
+                            Duplicar Unidad
+                          </button>
+                        )}
                       </div>
-                    )
-                  })}
+                      
+                      <div className="p-4 flex flex-col gap-4">
+                        {Object.entries(subUnidades).map(([sub, listas]: [string, any]) => {
+                          const listaVigente = listas.find((l:any) => l.activa);
+                          return (
+                            <div key={sub} className="border border-white/5 bg-black/20 rounded-lg overflow-hidden p-3">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-secondary font-semibold text-sm border-b border-white/5 pb-1">Sub-Unidad: {sub}</h4>
+                                {listaVigente && (
+                                  <button onClick={() => handleDuplicarSubUnidad(listaVigente.id, sub)} className="btn btn-secondary !py-1 text-xs">
+                                    Duplicar (Crear Zona)
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                {listas.map((l: any) => {
+                                  const actDate = new Date(l.vigenteDesde).toLocaleDateString('es-AR')
+                                  return (
+                                    <div key={l.id} className="p-3 rounded-lg border border-white/5 bg-black/10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-white font-bold text-sm">{l.nombre}</span>
+                                          <span className={`badge ${!l.activa ? 'badge-neutral' : (new Date(l.vigenteDesde) > new Date() ? 'badge-info bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'badge-success')}`}>
+                                            {!l.activa ? 'Cancelada (Historial)' : (new Date(l.vigenteDesde) > new Date() ? 'Próxima' : 'Vigente')}
+                                          </span>
+                                        </div>
+                                        <div className="text-secondary text-xs mt-1">
+                                          Vigente desde: {actDate} · {l.precios?.length || 0} productos
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
+                                        <div className="flex gap-2">
+                                          <button 
+                                            onClick={() => {
+                                              setEditMinimoCajas(String(l.minimoCajas ?? 300))
+                                              setEditLimiteListaA(String(l.limiteListaA ?? 60))
+                                              setSelectedListForReglas(l)
+                                              setShowReglasModal(true)
+                                            }} 
+                                            className="btn btn-secondary !py-1.5 !px-2.5 text-xs flex items-center gap-1"
+                                            title="Editar Reglas de Venta para esta lista"
+                                          >
+                                            <Settings size={14} /> Reglas
+                                          </button>
+                                          <button 
+                                            onClick={() => {
+                                              setListUsuariosHabilitados(l.usuariosHabilitados || [])
+                                              setSelectedListForAccesos(l)
+                                              setShowAccesosModal(true)
+                                            }} 
+                                            className="btn btn-secondary !py-1.5 !px-2.5 text-xs flex items-center gap-1"
+                                            title="Configurar usuarios que pueden ver esta lista"
+                                          >
+                                            <Users size={14} /> Accesos
+                                          </button>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                          <button 
+                                            onClick={() => handleToggleActivaTarifa(l.id)} 
+                                            className="btn btn-secondary !py-1.5 !px-2.5 text-xs"
+                                          >
+                                            {l.activa ? 'Desactivar' : 'Activar'}
+                                          </button>
+                                          <button 
+                                            onClick={() => handleDeleteTarifa(l.id, l.nombre)} 
+                                            className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1.5 !px-2.5 text-xs"
+                                          >
+                                            Borrar
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
                   {listasTarifas.length === 0 && (
                     <p className="text-secondary text-sm">No hay listas de tarifas importadas.</p>
                   )}
@@ -896,6 +988,28 @@ export function ConfigPageClient({ currentLogo }: Props) {
                 Cargar Nuevo Tarifario / Lista de Precios (CSV)
               </h3>
               <form onSubmit={handleUploadTarifas} className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="form-group mb-0">
+                    <label className="form-label">Unidad de Negocio</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Ej. Gerencia Comercial" 
+                      value={newUnidadNegocio} 
+                      onChange={(e) => setNewUnidadNegocio(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group mb-0">
+                    <label className="form-label">Sub-Unidad (Zona)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Ej. Comercial o Tucumán" 
+                      value={newSubUnidadNegocio} 
+                      onChange={(e) => setNewSubUnidadNegocio(e.target.value)} 
+                    />
+                  </div>
+                </div>
                 <div className="form-group mb-0">
                   <label className="form-label">Nombre del Tarifario</label>
                   <input 
@@ -1005,21 +1119,24 @@ export function ConfigPageClient({ currentLogo }: Props) {
                           <div className="flex gap-2">
                             <button 
                               onClick={() => handleToggleActivaPromo(p.id)} 
-                              className="btn btn-secondary !py-1 !px-2 text-xs"
+                              className={`btn !py-1 !px-2 text-xs flex items-center justify-center ${p.activa ? 'btn-secondary text-white' : 'btn-primary'}`}
+                              title={p.activa ? 'Desactivar' : 'Activar'}
                             >
-                              {p.activa ? 'Desactivar' : 'Activar'}
+                              <Power size={14} />
                             </button>
                             <button 
                               onClick={() => handleEditPromo(p)} 
-                              className="btn btn-secondary !py-1 !px-2 text-xs"
+                              className="btn btn-secondary !py-1 !px-2 text-xs flex items-center justify-center text-white"
+                              title="Editar"
                             >
-                              Editar
+                              <Edit2 size={14} />
                             </button>
                             <button 
                               onClick={() => handleDeletePromo(p.id, p.nombre)} 
-                              className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs"
+                              className="btn btn-outline border-error text-error hover:bg-error hover:text-white !py-1 !px-2 text-xs flex items-center justify-center"
+                              title="Borrar"
                             >
-                              Borrar
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         </div>
@@ -1048,9 +1165,10 @@ export function ConfigPageClient({ currentLogo }: Props) {
                               const hVal = (document.getElementById(`promo-hasta-${p.id}`) as HTMLInputElement).value
                               handleUpdatePromoDate(p.id, dVal, hVal)
                             }}
-                            className="btn btn-primary !py-1 !px-3 text-xs"
+                            className="btn btn-primary !py-1 !px-2 text-xs flex items-center justify-center"
+                            title="Guardar Vigencia"
                           >
-                            Guardar Vigencia
+                            <Save size={14} />
                           </button>
                         </div>
                       </div>
@@ -1131,13 +1249,27 @@ export function ConfigPageClient({ currentLogo }: Props) {
                   />
                 </div>
                 <div className="form-group mb-0">
-                  <label className="form-label text-[10px]">Productos que aplican</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="form-label text-[10px] mb-0">Productos que aplican</label>
+                    <input
+                      type="text"
+                      className="form-input !py-0.5 !px-2 text-[10px] w-1/2 border-white/10"
+                      placeholder="Buscar producto..."
+                      value={promoProductSearch}
+                      onChange={e => setPromoProductSearch(e.target.value)}
+                    />
+                  </div>
                   <div className="max-h-32 overflow-y-auto bg-black/20 p-2 rounded-lg border border-white/5 flex flex-col gap-1">
-                    {productos.map(prod => (
-                      <label key={prod.id} className="flex items-center gap-2 text-[11px] text-white/80 cursor-pointer hover:text-white">
+                    {productos
+                      .filter(prod => 
+                        prod.nombre.toLowerCase().includes(promoProductSearch.toLowerCase()) || 
+                        prod.codigoInterno.toLowerCase().includes(promoProductSearch.toLowerCase())
+                      )
+                      .map(prod => (
+                      <label key={prod.id} className="flex items-center gap-2 text-[11px] text-white/80 cursor-pointer hover:text-white ml-0">
                         <input 
                           type="checkbox" 
-                          className="rounded border-white/20 bg-black/50 text-primary"
+                          className="rounded border-white/20 bg-black/50 text-primary !ml-0"
                           checked={selectedPromoProductos.includes(prod.id)}
                           onChange={(e) => {
                             if (e.target.checked) setSelectedPromoProductos(prev => [...prev, prod.id])
