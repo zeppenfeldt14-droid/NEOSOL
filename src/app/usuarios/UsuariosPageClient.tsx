@@ -293,7 +293,8 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     if (level === 2) return 'bg-blue-500 text-white'
     return 'bg-green-500 text-white'
   }
-  const levelLabel = (level: number, rol?: string) => {
+  const levelLabel = (level: number, rol?: string, isNivelTodo?: boolean) => {
+    if (isNivelTodo) return 'Nivel - TODO'
     if (level === 1) return 'N1 - Gerencia'
     if (level === 2) return `N2 - ${rol && !rol.toLowerCase().includes('vendedor') ? rol : 'Supervisión/Ventas'}`
     return 'N3 - Ventas'
@@ -437,7 +438,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                       u.nivel === 2 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
                       'bg-green-500/10 text-green-400 border border-green-500/20'
                     }`}>
-                      {levelLabel(u.nivel, u.rol)}
+                      {levelLabel(u.nivel, u.rol, u.isNivelTodo)}
                     </span>
                     {u.nivel === 3 ? (
                       <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
@@ -556,7 +557,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                   </p>
                   
                   <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${levelBadge(formNivel)} shadow-lg`}>
-                    {levelLabel(formNivel)}
+                    {levelLabel(formNivel, formRol, formIsNivelTodo)}
                   </div>
                 </div>
               </div>
