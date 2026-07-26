@@ -25,6 +25,12 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [aumentoTipo, setAumentoTipo] = useState<{ [key: number]: 'min' | 'max' | 'ambas' }>({})
   const [isLoadingTarifas, setIsLoadingTarifas] = useState(false)
 
+  // Sales rules state
+  const [minimoCajas, setMinimoCajas] = useState<string>('300')
+  const [limiteListaA, setLimiteListaA] = useState<string>('60')
+  const [isSavingReglas, setIsSavingReglas] = useState(false)
+  const [reglasMsg, setReglasMsg] = useState<{ type: 'ok' | 'err', text: string } | null>(null)
+
   // Promotions state
   const [promociones, setPromociones] = useState<any[]>([])
   const [newPromoNombre, setNewPromoNombre] = useState('')
@@ -67,6 +73,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
     fetchTarifas()
     fetchPromociones()
     fetchProductos()
+    // Fetch configurable sales rules
+    fetch('/api/configuracion/reglas')
+      .then(r => r.json())
+      .then(d => {
+        if (d.minimoCajas !== undefined) setMinimoCajas(String(d.minimoCajas))
+        if (d.limiteListaA !== undefined) setLimiteListaA(String(d.limiteListaA))
+      })
+      .catch(e => console.error('Error fetching reglas:', e))
   }, [])
 
   const fetchTarifas = async () => {
@@ -904,8 +918,97 @@ export function ConfigPageClient({ currentLogo }: Props) {
         </div>
       )}
 
+      {/* Reglas de Ventas — visible inside lista tab for Nivel 1 */}
+      {activeTab === 'lista' && userNivel === 1 && (
+        <div className="glass-panel card animate-fade-in" style={{ marginTop: '1.5rem' }}>
+          <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+            Reglas de Ventas
+          </h3>
+          <p className="text-secondary text-xs mb-5">
+            Estos parámetros controlan la lógica de aprobación de pedidos. Solo Gerencia (Nivel 1) puede modificarlos.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="form-label">Mínimo de Cajas para Tarifa por Volumen</label>
+              <p className="text-secondary text-xs -mt-1">
+                Pedidos con igual o más cajas acceden a precios de mayor volumen sin aprobación especial.
+                Actual: <strong className="text-white">{minimoCajas} cajas</strong>.
+              </p>
+              <input
+                type="number"
+                min="1"
+                className="form-input"
+                value={minimoCajas}
+                onChange={e => setMinimoCajas(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="form-label">Límite Lista A sin Volumen (%)</label>
+              <p className="text-secondary text-xs -mt-1">
+                Si el % de productos en precio Lista A supera este límite sin alcanzar el mínimo de cajas, el pedido requiere aprobación N1.
+                Actual: <strong className="text-white">{limiteListaA}%</strong>.
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="form-input"
+                  value={limiteListaA}
+                  onChange={e => setLimiteListaA(e.target.value)}
+                />
+                <span className="text-secondary font-bold text-sm">%</span>
+              </div>
+            </div>
+          </div>
+
+          {reglasMsg && (
+            <div className={`mt-4 p-3 rounded-xl text-sm font-semibold ${reglasMsg.type === 'ok' ? 'bg-green-400/10 border border-green-400/30 text-green-400' : 'bg-red-400/10 border border-red-400/30 text-red-400'}`}>
+              {reglasMsg.text}
+            </div>
+          )}
+
+          <div className="mt-5 flex justify-end">
+            <button
+              className="btn btn-primary"
+              disabled={isSavingReglas}
+              onClick={async () => {
+                setIsSavingReglas(true)
+                setReglasMsg(null)
+                try {
+                  const res = await fetch('/api/configuracion/reglas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      minimoCajas: parseInt(minimoCajas),
+                      limiteListaA: parseInt(limiteListaA),
+                    }),
+                  })
+                  const data = await res.json()
+                  if (res.ok) {
+                    setReglasMsg({ type: 'ok', text: '✓ Reglas guardadas correctamente.' })
+                  } else {
+                    setReglasMsg({ type: 'err', text: data.error || 'Error al guardar.' })
+                  }
+                } catch {
+                  setReglasMsg({ type: 'err', text: 'Error de conexión.' })
+                } finally {
+                  setIsSavingReglas(false)
+                  setTimeout(() => setReglasMsg(null), 4000)
+                }
+              }}
+            >
+              {isSavingReglas ? 'Guardando...' : 'Guardar Reglas'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Promotions */}
       {activeTab === 'promos' && userNivel === 1 && (
+
         <div className="grid md:grid-cols-3 gap-6 animate-fade-in">
           <div className="glass-panel card md:col-span-2">
             <h3 className="card-title text-primary border-b pb-3" style={{ borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>

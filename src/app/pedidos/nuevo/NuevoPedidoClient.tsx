@@ -108,6 +108,8 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   const [promosSeleccionadas, setPromosSeleccionadas] = useState<{ [key: number]: boolean }>({})
   const [priceLists, setPriceLists] = useState<any[]>([])
   const [selectedListId, setSelectedListId] = useState<number | null>(null)
+  const [minimoCajas, setMinimoCajas] = useState<number>(300)
+  const [limiteListaA, setLimiteListaA] = useState<number>(60)
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
@@ -117,16 +119,20 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
   useEffect(() => {
     const fetchData = async () => {
       const zoneQueryParam = userNivel === 3 ? (userZona || '') : ''
-      const [prodRes, empRes, promoRes, listsRes] = await Promise.all([
+      const [prodRes, empRes, promoRes, listsRes, reglasRes] = await Promise.all([
         fetch('/api/productos'),
         fetch(`/api/empresas?estado=activo&zona=${zoneQueryParam}&limit=200`),
         fetch('/api/configuracion/promociones'),
         fetch('/api/configuracion/tarifas'),
+        fetch('/api/configuracion/reglas'),
       ])
       const prodData = await prodRes.json()
       const empData  = await empRes.json()
       const promoData = await promoRes.json()
       const listsData = await listsRes.json()
+      const reglasData = await reglasRes.json()
+      if (reglasData.minimoCajas) setMinimoCajas(reglasData.minimoCajas)
+      if (reglasData.limiteListaA) setLimiteListaA(reglasData.limiteListaA)
       
       const prodsList = Array.isArray(prodData) ? prodData : []
       const empsList = Array.isArray(empData) ? empData : (empData.empresas || [])
@@ -495,7 +501,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
         const { priceA } = getAllListPricesForProduct(l.producto);
         return Math.abs(l.precioCajaNegociado - priceA) < 0.01;
       });
-      const needsApproval = (negociarTarifaVolumen && totalCajas < 300) || (is100PercentListA && totalCajas < 300) || isSelectedListUpcoming();
+      const needsApproval = (negociarTarifaVolumen && totalCajas < minimoCajas) || (is100PercentListA && totalCajas < minimoCajas) || isSelectedListUpcoming();
 
       const res = await fetch(url, {
         method,
@@ -698,15 +704,15 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
             <div className="p-4 rounded-xl border flex flex-col gap-3 bg-black/30 border-white/5">
               <p className="text-[10px] font-black uppercase text-secondary tracking-wider">Tarifa del Pedido</p>
               
-              {totalCajas >= 300 ? (
+              {totalCajas >= minimoCajas ? (
                 <div className="px-3 py-2 rounded-lg bg-green-400/10 border border-green-400/20 text-green-400 text-xs font-semibold flex items-center gap-2">
                   <Package size={14} />
-                  ¡Tarifa por Volumen Aplicada! (≥ 300 cajas)
+                  ¡Tarifa por Volumen Aplicada! (≥ {minimoCajas} cajas)
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   <div className="px-3 py-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-semibold">
-                    Tarifa Estándar activa. Faltan {300 - totalCajas} cajas para descuento por volumen.
+                    Tarifa Estándar activa. Faltan {minimoCajas - totalCajas} cajas para descuento por volumen.
                   </div>
                   
                   {/* Negotiated override */}
@@ -719,7 +725,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                     />
                     <div className="flex flex-col">
                       <span className="text-white text-xs font-bold">Negociar Tarifa por Volumen</span>
-                      <span className="text-secondary text-[9px]">Aplica precios de ≥ 300 cajas (Aprobación N1)</span>
+                      <span className="text-secondary text-[9px]">Aplica precios de ≥ {minimoCajas} cajas (Aprobación N1)</span>
                     </div>
                   </label>
                 </div>

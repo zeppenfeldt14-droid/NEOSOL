@@ -90,6 +90,14 @@ export async function POST(request: Request) {
 
     let tieneTarifaNegociada = tieneTarifaNegociadaBody || false
 
+    // Load configurable rules from DB (fallback to defaults if not set)
+    const reglasDB = await prisma.configuracionSistema.findMany({
+      where: { clave: { in: ['MINIMO_CAJAS_VOLUMEN', 'LIMITE_LISTA_A_SIN_VOLUMEN'] } }
+    })
+    const reglasMap = Object.fromEntries(reglasDB.map(r => [r.clave, r.valor]))
+    const MINIMO_CAJAS = parseInt(reglasMap['MINIMO_CAJAS_VOLUMEN'] ?? '300')
+    const LIMITE_LISTA_A = parseInt(reglasMap['LIMITE_LISTA_A_SIN_VOLUMEN'] ?? '60')
+
     // Fetch the products related to detailsnapshots
     const productoIds = detalles.map((d: any) => d.productoId)
     const productos = await prisma.producto.findMany({ where: { id: { in: productoIds } } })
@@ -97,7 +105,7 @@ export async function POST(request: Request) {
 
     // Check volume tier
     const totalCajas = detalles.reduce((sum: number, d: any) => sum + (d.cantidadCajas || 0), 0)
-    const isVolume = totalCajas >= 300 || tieneTarifaNegociada
+    const isVolume = totalCajas >= MINIMO_CAJAS || tieneTarifaNegociada
     
     let countListaA = 0
     let subtotalSinIVA = 0
@@ -149,9 +157,9 @@ export async function POST(request: Request) {
 
     const totalProductos = detalles.length
     let flag60Rule = false
-    if (totalCajas < 300) {
+    if (totalCajas < MINIMO_CAJAS) {
       const porcentajeListaA = (countListaA / totalProductos) * 100
-      if (porcentajeListaA >= 60) {
+      if (porcentajeListaA >= LIMITE_LISTA_A) {
         tienePrecioNegociado = true
         flag60Rule = true
       } else if (porcentajeListaA > 0) {
