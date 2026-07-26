@@ -245,7 +245,14 @@ export default function PreciosPublicosClient({ productos, priceLists, activeLis
         </div>
 
         {/* Listado de Productos */}
-        {Object.entries(byLinea).map(([linea, prods]) => (
+        {Object.entries(byLinea)
+          .sort(([a], [b]) => {
+            const order = Object.keys(LINEAS)
+            const idxA = order.indexOf(a)
+            const idxB = order.indexOf(b)
+            return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB)
+          })
+          .map(([linea, prods]) => (
           <div key={linea} style={{ marginBottom: '1.5rem' }}>
             {/* Cabecera de línea */}
             <div style={{

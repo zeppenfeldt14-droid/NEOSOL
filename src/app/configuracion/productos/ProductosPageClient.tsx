@@ -631,7 +631,14 @@ export function ProductosPageClient({ userNivel }: Props) {
           )}
         </div>
       ) : (
-        Object.entries(byLinea).map(([linea, prods]) => (
+        Object.entries(byLinea)
+          .sort(([a], [b]) => {
+            const order = Object.keys(LINEAS)
+            const idxA = order.indexOf(a)
+            const idxB = order.indexOf(b)
+            return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB)
+          })
+          .map(([linea, prods]) => (
           <div key={linea} className="glass-panel card border border-white/5 overflow-hidden">
             {/* Line header */}
             <div className="px-5 py-3 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
