@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     // Build zone filter via Pedido relation
     let pedidoZonaFilter: any = {}
     if (session.nivel === 3) {
-      pedidoZonaFilter = { pedido: { zona: session.zona } }
+      pedidoZonaFilter = { pedido: { zona: session.zona, vendedorAlias: session.alias } }
     } else if (zona && zona !== 'todas') {
       pedidoZonaFilter = { pedido: { zona } }
     }

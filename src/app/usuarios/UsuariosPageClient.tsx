@@ -336,7 +336,12 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   const filteredUsers = users.filter(u =>
     u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.alias.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ).sort((a, b) => {
+    const rankA = a.isNivelTodo ? 0 : a.nivel === 1 ? 1 : a.nivel === 2 ? 2 : a.nivel === 4 ? 3 : 4;
+    const rankB = b.isNivelTodo ? 0 : b.nivel === 1 ? 1 : b.nivel === 2 ? 2 : b.nivel === 4 ? 3 : 4;
+    if (rankA !== rankB) return rankA - rankB;
+    return a.nombre.localeCompare(b.nombre);
+  })
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0B132B]">

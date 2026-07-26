@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     // Build zone filter based on user level
     let zonaFilter: any = {}
     if (session.nivel === 3) {
-      zonaFilter = { zona: session.zona }
+      zonaFilter = { zona: session.zona, vendedorAlias: session.alias }
     } else if (session.nivel === 2 || session.nivel === 4) {
       const habilitadas = Array.isArray(session.zonasHabilitadas)
         ? session.zonasHabilitadas
