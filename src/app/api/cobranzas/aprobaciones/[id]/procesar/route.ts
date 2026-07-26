@@ -8,7 +8,7 @@ export async function POST(request: Request, { params }: Params) {
   try {
     const session = await getSessionUser()
     if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
-    if (session.nivel > 2) return NextResponse.json({ error: 'Sin permisos para procesar aprobaciones.' }, { status: 403 })
+    if (session.nivel > 2 && session.nivel !== 4) return NextResponse.json({ error: 'Sin permisos para procesar aprobaciones.' }, { status: 403 })
 
     const { id } = await params
     const solicitudId = Number(id)

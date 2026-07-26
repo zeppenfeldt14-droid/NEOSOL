@@ -291,12 +291,14 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   const levelBadge = (level: number) => {
     if (level === 1) return 'bg-orange-500 text-white'
     if (level === 2) return 'bg-blue-500 text-white'
+    if (level === 4) return 'bg-purple-500 text-white'
     return 'bg-green-500 text-white'
   }
   const levelLabel = (level: number, rol?: string, isNivelTodo?: boolean) => {
     if (isNivelTodo) return 'Nivel - TODO'
     if (level === 1) return 'N1 - Gerencia'
     if (level === 2) return `N2 - ${rol && !rol.toLowerCase().includes('vendedor') ? rol : 'Supervisión/Ventas'}`
+    if (level === 4) return `N4 - ${rol || 'Analista'}`
     return 'N3 - Ventas'
   }
 
@@ -402,6 +404,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                   <div className={`absolute top-0 left-0 right-0 h-1.5 ${
                     u.nivel === 1 ? 'bg-orange-500' : 
                     u.nivel === 2 ? 'bg-blue-500' : 
+                    u.nivel === 4 ? 'bg-purple-500' : 
                     'bg-green-500'
                   }`} />
                   
@@ -411,6 +414,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg overflow-hidden border border-white/10 ${
                         u.nivel === 1 ? 'bg-orange-500/20 text-orange-400' : 
                         u.nivel === 2 ? 'bg-blue-500/20 text-blue-400' : 
+                        u.nivel === 4 ? 'bg-purple-500/20 text-purple-400' : 
                         'bg-green-500/20 text-green-400'
                       }`}>
                         {u.foto ? (
@@ -436,6 +440,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                       u.nivel === 1 ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 
                       u.nivel === 2 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                      u.nivel === 4 ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 
                       'bg-green-500/10 text-green-400 border border-green-500/20'
                     }`}>
                       {levelLabel(u.nivel, u.rol, u.isNivelTodo)}
@@ -656,7 +661,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                       <div className="form-group">
                         <label className="form-label">Nivel de Acceso *</label>
                         <select 
-                          value={formIsNivelTodo ? "TODO" : formNivel === 1 ? "1" : formNivel === 2 ? "2" : "3"} 
+                          value={formIsNivelTodo ? "TODO" : formNivel === 1 ? "1" : formNivel === 2 ? "2" : formNivel === 4 ? "4" : "3"} 
                           onChange={(e) => {
                             const val = e.target.value;
                             if (val === "TODO") {
@@ -670,11 +675,16 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                             } else if (val === "2") {
                               setFormNivel(2);
                               setFormIsNivelTodo(false);
-                              if (formRol === 'Vendedor' || formRol === 'Gerencia' || formRol === 'Administrador' || !formRol) setFormRol('Supervisión/Ventas');
+                              if (formRol === 'Vendedor' || formRol === 'Gerencia' || formRol === 'Administrador' || formRol === 'Analista' || !formRol) setFormRol('Supervisión/Ventas');
+                            } else if (val === "4") {
+                              setFormNivel(4);
+                              setFormIsNivelTodo(false);
+                              if (!formRol || formRol === 'Supervisión/Ventas' || formRol === 'Vendedor') setFormRol('Analista');
+                              setFormModulos(prev => ({ ...prev, pedidos: true, ventas: true, cobranzas: true, visitas: false }));
                             } else {
                               setFormNivel(3);
                               setFormIsNivelTodo(false);
-                              if (!formRol || formRol === 'Supervisión/Ventas' || formRol === 'Gerencia' || formRol === 'Administrador') setFormRol('Vendedor');
+                              if (!formRol || formRol === 'Supervisión/Ventas' || formRol === 'Gerencia' || formRol === 'Administrador' || formRol === 'Analista') setFormRol('Vendedor');
                             }
                           }} 
                           className="form-input bg-[#0B132B]/50 border-white/10 cursor-pointer"
@@ -682,6 +692,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                           <option value="TODO" className="bg-[#0B132B]">Nivel - TODO</option>
                           <option value="1" className="bg-[#0B132B]">Nivel 1 (Gerencia)</option>
                           <option value="2" className="bg-[#0B132B]">Nivel 2 (Supervisión / Ventas / etc.)</option>
+                          <option value="4" className="bg-[#0B132B]">Nivel 4 (Analista / Administrativo)</option>
                           <option value="3" className="bg-[#0B132B]">Nivel 3 (Vendedor)</option>
                         </select>
                       </div>

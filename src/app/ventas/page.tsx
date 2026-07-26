@@ -13,7 +13,7 @@ export default async function VentasPage() {
   let availableZones: string[] = []
   if (session.nivel === 1) {
     availableZones = allZoneNames
-  } else if (session.nivel === 2) {
+  } else if (session.nivel === 2 || session.nivel === 4) {
     const habilitadas = Array.isArray(session.zonasHabilitadas)
       ? session.zonasHabilitadas
       : JSON.parse((session.zonasHabilitadas as unknown as string) || '[]')
