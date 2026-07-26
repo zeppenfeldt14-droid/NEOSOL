@@ -187,7 +187,14 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
           : JSON.parse(JSON.stringify(user.zonasHabilitadas))
       }
     } catch (e) {}
-    setFormZonasHabilitadas(enabled)
+    
+    const validZones = Array.from(new Set(
+      enabled
+        .map(e => zones.find(z => z.toLowerCase() === e.toLowerCase()))
+        .filter(Boolean)
+    )) as string[]
+    
+    setFormZonasHabilitadas(validZones)
     setShowUserModal(true)
   }
 
@@ -464,10 +471,17 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                               : JSON.parse(JSON.stringify(u.zonasHabilitadas))
                           }
                         } catch (e) {}
-                        if (enabled && enabled.length > 0) {
+                        
+                        const validZones = Array.from(new Set(
+                          enabled
+                            .map(e => zones.find(z => z.toLowerCase() === e.toLowerCase()))
+                            .filter(Boolean)
+                        )) as string[]
+                        
+                        if (validZones && validZones.length > 0) {
                           return (
-                            <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 animate-fade-in" title={enabled.join(', ')}>
-                              📍 {enabled.join(', ')}
+                            <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 animate-fade-in" title={validZones.join(', ')}>
+                              📍 {validZones.join(', ')}
                             </span>
                           )
                         }
