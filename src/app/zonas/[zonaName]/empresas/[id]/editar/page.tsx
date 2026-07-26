@@ -148,15 +148,6 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="form-label">Vendedor Asignado</label>
-                <select name="vendedorAsignado" defaultValue={empresa.vendedorAsignado || ''} className="form-input bg-dark">
-                  <option value="">-- Sin Asignar --</option>
-                  {usuarios.filter(u => u.alias).map(u => (
-                    <option key={u.alias} value={u.alias}>{u.nombre} (@{u.alias})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
                 <label className="form-label">Rubro Comercial</label>
                 <select name="rubro" defaultValue={empresa.rubro || 'CATEGORIA 1'} className="form-input bg-dark">
                   {rubros.map(r => (

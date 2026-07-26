@@ -15,7 +15,7 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage({ params, searchParams }: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string }> }) {
+export default async function DashboardPage({ params, searchParams }: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string, vendedor?: string }> }) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
@@ -24,7 +24,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const { zonaName } = await params
   const decodedZona = decodeURIComponent(zonaName)
   
-  const { period } = await searchParams
+  const { period, vendedor } = await searchParams
   const currentPeriod = period || String(new Date().getMonth())
 
   const modules = typeof user.modulos === 'string' ? JSON.parse(user.modulos) : (user.modulos || {})
@@ -69,22 +69,23 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   }
 
   const isVendedor = user.nivel === 3
-  const userAlias = user.alias
+  const userAlias = isVendedor ? user.alias : vendedor
+  const hasVendedorFilter = Boolean(userAlias)
 
   const whereEmpresa = {
     zona: decodedZona,
-    ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+    ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
   }
   const whereAccion = {
     empresa: {
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   }
   const whereVisita = {
     empresa: {
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   }
 
@@ -94,8 +95,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const accionesPendientes = await prisma.accion.count({ where: { estado: 'pendiente', ...whereAccion } })
 
   const predicAlerts = await getPredictiveAlerts({
-    usuarioNivel: user.nivel,
-    vendedorAlias: user.alias,
+    usuarioNivel: hasVendedorFilter ? 3 : user.nivel,
+    vendedorAlias: userAlias,
     zona: decodedZona
   })
 

@@ -187,14 +187,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
           : JSON.parse(JSON.stringify(user.zonasHabilitadas))
       }
     } catch (e) {}
-    
-    const validZones = Array.from(new Set(
-      enabled
-        .map(e => zones.find(z => z.toLowerCase() === e.toLowerCase()))
-        .filter(Boolean)
-    )) as string[]
-    
-    setFormZonasHabilitadas(validZones)
+    setFormZonasHabilitadas(enabled)
     setShowUserModal(true)
   }
 
@@ -470,18 +463,13 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                               ? JSON.parse(u.zonasHabilitadas)
                               : JSON.parse(JSON.stringify(u.zonasHabilitadas))
                           }
+                          // Remove duplicates and filter invalid zones
+                          enabled = Array.from(new Set(enabled)).filter(z => zones.includes(z))
                         } catch (e) {}
-                        
-                        const validZones = Array.from(new Set(
-                          enabled
-                            .map(e => zones.find(z => z.toLowerCase() === e.toLowerCase()))
-                            .filter(Boolean)
-                        )) as string[]
-                        
-                        if (validZones && validZones.length > 0) {
+                        if (enabled && enabled.length > 0) {
                           return (
-                            <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 animate-fade-in" title={validZones.join(', ')}>
-                              📍 {validZones.join(', ')}
+                            <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 animate-fade-in" title={enabled.join(', ')}>
+                              📍 {enabled.join(', ')}
                             </span>
                           )
                         }
