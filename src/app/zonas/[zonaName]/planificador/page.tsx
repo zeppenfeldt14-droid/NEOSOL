@@ -219,7 +219,7 @@ export default async function PlanificadorPage(props: {
 
   // Fetch available sub-zones in DB for this major zone
   const dbSubZonas = await prisma.subZona.findMany({
-    where: { zona: decodedZona, ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {}) },
+    where: { zona: decodedZona },
     orderBy: { nombre: 'asc' }
   })
 
