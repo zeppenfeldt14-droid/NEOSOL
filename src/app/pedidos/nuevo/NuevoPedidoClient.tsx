@@ -720,7 +720,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                   <label className="flex items-center gap-2 cursor-pointer mt-1 p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                     <input 
                       type="checkbox" 
-                      className="rounded border-white/10 bg-black/40 text-primary focus:ring-0"
+                      className="shrink-0 h-4 w-4 rounded border-white/10 bg-black/40 text-primary focus:ring-0"
                       checked={negociarTarifaVolumen}
                       onChange={(e) => setNegociarTarifaVolumen(e.target.checked)}
                     />
@@ -1402,7 +1402,7 @@ export function NuevoPedidoClient({ userNivel, userAlias, userZona }: Props) {
                         type="checkbox"
                         checked={!!promosSeleccionadas[p.id]}
                         onChange={() => setPromosSeleccionadas(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
-                        className="form-checkbox bg-black/40 border-white/20 text-primary rounded focus:ring-primary/50"
+                        className="form-checkbox shrink-0 h-4 w-4 bg-black/40 border-white/20 text-primary rounded focus:ring-primary/50"
                       />
                       <span className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">{p.nombre}</span>
                     </label>

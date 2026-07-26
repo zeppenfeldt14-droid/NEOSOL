@@ -18,6 +18,8 @@ interface Usuario {
   connectionLogs: Array<{ date: string; ip: string; userAgent: string }>
   zona: string | null
   zonasHabilitadas: any
+  isNivelTodo?: boolean
+  unidadesNegocio?: string[]
 }
 
 interface LogEntry {
@@ -74,6 +76,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
   const [formEmail, setFormEmail] = useState('')
   const [formPassword, setFormPassword] = useState('')
   const [formNivel, setFormNivel] = useState(3)
+  const [formIsNivelTodo, setFormIsNivelTodo] = useState(false)
   const [formRol, setFormRol] = useState('Vendedor')
   const [formActivo, setFormActivo] = useState(true)
   const [formFoto, setFormFoto] = useState<string | null>(null)
@@ -150,6 +153,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormEmail('')
     setFormPassword('')
     setFormNivel(3)
+    setFormIsNivelTodo(false)
     setFormRol('Vendedor')
     setFormActivo(true)
     setFormFoto(null)
@@ -168,6 +172,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     setFormEmail(user.email)
     setFormPassword('')
     setFormNivel(user.nivel)
+    setFormIsNivelTodo(user.isNivelTodo || false)
     setFormRol(user.rol || 'Vendedor')
     setFormActivo(user.activo)
     setFormFoto(user.foto)
@@ -219,6 +224,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
         email: formEmail,
         password: formPassword || null,
         nivel: formNivel,
+        isNivelTodo: formIsNivelTodo,
         rol: formRol,
         activo: formActivo,
         foto: formFoto,
@@ -287,9 +293,9 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
     if (level === 2) return 'bg-blue-500 text-white'
     return 'bg-green-500 text-white'
   }
-  const levelLabel = (level: number) => {
+  const levelLabel = (level: number, rol?: string) => {
     if (level === 1) return 'N1 - Gerencia'
-    if (level === 2) return 'N2 - Supervisión'
+    if (level === 2) return `N2 - ${rol && !rol.toLowerCase().includes('vendedor') ? rol : 'Supervisión/Ventas'}`
     return 'N3 - Ventas'
   }
 
@@ -431,7 +437,7 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                       u.nivel === 2 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
                       'bg-green-500/10 text-green-400 border border-green-500/20'
                     }`}>
-                      {levelLabel(u.nivel)}
+                      {levelLabel(u.nivel, u.rol)}
                     </span>
                     {u.nivel === 3 ? (
                       <span className="text-[9px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
@@ -649,23 +655,33 @@ export function UsuariosPageClient({ currentUser }: { currentUser: any }) {
                       <div className="form-group">
                         <label className="form-label">Nivel de Acceso *</label>
                         <select 
-                          value={formNivel} 
+                          value={formIsNivelTodo ? "TODO" : formNivel === 1 ? "1" : formNivel === 2 ? "2" : "3"} 
                           onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setFormNivel(val);
-                            // Auto-asignar rol según la selección si es Nivel 2 Analista
-                            if (e.target.options[e.target.selectedIndex].text.includes('Analista')) {
-                              setFormRol('Analista');
-                            } else if (val === 2) {
-                              setFormRol('Supervisor');
+                            const val = e.target.value;
+                            if (val === "TODO") {
+                              setFormNivel(1);
+                              setFormIsNivelTodo(true);
+                              if (formRol === 'Vendedor' || !formRol) setFormRol('Administrador');
+                            } else if (val === "1") {
+                              setFormNivel(1);
+                              setFormIsNivelTodo(false);
+                              if (formRol === 'Vendedor' || formRol === 'Administrador' || !formRol) setFormRol('Gerencia');
+                            } else if (val === "2") {
+                              setFormNivel(2);
+                              setFormIsNivelTodo(false);
+                              if (formRol === 'Vendedor' || formRol === 'Gerencia' || formRol === 'Administrador' || !formRol) setFormRol('Supervisión/Ventas');
+                            } else {
+                              setFormNivel(3);
+                              setFormIsNivelTodo(false);
+                              if (!formRol || formRol === 'Supervisión/Ventas' || formRol === 'Gerencia' || formRol === 'Administrador') setFormRol('Vendedor');
                             }
                           }} 
                           className="form-input bg-[#0B132B]/50 border-white/10 cursor-pointer"
                         >
-                          <option value={1} className="bg-[#0B132B]">Nivel 1 — Total (Gerencia)</option>
-                          <option value={2} className="bg-[#0B132B]">Nivel 2 — Supervisión</option>
-                          <option value={2} className="bg-[#0B132B]">Nivel 2 — Analista</option>
-                          <option value={3} className="bg-[#0B132B]">Nivel 3 — Vendedor</option>
+                          <option value="TODO" className="bg-[#0B132B]">Nivel - TODO</option>
+                          <option value="1" className="bg-[#0B132B]">Nivel 1 (Gerencia)</option>
+                          <option value="2" className="bg-[#0B132B]">Nivel 2 (Supervisión / Ventas / etc.)</option>
+                          <option value="3" className="bg-[#0B132B]">Nivel 3 (Vendedor)</option>
                         </select>
                       </div>
                     </div>

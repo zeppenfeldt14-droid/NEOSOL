@@ -256,8 +256,8 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const session = await getSessionUser()
-    if (!session || session.nivel !== 1) {
-      return NextResponse.json({ error: 'No autorizado. Se requiere nivel 1.' }, { status: 403 })
+    if (!session || (session.nivel !== 1 && !session.isNivelTodo)) {
+      return NextResponse.json({ error: 'No autorizado. Se requiere nivel 1 o superior.' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -461,6 +461,31 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, message: `Unidad de Negocio duplicada correctamente. ${count} listas clonadas.` })
     }
 
+    if (action === 'renombrar_unidad') {
+      if (session.alias !== 'admin' && !session.isNivelTodo) {
+        return NextResponse.json({ error: 'No tienes permiso para renombrar unidades de negocio.' }, { status: 403 })
+      }
+      const { unidadOrigen, nuevaUnidad } = body
+      if (!unidadOrigen || !nuevaUnidad) return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+
+      await prisma.listaPrecio.updateMany({
+        where: { unidadNegocio: unidadOrigen },
+        data: { unidadNegocio: nuevaUnidad }
+      })
+      return NextResponse.json({ success: true, message: 'Unidad de Negocio renombrada correctamente.' })
+    }
+
+    if (action === 'renombrar_subunidad') {
+      const { unidadOrigen, subUnidadOrigen, nuevaSubUnidad } = body
+      if (!unidadOrigen || !subUnidadOrigen || !nuevaSubUnidad) return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+
+      await prisma.listaPrecio.updateMany({
+        where: { unidadNegocio: unidadOrigen, subUnidadNegocio: subUnidadOrigen },
+        data: { subUnidadNegocio: nuevaSubUnidad }
+      })
+      return NextResponse.json({ success: true, message: 'Sub-Unidad renombrada correctamente.' })
+    }
+
     return NextResponse.json({ error: 'Acción no válida.' }, { status: 400 })
   } catch (error: any) {
     console.error('[API PUT Tarifas]', error)
@@ -471,8 +496,8 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await getSessionUser()
-    if (!session || session.nivel !== 1) {
-      return NextResponse.json({ error: 'No autorizado. Se requiere nivel 1.' }, { status: 403 })
+    if (!session || (session.nivel !== 1 && !session.isNivelTodo)) {
+      return NextResponse.json({ error: 'No autorizado. Se requiere nivel 1 o superior.' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)

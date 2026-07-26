@@ -198,6 +198,27 @@ export function ConfigPageClient({ currentLogo }: Props) {
     }
   }
 
+  const handleRenombrarUnidad = async (unidadOrigen: string) => {
+    const nuevaUnidad = prompt(`Renombrar Unidad de Negocio "${unidadOrigen}". Ingrese el nuevo nombre:`, unidadOrigen);
+    if (!nuevaUnidad || nuevaUnidad === unidadOrigen) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'renombrar_unidad', unidadOrigen, nuevaUnidad: nuevaUnidad.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al renombrar unidad');
+      alert(data.message || 'Unidad renombrada correctamente.');
+      fetchTarifas();
+    } catch(e:any) {
+      alert(e.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleDuplicarUnidad = async (unidadOrigen: string) => {
     const nuevaUnidad = prompt(`Duplicar Unidad de Negocio "${unidadOrigen}". Ingrese el nuevo nombre (Ej. Supermercados):`, unidadOrigen + ' Copia');
     if (!nuevaUnidad) return;
@@ -206,11 +227,32 @@ export function ConfigPageClient({ currentLogo }: Props) {
       const res = await fetch('/api/configuracion/tarifas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'duplicar_unidad_negocio', unidadOrigen, nuevaUnidad })
+        body: JSON.stringify({ action: 'duplicar_unidad_negocio', unidadOrigen, nuevaUnidad: nuevaUnidad.trim() })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al duplicar unidad');
       alert(data.message || 'Unidad duplicada correctamente.');
+      fetchTarifas();
+    } catch(e:any) {
+      alert(e.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleRenombrarSubUnidad = async (unidadOrigen: string, subUnidadOrigen: string) => {
+    const nuevaSubUnidad = prompt(`Renombrar Sub-Unidad "${subUnidadOrigen}". Ingrese el nuevo nombre:`, subUnidadOrigen);
+    if (!nuevaSubUnidad || nuevaSubUnidad === subUnidadOrigen) return;
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'renombrar_subunidad', unidadOrigen, subUnidadOrigen, nuevaSubUnidad: nuevaSubUnidad.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al renombrar sub-unidad');
+      alert(data.message || 'Sub-Unidad renombrada correctamente.');
       fetchTarifas();
     } catch(e:any) {
       alert(e.message)
@@ -227,7 +269,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
       const res = await fetch('/api/configuracion/tarifas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'duplicar_sub_unidad', listaId, nuevaSubUnidad })
+        body: JSON.stringify({ action: 'duplicar_sub_unidad', listaId, nuevaSubUnidad: nuevaSubUnidad.trim() })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al duplicar sub-unidad');
@@ -237,6 +279,23 @@ export function ConfigPageClient({ currentLogo }: Props) {
       alert(e.message)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleRenombrarLista = async (listaId: number, nombreBase: string) => {
+    const nombre = prompt(`Renombrar Lista de Precios "${nombreBase}". Ingrese el nuevo nombre:`, nombreBase);
+    if (!nombre || nombre === nombreBase) return;
+    try {
+      const res = await fetch('/api/configuracion/tarifas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'editar_lista', listaId, nombre: nombre.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al renombrar lista');
+      fetchTarifas();
+    } catch(e:any) {
+      alert(e.message)
     }
   }
 
@@ -886,9 +945,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
                       <div className="bg-primary/20 text-primary font-bold px-4 py-2 flex justify-between items-center border-b border-white/10">
                         <span>Unidad de Negocio: {un}</span>
                         {isAdmin && (
-                          <button onClick={() => handleDuplicarUnidad(un)} className="btn btn-primary !py-1 text-xs">
-                            Duplicar Unidad
-                          </button>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleRenombrarUnidad(un)} className="text-secondary hover:text-white transition-colors" title="Renombrar Unidad">
+                              <Edit2 size={16} />
+                            </button>
+                            <button onClick={() => handleDuplicarUnidad(un)} className="btn btn-primary !py-1 text-xs">
+                              Duplicar Unidad
+                            </button>
+                          </div>
                         )}
                       </div>
                       
@@ -898,7 +962,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
                           return (
                             <div key={sub} className="border border-white/5 bg-black/20 rounded-lg overflow-hidden p-3">
                               <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-secondary font-semibold text-sm border-b border-white/5 pb-1">Sub-Unidad: {sub}</h4>
+                                <div className="flex items-center gap-2 border-b border-white/5 pb-1">
+                                  <h4 className="text-secondary font-semibold text-sm">Sub-Unidad: {sub}</h4>
+                                  {isAdmin && (
+                                    <button onClick={() => handleRenombrarSubUnidad(un, sub)} className="text-secondary hover:text-white transition-colors" title="Renombrar Sub-Unidad">
+                                      <Edit2 size={14} />
+                                    </button>
+                                  )}
+                                </div>
                                 {listaVigente && (
                                   <button onClick={() => handleDuplicarSubUnidad(listaVigente.id, sub)} className="btn btn-secondary !py-1 text-xs">
                                     Duplicar (Crear Zona)
@@ -912,7 +983,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
                                     <div key={l.id} className="p-3 rounded-lg border border-white/5 bg-black/10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                       <div>
                                         <div className="flex items-center gap-2">
-                                          <span className="text-white font-bold text-sm">{l.nombre}</span>
+                                          <span className="text-white font-bold text-sm flex items-center gap-2">
+                                            {l.nombre}
+                                            {isAdmin && (
+                                              <button onClick={() => handleRenombrarLista(l.id, l.nombre)} className="text-secondary hover:text-white transition-colors" title="Renombrar Lista">
+                                                <Edit2 size={14} />
+                                              </button>
+                                            )}
+                                          </span>
                                           <span className={`badge ${!l.activa ? 'badge-neutral' : (new Date(l.vigenteDesde) > new Date() ? 'badge-info bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'badge-success')}`}>
                                             {!l.activa ? 'Cancelada (Historial)' : (new Date(l.vigenteDesde) > new Date() ? 'Próxima' : 'Vigente')}
                                           </span>
@@ -1266,10 +1344,10 @@ export function ConfigPageClient({ currentLogo }: Props) {
                         prod.codigoInterno.toLowerCase().includes(promoProductSearch.toLowerCase())
                       )
                       .map(prod => (
-                      <label key={prod.id} className="flex items-center gap-2 text-[11px] text-white/80 cursor-pointer hover:text-white ml-0">
+                      <label key={prod.id} className="flex items-start gap-2 text-[11px] text-white/80 cursor-pointer hover:text-white ml-0">
                         <input 
                           type="checkbox" 
-                          className="rounded border-white/20 bg-black/50 text-primary !ml-0"
+                          className="shrink-0 mt-0.5 h-3.5 w-3.5 rounded border-white/20 bg-black/50 text-primary"
                           checked={selectedPromoProductos.includes(prod.id)}
                           onChange={(e) => {
                             if (e.target.checked) setSelectedPromoProductos(prev => [...prev, prod.id])
@@ -1364,7 +1442,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
                   <label key={u.id} className="flex items-center gap-3 p-2 rounded hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/5">
                     <input 
                       type="checkbox" 
-                      className="form-checkbox h-4 w-4 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-black"
+                      className="form-checkbox shrink-0 h-4 w-4 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-black"
                       checked={listUsuariosHabilitados.includes(u.id)}
                       onChange={(e) => {
                         if (e.target.checked) {

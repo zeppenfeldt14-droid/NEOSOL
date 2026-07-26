@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         unidadesNegocio: unidadesNegocio || ['Gerencia Comercial']
       }
 
-      if (session.alias === 'admin' && isNivelTodo !== undefined) {
+      if ((session.alias === 'admin' || session.isNivelTodo) && isNivelTodo !== undefined) {
         updateData.isNivelTodo = isNivelTodo === true
       }
 
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
         zona: zona || 'CABA',
         zonasHabilitadas: zonasHabilitadas || [],
         unidadesNegocio: unidadesNegocio || ['Gerencia Comercial'],
-        isNivelTodo: session.alias === 'admin' && isNivelTodo === true,
+        isNivelTodo: (session.alias === 'admin' || session.isNivelTodo) && isNivelTodo === true,
         passwordUpdatedAt: new Date()
       }
     })
