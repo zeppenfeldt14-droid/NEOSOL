@@ -51,6 +51,8 @@ export function ProductosPageClient({ userNivel }: Props) {
   const [tarifaVer, setTarifaVer] = useState<'min' | 'max'>('max')
   const [priceLists, setPriceLists] = useState<any[]>([])
   const [selectedListId, setSelectedListId] = useState<number | null>(null)
+  const [selectedUnidadFiltro, setSelectedUnidadFiltro] = useState<string | null>(null)
+  const [unidadesDisponibles, setUnidadesDisponibles] = useState<string[]>([])
   const [copiedPrecios, setCopiedPrecios] = useState(false)
 
   const handleCopyPreciosLink = () => {
@@ -110,11 +112,33 @@ export function ProductosPageClient({ userNivel }: Props) {
       
       const listsRes = await fetch('/api/configuracion/tarifas')
       const listsData = await listsRes.json()
-      if (Array.isArray(listsData)) {
+      if (Array.isArray(listsData) && listsData.length > 0) {
         setPriceLists(listsData)
+        
+        // Extract unique Business Units
+        const uniqueUnidades = Array.from(new Set(listsData.map((l: any) => l.unidadNegocio || 'Gerencia Comercial'))) as string[]
+        setUnidadesDisponibles(uniqueUnidades)
+        
+        let initialUnidad = uniqueUnidades[0]
+        if (selectedUnidadFiltro && uniqueUnidades.includes(selectedUnidadFiltro)) {
+          initialUnidad = selectedUnidadFiltro
+        } else {
+          setSelectedUnidadFiltro(initialUnidad)
+        }
+
+        const listsForUnidad = listsData.filter((l: any) => (l.unidadNegocio || 'Gerencia Comercial') === initialUnidad)
+
         const now = new Date()
-        const active = listsData.find((l: any) => l.activa && new Date(l.vigenteDesde) <= now) || listsData[0]
-        if (active) setSelectedListId(active.id)
+        let active = listsForUnidad.find((l: any) => l.activa && new Date(l.vigenteDesde) <= now)
+        if (!active && listsForUnidad.length > 0) {
+           active = listsForUnidad[0]
+        }
+        
+        if (active) {
+          setSelectedListId(active.id)
+        } else if (listsData[0]) {
+          setSelectedListId(listsData[0].id)
+        }
       }
     } catch (e) {
       console.error(e)
@@ -484,13 +508,43 @@ export function ProductosPageClient({ userNivel }: Props) {
 
       {/* List Selection & Tariff Selection */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white/5 border border-white/5 p-4 rounded-2xl">
-        <div className="flex flex-col gap-1.5 flex-1">
+        <div className="flex flex-col gap-1.5 flex-1 w-full md:w-auto">
+          {unidadesDisponibles.length > 0 && (
+            <div className="mb-4">
+              <label className="text-[10px] uppercase font-black text-secondary tracking-wider block mb-2">Unidad de Negocio</label>
+              <div className="flex flex-wrap gap-2">
+                {unidadesDisponibles.map(un => (
+                  <button
+                    key={un}
+                    onClick={() => {
+                      setSelectedUnidadFiltro(un)
+                      const listsForUnidad = priceLists.filter((l: any) => (l.unidadNegocio || 'Gerencia Comercial') === un)
+                      const now = new Date()
+                      let active = listsForUnidad.find((l: any) => l.activa && new Date(l.vigenteDesde) <= now)
+                      if (!active && listsForUnidad.length > 0) active = listsForUnidad[0]
+                      if (active) setSelectedListId(active.id)
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      selectedUnidadFiltro === un
+                        ? 'bg-primary text-black shadow-md shadow-primary/20'
+                        : 'bg-white/5 text-secondary hover:bg-white/10 hover:text-white border border-white/10'
+                    }`}
+                  >
+                    {un}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <label className="text-[10px] uppercase font-black text-secondary tracking-wider">Período / Tarifario</label>
           <div className="flex gap-2 flex-wrap">
-            {priceLists.length === 0 ? (
-              <span className="text-secondary text-xs italic">No hay listas creadas</span>
+            {priceLists.filter((l: any) => (l.unidadNegocio || 'Gerencia Comercial') === selectedUnidadFiltro).length === 0 ? (
+              <span className="text-secondary text-xs italic">No hay listas para esta unidad</span>
             ) : (
-              priceLists.map((l: any) => {
+              priceLists
+                .filter((l: any) => (l.unidadNegocio || 'Gerencia Comercial') === selectedUnidadFiltro)
+                .map((l: any) => {
                 const isUpcoming = new Date(l.vigenteDesde) > new Date()
                 const monthName = new Date(l.vigenteDesde).toLocaleDateString('es-AR', { month: 'short' })
                 return (
