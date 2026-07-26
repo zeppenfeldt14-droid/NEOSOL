@@ -525,6 +525,7 @@ export function ProductosPageClient({ userNivel }: Props) {
                             setNewListVigencia(l.vigenteDesde.split('T')[0])
                             setAumentoPorcentaje('')
                             setAumentoTarifaTipo('ambas')
+                            setShowAumentoModal(true)
                           }}
                           className="flex-1 px-2 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10"
                           title="Editar tarifario programado"

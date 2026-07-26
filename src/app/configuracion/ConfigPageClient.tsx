@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, Link2, Trash2, Save, Image as ImageIcon, Settings, Users, Power, Edit2 } from 'lucide-react'
+import { Upload, Link2, Trash2, Save, Image as ImageIcon, Settings, Users, Power, Edit2, Building, MapPin, Copy } from 'lucide-react'
 import { saveLogo, deleteLogo } from './actions'
 
 type Props = {
@@ -631,7 +631,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
           onClick={() => setActiveTab('lista')}
           className={`btn-toggle ${activeTab === 'lista' ? 'active' : ''}`}
         >
-          Lista (Tarifas y Precios)
+          Unidades de Negocio
         </button>
         {userNivel === 1 && (
           <>
@@ -941,38 +941,46 @@ export function ConfigPageClient({ currentLogo }: Props) {
                       return acc;
                     }, {})
                   ).map(([un, subUnidades]: [string, any]) => (
-                    <div key={un} className="border border-white/10 rounded-lg overflow-hidden">
-                      <div className="bg-primary/20 text-primary font-bold px-4 py-2 flex justify-between items-center border-b border-white/10">
-                        <span>Unidad de Negocio: {un}</span>
+                    <div key={un} className="border border-white/10 rounded-xl overflow-hidden bg-black/10 shadow-lg mb-6">
+                      <div className="bg-gradient-to-r from-primary/20 to-transparent text-primary font-bold px-5 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-white/10 gap-3">
+                        <div className="flex items-center gap-2">
+                          <Building size={20} className="text-primary" />
+                          <span className="text-lg tracking-wide">{un}</span>
+                          {isAdmin && (
+                            <button onClick={() => handleRenombrarUnidad(un)} className="text-secondary hover:text-white transition-colors ml-2 bg-black/20 p-1.5 rounded-md border border-white/5" title="Renombrar Unidad">
+                              <Edit2 size={14} />
+                            </button>
+                          )}
+                        </div>
                         {isAdmin && (
                           <div className="flex gap-2">
-                            <button onClick={() => handleRenombrarUnidad(un)} className="text-secondary hover:text-white transition-colors" title="Renombrar Unidad">
-                              <Edit2 size={16} />
-                            </button>
-                            <button onClick={() => handleDuplicarUnidad(un)} className="btn btn-primary !py-1 text-xs">
-                              Duplicar Unidad
+                            <button onClick={() => handleDuplicarUnidad(un)} className="btn btn-primary !py-1.5 flex items-center gap-1 shadow-primary/20 shadow-lg">
+                              <Copy size={14} /> Duplicar Unidad
                             </button>
                           </div>
                         )}
                       </div>
                       
-                      <div className="p-4 flex flex-col gap-4">
+                      <div className="p-5 flex flex-col gap-6">
                         {Object.entries(subUnidades).map(([sub, listas]: [string, any]) => {
                           const listaVigente = listas.find((l:any) => l.activa);
                           return (
-                            <div key={sub} className="border border-white/5 bg-black/20 rounded-lg overflow-hidden p-3">
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center gap-2 border-b border-white/5 pb-1">
-                                  <h4 className="text-secondary font-semibold text-sm">Sub-Unidad: {sub}</h4>
+                            <div key={sub} className="border border-white/10 bg-black/40 rounded-xl overflow-hidden p-4 shadow-md">
+                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="bg-primary/20 p-1.5 rounded-lg border border-primary/20">
+                                    <MapPin size={16} className="text-primary" />
+                                  </div>
+                                  <h4 className="text-white font-bold text-md tracking-wide">Zona / Sub-Unidad: {sub}</h4>
                                   {isAdmin && (
-                                    <button onClick={() => handleRenombrarSubUnidad(un, sub)} className="text-secondary hover:text-white transition-colors" title="Renombrar Sub-Unidad">
+                                    <button onClick={() => handleRenombrarSubUnidad(un, sub)} className="text-secondary hover:text-white transition-colors bg-white/5 p-1.5 rounded-md ml-1" title="Renombrar Sub-Unidad">
                                       <Edit2 size={14} />
                                     </button>
                                   )}
                                 </div>
                                 {listaVigente && (
-                                  <button onClick={() => handleDuplicarSubUnidad(listaVigente.id, sub)} className="btn btn-secondary !py-1 text-xs">
-                                    Duplicar (Crear Zona)
+                                  <button onClick={() => handleDuplicarSubUnidad(listaVigente.id, sub)} className="btn btn-secondary !py-1.5 text-xs flex items-center gap-1 border-white/10">
+                                    <Copy size={12} /> Crear Nueva Zona (Duplicar)
                                   </button>
                                 )}
                               </div>

@@ -263,7 +263,7 @@ export async function PUT(request: Request) {
     const body = await request.json()
     const { action, listaId, porcentaje, recordId, precioPaqueteMin, precioCajaMin, precioPaqueteMax, precioCajaMax, tarifaTipo } = body
 
-    if (!listaId) {
+    if (!listaId && !['duplicar_unidad_negocio', 'renombrar_unidad', 'renombrar_subunidad'].includes(action)) {
       return NextResponse.json({ error: 'ID de lista requerido.' }, { status: 400 })
     }
 
