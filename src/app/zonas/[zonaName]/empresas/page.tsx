@@ -5,13 +5,20 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EmpresasPage({ params }: { params: Promise<{ zonaName: string }> }) {
+export default async function EmpresasPage({ 
+  params,
+  searchParams
+}: { 
+  params: Promise<{ zonaName: string }>
+  searchParams: Promise<{ vendedor?: string }>
+}) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
   const { zonaName } = await params
+  const { vendedor: queryVendedor } = await searchParams
   const decodedZona = decodeURIComponent(zonaName)
 
   // Verify access permissions to this zone
@@ -30,9 +37,13 @@ export default async function EmpresasPage({ params }: { params: Promise<{ zonaN
   }
 
   const isVendedor = user.nivel === 3
+  const userAlias = isVendedor ? user.alias : queryVendedor
+  const hasVendedorFilter = Boolean(userAlias)
+  
   const whereFilter = {
     zona: decodedZona,
-    ...(isVendedor ? { vendedorAsignado: user.alias, ocultarVendedor: false } : {})
+    ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {}),
+    ...(isVendedor ? { ocultarVendedor: false } : {})
   }
 
   const empresasAll = await prisma.empresa.findMany({
@@ -48,7 +59,7 @@ export default async function EmpresasPage({ params }: { params: Promise<{ zonaN
 
   // Fetch available sub-zones in DB for this major zone
   const dbSubZonas = await prisma.subZona.findMany({
-    where: { zona: decodedZona },
+    where: { zona: decodedZona, ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {}) },
     orderBy: { nombre: 'asc' }
   })
 

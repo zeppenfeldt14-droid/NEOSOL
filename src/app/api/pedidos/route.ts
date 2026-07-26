@@ -10,21 +10,28 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const zona = searchParams.get('zona')
+    const queryVendedor = searchParams.get('vendedor')
     const estado = searchParams.get('estado')
 
     // Build zone filter based on user level
     let zonaFilter: any = {}
     if (session.nivel === 3) {
       zonaFilter = { zona: session.zona, vendedorAlias: session.alias }
-    } else if (session.nivel === 2 || session.nivel === 4) {
-      const habilitadas = Array.isArray(session.zonasHabilitadas)
-        ? session.zonasHabilitadas
-        : JSON.parse(session.zonasHabilitadas || '[]')
-      zonaFilter = zona && zona !== 'todas'
-        ? { zona }
-        : { zona: { in: habilitadas } }
-    } else if (zona && zona !== 'todas') {
-      zonaFilter = { zona }
+    } else {
+      if (session.nivel === 2 || session.nivel === 4) {
+        const habilitadas = Array.isArray(session.zonasHabilitadas)
+          ? session.zonasHabilitadas
+          : JSON.parse(session.zonasHabilitadas || '[]')
+        zonaFilter = zona && zona !== 'todas'
+          ? { zona }
+          : { zona: { in: habilitadas } }
+      } else if (zona && zona !== 'todas') {
+        zonaFilter = { zona }
+      }
+      
+      if (queryVendedor) {
+        zonaFilter.vendedorAlias = queryVendedor
+      }
     }
 
     const pedidos = await prisma.pedido.findMany({

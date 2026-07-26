@@ -48,10 +48,22 @@ export default async function RootLayout({
   })
   const zones = zonesList.map(z => z.nombre)
 
+  const vendedores = await prisma.usuario.findMany({
+    where: { nivel: 3, activo: true },
+    select: { id: true, nombre: true, alias: true, zona: true }
+  })
+
+  const vendedoresPorZona = vendedores.reduce((acc, v) => {
+    const z = v.zona || 'Sin Zona'
+    if (!acc[z]) acc[z] = []
+    acc[z].push(v)
+    return acc
+  }, {} as Record<string, typeof vendedores>)
+
   return (
     <html lang="es">
       <body>
-        <AppShellClient logo={logo} user={user} zones={zones}>
+        <AppShellClient logo={logo} user={user} zones={zones} vendedoresPorZona={vendedoresPorZona}>
           {children}
         </AppShellClient>
       </body>

@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { InicioPageClient } from './InicioPageClient'
 
-export default async function IndexPage({ searchParams }: { searchParams: Promise<{ period?: string, zona?: string }> }) {
+export default async function IndexPage({ searchParams }: { searchParams: Promise<{ period?: string, zona?: string, vendedor?: string }> }) {
   const user = await getSessionUser()
   
   if (!user) {
@@ -43,7 +43,14 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   }
 
   const isVendedor = user.nivel === 3
-  const userAlias = user.alias
+  
+  // Nivel 3 always uses their own alias. Nivel 1/2/4 can pass ?vendedor= alias in URL.
+  const resolvedParams = await searchParams
+  const queryVendedor = resolvedParams.vendedor as string | undefined
+  
+  const userAlias = isVendedor ? user.alias : queryVendedor
+  const hasVendedorFilter = Boolean(userAlias)
+
   const userZona = user.zona
 
   // Get available zones for the user
@@ -68,7 +75,6 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   }
 
   // Parse selected zones from query param
-  const resolvedParams = await searchParams
   const zoneParam = resolvedParams.zona || 'todas'
   let selectedZones: string[] = []
 
@@ -166,7 +172,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
             { factura: { pedido: { zona: zoneFilter } } }
           ]
         },
-        ...(isVendedor ? [{
+        ...(hasVendedorFilter ? [{
           OR: [
             { cobranza: { vendedorAlias: userAlias } },
             { factura: { pedido: { vendedorAlias: userAlias } } }
@@ -184,7 +190,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const cobranzasMes = await prisma.cobranza.findMany({
     where: {
       zona: zoneFilter,
-      ...(isVendedor ? { vendedorAlias: userAlias } : {}),
+      ...(hasVendedorFilter ? { vendedorAlias: userAlias } : {}),
       ...(isPeriodFiltered ? {
         OR: dateFilters.map(filter => ({ creadoEn: filter }))
       } : {})
@@ -227,7 +233,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     where: {
       estado: 'aprobado',
       zona: zoneFilter,
-      ...(isVendedor ? { vendedorAlias: userAlias } : {}),
+      ...(hasVendedorFilter ? { vendedorAlias: userAlias } : {}),
       ...(isPeriodFiltered ? {
         OR: dateFilters.map(filter => ({ creadoEn: filter }))
       } : {})
@@ -247,14 +253,14 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     where: {
       estado: 'activo',
       zona: zoneFilter,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   })
   const clientesProspecto = await prisma.empresa.count({
     where: {
       estado: 'prospecto',
       zona: zoneFilter,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   })
 
@@ -264,7 +270,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     orderBy: { creadoEn: 'desc' },
     where: {
       zona: zoneFilter,
-      ...(isVendedor ? { vendedorAlias: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAlias: userAlias } : {})
     },
     include: { empresa: true }
   })
@@ -275,7 +281,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     where: {
       pedido: {
         zona: zoneFilter,
-        ...(isVendedor ? { vendedorAlias: userAlias } : {})
+        ...(hasVendedorFilter ? { vendedorAlias: userAlias } : {})
       }
     },
     include: {
@@ -376,6 +382,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   const empresasGeo = await prisma.empresa.findMany({
     where: {
       zona: zoneFilter,
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {}),
       AND: [
         { NOT: { latitud: null } },
         { NOT: { longitud: null } }

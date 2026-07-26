@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const estado = searchParams.get('estado') // 'activo' | 'prospecto' | null (all)
     const zona   = searchParams.get('zona')
     const q      = searchParams.get('q')
+    const queryVendedor = searchParams.get('vendedor')
     const limit  = parseInt(searchParams.get('limit') || '50')
 
     // Level 3 can only see their own zone and assigned, visible companies
@@ -18,13 +19,15 @@ export async function GET(request: Request) {
     const zonaFiltro = isVendedor
       ? session.zona
       : (zona && zona !== '' ? zona : undefined)
+      
+    const vendedorFiltro = isVendedor ? session.alias : queryVendedor
 
     const empresas = await prisma.empresa.findMany({
       where: {
         ...(estado ? { estado } : {}),
         ...(zonaFiltro ? { zona: zonaFiltro } : {}),
         ...(q ? { nombre: { contains: q, mode: 'insensitive' } } : {}),
-        ...(isVendedor ? { vendedorAsignado: session.alias, ocultarVendedor: false } : {}),
+        ...(isVendedor ? { vendedorAsignado: session.alias, ocultarVendedor: false } : vendedorFiltro ? { vendedorAsignado: vendedorFiltro } : {}),
       },
       select: {
         id: true,

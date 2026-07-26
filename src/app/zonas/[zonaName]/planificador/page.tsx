@@ -104,7 +104,7 @@ async function reordenarRutaAction(accionesIds: number[]) {
 
 export default async function PlanificadorPage(props: {
   params: Promise<{ zonaName: string }>
-  searchParams: Promise<{ vista?: string; period?: string; tab?: string }>
+  searchParams: Promise<{ vista?: string; period?: string; tab?: string; vendedor?: string }>
 }) {
   const user = await getSessionUser()
   if (!user) {
@@ -112,7 +112,13 @@ export default async function PlanificadorPage(props: {
   }
 
   const { zonaName } = await props.params
+  const searchParams = await props.searchParams
   const decodedZona = decodeURIComponent(zonaName)
+  
+  const queryVendedor = searchParams.vendedor
+  const isVendedor = user.nivel === 3
+  const userAlias = isVendedor ? user.alias : queryVendedor
+  const hasVendedorFilter = Boolean(userAlias)
 
   // Verify access permissions to this zone
   if (user.nivel === 3 && user.zona !== decodedZona) {
@@ -129,21 +135,18 @@ export default async function PlanificadorPage(props: {
     }
   }
 
-  const isVendedor = user.nivel === 3
-  const userAlias = user.alias
 
   const whereEmpresa = {
     zona: decodedZona,
-    ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+    ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
   }
-  const whereAccion = {
+  const baseFilter = {
     empresa: {
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   }
 
-  const searchParams = await props.searchParams
   const vista = searchParams.vista || 'hoy' // 'hoy', 'semana', 'mes'
 
   const today = new Date()
@@ -159,7 +162,7 @@ export default async function PlanificadorPage(props: {
       fechaVencimiento: {
         lt: today
       },
-      ...whereAccion
+      ...baseFilter
     },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
@@ -174,7 +177,7 @@ export default async function PlanificadorPage(props: {
         gte: today,
         lt: tomorrow
       },
-      ...whereAccion
+      ...baseFilter
     },
     include: { empresa: true },
     orderBy: [
@@ -197,7 +200,7 @@ export default async function PlanificadorPage(props: {
           fechaVencimiento: null
         }
       ],
-      ...whereAccion
+      ...baseFilter
     },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
@@ -216,7 +219,7 @@ export default async function PlanificadorPage(props: {
 
   // Fetch available sub-zones in DB for this major zone
   const dbSubZonas = await prisma.subZona.findMany({
-    where: { zona: decodedZona },
+    where: { zona: decodedZona, ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {}) },
     orderBy: { nombre: 'asc' }
   })
 
@@ -347,7 +350,7 @@ export default async function PlanificadorPage(props: {
   const accionesMes = vista === 'mes' ? await prisma.accion.findMany({
     where: {
       fechaVencimiento: { gte: startOfMonth, lte: endOfMonth },
-      ...whereAccion
+      ...baseFilter
     },
     include: { empresa: true },
     orderBy: { fechaVencimiento: 'asc' }
@@ -358,7 +361,7 @@ export default async function PlanificadorPage(props: {
       fecha: { gte: startOfMonth, lte: endOfMonth },
       empresa: {
         zona: decodedZona,
-        ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+        ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
       }
     },
     include: { empresa: true },
@@ -369,7 +372,7 @@ export default async function PlanificadorPage(props: {
     where: {
       creadoEn: { gte: startOfMonth, lte: endOfMonth },
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     },
     orderBy: { creadoEn: 'desc' }
   }) : []
@@ -378,7 +381,7 @@ export default async function PlanificadorPage(props: {
     where: {
       creadoEn: { gte: startOfMonth, lte: endOfMonth },
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAlias: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAlias: userAlias } : {})
     },
     include: { empresa: true },
     orderBy: { creadoEn: 'desc' }

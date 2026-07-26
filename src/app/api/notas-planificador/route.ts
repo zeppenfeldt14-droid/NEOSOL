@@ -14,6 +14,12 @@ export async function GET(request: Request) {
 
     let whereClause: any = {}
 
+    // Import session user to check level
+    const { getSessionUser } = await import('@/lib/auth')
+    const session = await getSessionUser()
+    const isVendedor = session?.nivel === 3
+    const userAlias = session?.alias
+
     if (global === 'true' && alias) {
       whereClause = {
         OR: [
@@ -23,12 +29,10 @@ export async function GET(request: Request) {
       }
     } else {
       whereClause = {
-        OR: [
-          { zona: zona as string }
+        AND: [
+          { zona: zona as string },
+          ...(isVendedor ? [{ OR: [{ destinatario: userAlias }, { creadoPor: userAlias }] }] : alias ? [{ destinatario: alias }] : [])
         ]
-      }
-      if (alias) {
-        whereClause.OR.push({ destinatario: alias })
       }
     }
 

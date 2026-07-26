@@ -10,13 +10,20 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const zona = searchParams.get('zona')
+    const queryVendedor = searchParams.get('vendedor')
 
     // Build zone filter via Pedido relation
     let pedidoZonaFilter: any = {}
     if (session.nivel === 3) {
       pedidoZonaFilter = { pedido: { zona: session.zona, vendedorAlias: session.alias } }
-    } else if (zona && zona !== 'todas') {
-      pedidoZonaFilter = { pedido: { zona } }
+    } else {
+      if (zona && zona !== 'todas') {
+        pedidoZonaFilter = { pedido: { zona } }
+      }
+      if (queryVendedor) {
+        if (!pedidoZonaFilter.pedido) pedidoZonaFilter.pedido = {}
+        pedidoZonaFilter.pedido.vendedorAlias = queryVendedor
+      }
     }
 
     const facturas = await prisma.factura.findMany({

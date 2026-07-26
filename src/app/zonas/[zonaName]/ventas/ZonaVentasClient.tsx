@@ -82,7 +82,7 @@ export function ZonaVentasClient({ zonaName, userNivel, userAlias }: Props) {
 
   const fetchFacturas = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
     params.set('zona', zonaName)
     const res = await fetch(`/api/facturas?${params.toString()}`)
     const data = await res.json()

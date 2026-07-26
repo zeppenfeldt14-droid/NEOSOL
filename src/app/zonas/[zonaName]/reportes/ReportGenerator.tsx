@@ -172,7 +172,9 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
   // Cargar historial de la base de datos con el filtro de tiempo
   const fetchHistorial = () => {
     setLoadingHistorial(true)
-    fetch(`/api/reportes/historial?period=${initialPeriod}&zona=${encodeURIComponent(zonaName)}`)
+    const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+    const vQuery = urlParams.get('vendedor') ? `&vendedor=${encodeURIComponent(urlParams.get('vendedor')!)}` : ''
+    fetch(`/api/reportes/historial?period=${initialPeriod}&zona=${encodeURIComponent(zonaName)}${vQuery}`)
       .then(res => res.json())
       .then(data => {
         setHistorial(data.reportes || [])
@@ -186,7 +188,9 @@ export default function ReportGenerator({ data, defaultEmail, initialPeriod = ''
 
   const loadMonthlyReport = () => {
     setStatus('generating')
-    fetch(`/api/reportes/mensual?period=${initialPeriod}&zona=${encodeURIComponent(zonaName)}`)
+    const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+    const vQuery = urlParams.get('vendedor') ? `&vendedor=${encodeURIComponent(urlParams.get('vendedor')!)}` : ''
+    fetch(`/api/reportes/mensual?period=${initialPeriod}&zona=${encodeURIComponent(zonaName)}${vQuery}`)
       .then(res => res.json())
       .then(data => {
         if (data.reportData) {

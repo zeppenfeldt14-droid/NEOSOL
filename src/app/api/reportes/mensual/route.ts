@@ -7,6 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period')
     const zonaParam = searchParams.get('zona') // zona de la página que se está navegando
+    const queryVendedor = searchParams.get('vendedor')
 
     const session = await getSessionUser()
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -25,6 +26,11 @@ export async function GET(request: Request) {
 
     if (zonaParam) {
       if (!whereClause.empresa) whereClause.empresa = {}
+      
+      if (queryVendedor && session.nivel !== 3) {
+        whereClause.empresa.vendedorAsignado = queryVendedor
+      }
+      
       if (whereClause.empresa.zona && typeof whereClause.empresa.zona === 'object' && 'in' in whereClause.empresa.zona) {
         const allowed = whereClause.empresa.zona.in as string[]
         if (allowed.includes(zonaParam)) {

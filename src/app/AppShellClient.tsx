@@ -23,9 +23,10 @@ interface Props {
   logo: string | null
   user: UserSession
   zones?: string[]
+  vendedoresPorZona?: Record<string, {id: number, nombre: string, alias: string, zona: string|null}[]>
 }
 
-export function AppShellClient({ children, logo, user, zones = [] }: Props) {
+export function AppShellClient({ children, logo, user, zones = [], vendedoresPorZona = {} }: Props) {
   const pathname = usePathname()
   const [modules, setModules] = useState<Record<string, boolean>>(user.modulos || {})
   const [userName, setUserName] = useState(user.nombre)
@@ -35,6 +36,7 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
   // Zones UI States
   const [isZonesExpanded, setIsZonesExpanded] = useState(true)
   const [expandedZone, setExpandedZone] = useState<string | null>(null)
+  const [expandedVendedor, setExpandedVendedor] = useState<string | null>(null)
   
   // Create Zone Modal State
   const [showCreateZone, setShowCreateZone] = useState(false)
@@ -87,6 +89,12 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
     if (match) {
       const activeZone = decodeURIComponent(match[1])
       setExpandedZone(activeZone)
+    }
+    // Also try to read ?vendedor= from URL to auto-expand
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const v = params.get('vendedor')
+      if (v) setExpandedVendedor(v)
     }
   }, [pathname])
 
@@ -277,36 +285,106 @@ export function AppShellClient({ children, logo, user, zones = [] }: Props) {
 
                         {isZoneActive && (
                           <div className="pl-3 mt-1 flex flex-col gap-1.5 border-l border-white/5 ml-1.5">
-                            {modules.ventas !== false && (
-                              <Link href={`/zonas/${zone}/ventas`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/ventas`, true) ? 'active' : ''}`}>
-                                <TrendingUp className="w-3.5 h-3.5" />
-                                <span>Gestión de Ventas</span>
-                              </Link>
-                            )}
-                            {modules.visitas !== false && (
-                              <Link href={`/zonas/${zone}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${pathname === `/zonas/${zone}` ? 'active' : ''}`}>
-                                <LayoutDashboard className="w-3.5 h-3.5" />
-                                <span>Gestión de Visitas</span>
-                              </Link>
-                            )}
-                            {modules.empresas !== false && (
-                              <Link href={`/zonas/${zone}/empresas`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/empresas`) ? 'active' : ''}`}>
-                                <Users className="w-3.5 h-3.5" />
-                                <span>Empresas</span>
-                              </Link>
-                            )}
-                            {modules.planificador !== false && (
-                              <Link href={`/zonas/${zone}/planificador`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/planificador`) ? 'active' : ''}`}>
-                                <MapIcon className="w-3.5 h-3.5" />
-                                <span>Planificador Diario</span>
-                              </Link>
-                            )}
-                            {modules.reportes !== false && (
-                              <Link href={`/zonas/${zone}/reportes`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/reportes`) ? 'active' : ''}`}>
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Reportes (PDF)</span>
-                              </Link>
-                            )}
+                            
+                            {/* OPClÓN: VER TODA LA ZONA */}
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => setExpandedVendedor(expandedVendedor === 'ALL' ? null : 'ALL')}
+                                className={`nav-item flex items-center justify-between w-full py-1.5 px-3 rounded-lg text-[11px] font-semibold ${expandedVendedor === 'ALL' ? 'text-primary bg-primary/10' : 'text-secondary hover:text-white'}`}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                              >
+                                <span>Ver Toda la Zona</span>
+                                {expandedVendedor === 'ALL' ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                              </button>
+                              
+                              {expandedVendedor === 'ALL' && (
+                                <div className="pl-3 mt-1 flex flex-col gap-1.5 border-l border-white/5 ml-1.5">
+                                  {modules.ventas !== false && (
+                                    <Link href={`/zonas/${zone}/ventas`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/ventas`, true) && !pathname.includes('vendedor') ? 'active' : ''}`}>
+                                      <TrendingUp className="w-3.5 h-3.5" />
+                                      <span>Gestión de Ventas</span>
+                                    </Link>
+                                  )}
+                                  {modules.visitas !== false && (
+                                    <Link href={`/zonas/${zone}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${pathname === `/zonas/${zone}` && !pathname.includes('vendedor') ? 'active' : ''}`}>
+                                      <LayoutDashboard className="w-3.5 h-3.5" />
+                                      <span>Gestión de Visitas</span>
+                                    </Link>
+                                  )}
+                                  {modules.empresas !== false && (
+                                    <Link href={`/zonas/${zone}/empresas`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/empresas`) && !pathname.includes('vendedor') ? 'active' : ''}`}>
+                                      <Users className="w-3.5 h-3.5" />
+                                      <span>Empresas</span>
+                                    </Link>
+                                  )}
+                                  {modules.planificador !== false && (
+                                    <Link href={`/zonas/${zone}/planificador`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/planificador`) && !pathname.includes('vendedor') ? 'active' : ''}`}>
+                                      <MapIcon className="w-3.5 h-3.5" />
+                                      <span>Planificador Diario</span>
+                                    </Link>
+                                  )}
+                                  {modules.reportes !== false && (
+                                    <Link href={`/zonas/${zone}/reportes`} className={`nav-item !py-1.5 !px-2.5 !text-[11px] ${isLinkActive(`/zonas/${zone}/reportes`) && !pathname.includes('vendedor') ? 'active' : ''}`}>
+                                      <FileText className="w-3.5 h-3.5" />
+                                      <span>Reportes (PDF)</span>
+                                    </Link>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* VENDEDORES DE LA ZONA */}
+                            {vendedoresPorZona[zone]?.map(v => {
+                              const isVendedorActive = expandedVendedor === v.alias
+                              const vQuery = `?vendedor=${encodeURIComponent(v.alias)}`
+                              return (
+                                <div key={v.id} className="flex flex-col gap-1 mt-1">
+                                  <button
+                                    onClick={() => setExpandedVendedor(isVendedorActive ? null : v.alias)}
+                                    className={`nav-item flex items-center justify-between w-full py-1.5 px-3 rounded-lg text-[11px] font-semibold ${isVendedorActive ? 'text-white bg-white/10' : 'text-secondary hover:text-white'}`}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                                  >
+                                    <span className="truncate">{v.nombre}</span>
+                                    {isVendedorActive ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                  </button>
+
+                                  {isVendedorActive && (
+                                    <div className="pl-3 mt-1 flex flex-col gap-1.5 border-l border-white/5 ml-1.5">
+                                      {modules.ventas !== false && (
+                                        <Link href={`/zonas/${zone}/ventas${vQuery}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px]`}>
+                                          <TrendingUp className="w-3.5 h-3.5" />
+                                          <span>Gestión de Ventas</span>
+                                        </Link>
+                                      )}
+                                      {modules.visitas !== false && (
+                                        <Link href={`/zonas/${zone}${vQuery}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px]`}>
+                                          <LayoutDashboard className="w-3.5 h-3.5" />
+                                          <span>Gestión de Visitas</span>
+                                        </Link>
+                                      )}
+                                      {modules.empresas !== false && (
+                                        <Link href={`/zonas/${zone}/empresas${vQuery}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px]`}>
+                                          <Users className="w-3.5 h-3.5" />
+                                          <span>Empresas</span>
+                                        </Link>
+                                      )}
+                                      {modules.planificador !== false && (
+                                        <Link href={`/zonas/${zone}/planificador${vQuery}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px]`}>
+                                          <MapIcon className="w-3.5 h-3.5" />
+                                          <span>Planificador Diario</span>
+                                        </Link>
+                                      )}
+                                      {modules.reportes !== false && (
+                                        <Link href={`/zonas/${zone}/reportes${vQuery}`} className={`nav-item !py-1.5 !px-2.5 !text-[11px]`}>
+                                          <FileText className="w-3.5 h-3.5" />
+                                          <span>Reportes (PDF)</span>
+                                        </Link>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
                           </div>
                         )}
                       </div>

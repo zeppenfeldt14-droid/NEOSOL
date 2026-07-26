@@ -8,7 +8,7 @@ import { PeriodFilter } from '@/components/PeriodFilter'
 export const dynamic = 'force-dynamic'
 
 export default async function ReportesPage(
-  props: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string }> }
+  props: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string; vendedor?: string }> }
 ) {
   const { params, searchParams } = props
   const user = await getSessionUser()
@@ -38,18 +38,20 @@ export default async function ReportesPage(
   }
 
   const isVendedor = user.nivel === 3
-  const userAlias = user.alias
+  const queryVendedor = resolvedSearchParams.vendedor
+  const userAlias = isVendedor ? user.alias : queryVendedor
+  const hasVendedorFilter = Boolean(userAlias)
 
   const whereVisitasFilter = {
     empresa: {
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   }
   const wherePendientesFilter = {
     empresa: {
       zona: decodedZona,
-      ...(isVendedor ? { vendedorAsignado: userAlias } : {})
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
     }
   }
 
