@@ -52,7 +52,7 @@ const COLORS_PROMOS = ['#ec4899', '#f59e0b', '#8b5cf6', '#10b981', '#3b82f6']
 const COLOR_PRIMARY = '#3b82f6'
 const COLOR_SUCCESS = '#10b981'
 
-export function InicioPageClient({ data, currentUser }: { data: any, currentUser: any }) {
+export function InicioPageClient({ data, currentUser, vendedoresDisponibles = [] }: { data: any, currentUser: any, vendedoresDisponibles?: { alias: string, zona: string | null, nombre: string }[] }) {
   const { kpis, recentActivity, charts, heatmap, availableZones, selectedZones } = data
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -60,12 +60,15 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
   // Dropdown UI state
   const [isOpenFilter, setIsOpenFilter] = useState(false)
   const [isOpenZoneFilter, setIsOpenZoneFilter] = useState(false)
+  const [isOpenVendedorFilter, setIsOpenVendedorFilter] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const zoneDropdownRef = useRef<HTMLDivElement>(null)
+  const vendedorDropdownRef = useRef<HTMLDivElement>(null)
 
   // Current period and zone values
   const currentPeriodParam = searchParams.get('period') || 'mes'
   const currentZonaParam = searchParams.get('zona') || 'todas'
+  const currentVendedorParam = searchParams.get('vendedor') || ''
 
   // Parse selected months from query param
   const getSelectedMonths = () => {
@@ -86,6 +89,9 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
       if (zoneDropdownRef.current && !zoneDropdownRef.current.contains(event.target as Node)) {
         setIsOpenZoneFilter(false)
       }
+      if (vendedorDropdownRef.current && !vendedorDropdownRef.current.contains(event.target as Node)) {
+        setIsOpenVendedorFilter(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -103,6 +109,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
     const params = new URLSearchParams()
     params.set('period', newPeriod)
     if (currentZonaParam) params.set('zona', currentZonaParam)
+    if (currentVendedorParam) params.set('vendedor', currentVendedorParam)
     router.push(`/?${params.toString()}`)
   }
 
@@ -125,6 +132,7 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
     } else {
       params.set('zona', newZones.join(','))
     }
+    // Note: When changing zones, we don't carry over the vendedor since they might not belong to the new zones
     router.push(`/?${params.toString()}`)
   }
 
@@ -146,6 +154,24 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
     }
     return `${selectedZones.length} Zonas`
   }
+
+  const handleSelectVendedor = (alias: string) => {
+    const params = new URLSearchParams()
+    if (currentPeriodParam) params.set('period', currentPeriodParam)
+    if (currentZonaParam) params.set('zona', currentZonaParam)
+    
+    if (alias === 'todos') {
+      params.delete('vendedor')
+    } else {
+      params.set('vendedor', alias)
+    }
+    
+    router.push(`/?${params.toString()}`)
+    setIsOpenVendedorFilter(false)
+  }
+
+  // Deduplicate vendedores just in case
+  const uniqueVendedores = Array.from(new Map(vendedoresDisponibles.map(v => [v.alias, v])).values())
 
   return (
     <div className="flex-1 flex flex-col w-full pb-16">
@@ -211,6 +237,68 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
                               </svg>
                             )}
                           </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Dropdown de Vendedores (Single Select) */}
+          {currentUser.nivel !== 3 && uniqueVendedores.length > 0 && (
+            <div className="relative" ref={vendedorDropdownRef}>
+              <button 
+                onClick={() => setIsOpenVendedorFilter(!isOpenVendedorFilter)}
+                className="px-4 py-2.5 text-xs font-bold bg-[#141E3C] border border-white/5 hover:border-primary/40 text-white rounded-xl shadow-xl flex items-center gap-2.5 transition-all duration-300"
+              >
+                <Users size={14} className="text-violet-400" />
+                <span>{currentVendedorParam ? `@${currentVendedorParam}` : 'Todos los Vendedores'}</span>
+                <ChevronDown size={12} className="text-secondary/70 transition-transform duration-300" style={{ transform: isOpenVendedorFilter ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              </button>
+
+              {isOpenVendedorFilter && (
+                <div className="absolute left-0 md:left-auto md:right-0 mt-3 w-[290px] sm:w-72 backdrop-blur-xl bg-[#0e162d]/95 border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6),0_0_30px_rgba(139,92,246,0.15)] z-50 p-5 animate-fade-in origin-top-left md:origin-top-right">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[10px] font-black text-violet-400 uppercase tracking-wider">Filtrar por Vendedor</span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                    <div 
+                      onClick={() => handleSelectVendedor('todos')}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
+                        !currentVendedorParam 
+                          ? 'bg-violet-500/10 border-violet-500/50 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)]' 
+                          : 'border-white/5 bg-black/25 text-secondary hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <span>Todos los Vendedores</span>
+                    </div>
+
+                    {uniqueVendedores.map((v) => {
+                      const isSelected = currentVendedorParam === v.alias
+                      return (
+                        <div 
+                          key={v.alias} 
+                          onClick={() => handleSelectVendedor(v.alias)}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all duration-200 ${
+                            isSelected 
+                              ? 'bg-violet-500/10 border-violet-500/50 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)]' 
+                              : 'border-white/5 bg-black/25 text-secondary hover:border-white/20 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex flex-col">
+                            <span>{v.nombre}</span>
+                            <span className="text-[10px] opacity-70">@{v.alias}</span>
+                          </div>
+                          {isSelected && (
+                            <div className="w-4 h-4 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
@@ -320,15 +408,22 @@ export function InicioPageClient({ data, currentUser }: { data: any, currentUser
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           crossOrigin=""
         />
-        <ZoneHeatMap 
-          visitas={heatmap?.visitas || []} 
-          ventas={heatmap?.ventas || []} 
-          totalEmpresas={heatmap?.totalEmpresas || 0}
-          selectedZones={selectedZones}
-          userNivel={heatmap?.userNivel}
-          userZona={heatmap?.userZona}
-          allPoints={heatmap?.allPoints || []}
-        />
+        {/* MAPA */}
+        <div className="glass-panel card p-[3px] mt-8 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-emerald-500/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 blur-xl" />
+          <div className="bg-[#0f172a] rounded-[20px] overflow-hidden relative z-10 border border-white/5">
+            <ZoneHeatMap 
+              visitas={heatmap.visitas} 
+              ventas={heatmap.ventas} 
+              totalEmpresas={heatmap.visitas.length + heatmap.ventas.length} 
+              selectedZones={selectedZones}
+              userNivel={currentUser.nivel}
+              userZona={currentUser.zona}
+              allPoints={heatmap.visitas.length > 0 ? heatmap.visitas : heatmap.ventas}
+              vendedoresDisponibles={uniqueVendedores}
+            />
+          </div>
+        </div>
       </div>
 
       {/* CUADRÍCULA DE GRÁFICOS (6 Gráficos en 2 filas) */}

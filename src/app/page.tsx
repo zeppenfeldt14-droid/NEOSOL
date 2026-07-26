@@ -397,6 +397,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       zona: true,
       estado: true,
       motivoBaja: true,
+      vendedorAsignado: true,
       visitas: {
         where: isPeriodFiltered ? {
           OR: dateFilters.map((f: any) => ({ creadoEn: f }))
@@ -449,7 +450,10 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
         lng: e.longitud!,
         weight,
         nombre: e.nombre,
-        zona: e.zona
+        zona: e.zona,
+        estado: e.estado,
+        motivoBaja: e.motivoBaja,
+        vendedorAsignado: e.vendedorAsignado
       }
     })
 
@@ -465,7 +469,10 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
         lng: e.longitud!,
         weight,
         nombre: e.nombre,
-        zona: e.zona
+        zona: e.zona,
+        estado: e.estado,
+        motivoBaja: e.motivoBaja,
+        vendedorAsignado: e.vendedorAsignado
       }
     })
 
@@ -514,7 +521,20 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
     selectedZones
   }
 
+  // Fetch available sellers in the selected zones
+  const vendedoresDisponibles = await prisma.usuario.findMany({
+    where: { 
+      nivel: 3, 
+      zona: zoneFilter 
+    },
+    select: { alias: true, zona: true, nombre: true }
+  })
+
   return (
-    <InicioPageClient data={dashboardData} currentUser={user} />
+    <main className="min-h-screen bg-[#0a0f1c] pb-20 selection:bg-primary/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex flex-col items-center">
+        <InicioPageClient data={dashboardData} currentUser={user} vendedoresDisponibles={vendedoresDisponibles} />
+      </div>
+    </main>
   )
 }

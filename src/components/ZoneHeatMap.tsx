@@ -18,6 +18,7 @@ type AllPoint = {
   nombre?: string
   estado?: string | null
   motivoBaja?: string | null
+  vendedorAsignado?: string | null
 }
 
 type Props = {
@@ -28,6 +29,7 @@ type Props = {
   userNivel?: number
   userZona?: string | null
   allPoints?: AllPoint[]
+  vendedoresDisponibles?: { alias: string, nombre: string }[]
 }
 
 // Color and label per estado
@@ -52,7 +54,19 @@ const ZONE_CENTERS: Record<string, [number, number]> = {
   'OESTE':     [-34.66,   -58.72],
 }
 
-export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, userNivel, userZona, allPoints }: Props) {
+// Dynamic palette for sellers
+const SELLER_PALETTE = [
+  '#3b82f6', // blue-500
+  '#f97316', // orange-500
+  '#8b5cf6', // violet-500
+  '#06b6d4', // cyan-500
+  '#eab308', // yellow-500
+  '#ec4899', // pink-500
+  '#10b981', // emerald-500
+  '#6366f1', // indigo-500
+]
+
+export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, userNivel, userZona, allPoints, vendedoresDisponibles = [] }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const heatLayerRef = useRef<any>(null)
@@ -107,8 +121,9 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
     if (!showCompanies || !allPoints || allPoints.length === 0) return
 
     const group = L.layerGroup()
+    const isSegmented = selectedZones && selectedZones.length === 1
 
-    allPoints.forEach((point: AllPoint) => {
+    allPoints.forEach((point: AllPoint, index: number) => {
       const estadoKey = point.estado?.toLowerCase() || ''
       if (visibleEstados.length > 0 && !visibleEstados.includes(estadoKey)) return
 
@@ -118,10 +133,37 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
         ? `<div style="margin-top:6px;padding:4px 6px;background:rgba(0,0,0,0.05);border-left:2px solid ${cfg.color};font-size:10px;color:#475569;font-style:italic;">Motivo: ${point.motivoBaja}</div>` 
         : ''
 
+      let pinColor = cfg.color
+      let svgDefs = ''
+      let svgFill = `fill="${pinColor}"`
+      let sellerInfo = ''
+
+      // Dual-Color Pin logic when segmented
+      if (isSegmented && point.vendedorAsignado) {
+        const sellerIndex = vendedoresDisponibles.findIndex(v => v.alias === point.vendedorAsignado)
+        const sColor = SELLER_PALETTE[Math.max(0, sellerIndex) % SELLER_PALETTE.length]
+        
+        svgDefs = `
+          <defs>
+            <linearGradient id="grad-${point.lat.toString().replace('.','')}-${point.lng.toString().replace('.','')}-${index}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="35%" stop-color="${cfg.color}" />
+              <stop offset="35%" stop-color="${sColor}" />
+              <stop offset="100%" stop-color="${sColor}" />
+            </linearGradient>
+          </defs>
+        `
+        svgFill = `fill="url(#grad-${point.lat.toString().replace('.','')}-${point.lng.toString().replace('.','')}-${index})"`
+        pinColor = sColor // Update base color for border glow
+        
+        const sellerName = vendedoresDisponibles.find(v => v.alias === point.vendedorAsignado)?.nombre || point.vendedorAsignado
+        sellerInfo = `<div style="display:inline-block;margin-top:4px;margin-left:4px;background:${sColor}20;color:${sColor};border:1px solid ${sColor}50;padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;">👤 ${sellerName}</div>`
+      }
+
       const icon = L.divIcon({
         html: `<div title="${point.nombre || ''}" style="position:relative;width:24px;height:36px;cursor:pointer;transition:transform 0.15s;filter:drop-shadow(0px 3px 4px rgba(0,0,0,0.4));">
           <svg viewBox="0 0 32 48" style="width:24px;height:36px;">
-            <path fill="${cfg.color}" d="M16 0C7.16 0 0 7.16 0 16c0 12 16 32 16 32s16-20 16-32C32 7.16 24.84 0 16 0z" />
+            ${svgDefs}
+            <path ${svgFill} d="M16 0C7.16 0 0 7.16 0 16c0 12 16 32 16 32s16-20 16-32C32 7.16 24.84 0 16 0z" />
             <circle cx="16" cy="16" r="6" fill="white" />
           </svg>
         </div>`,
@@ -142,6 +184,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
               padding:2px 8px;border-radius:12px;
               font-weight:700;font-size:11px;
             ">${cfg.emoji} ${cfg.label}</span>
+            ${sellerInfo}
             ${motivoHtml}
           </div>
         `, { closeButton: false, maxWidth: 220 })
