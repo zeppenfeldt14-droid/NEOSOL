@@ -57,6 +57,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
 
   // Tabs State
   const [activeTab, setActiveTab] = useState<'lista' | 'zonas' | 'promos' | 'config'>('lista')
+  const [selectedUnidadFiltro, setSelectedUnidadFiltro] = useState<string | null>(null)
 
   // Zones management state
   const [zonas, setZonas] = useState<any[]>([])
@@ -107,7 +108,13 @@ export function ConfigPageClient({ currentLogo }: Props) {
     try {
       const res = await fetch('/api/configuracion/tarifas')
       const data = await res.json()
-      if (Array.isArray(data)) setListasTarifas(data)
+      if (Array.isArray(data)) {
+        setListasTarifas(data)
+        const uniqueUnidades = Array.from(new Set(data.map((l: any) => l.unidadNegocio || 'Gerencia Comercial')))
+        if (uniqueUnidades.length > 0) {
+          setSelectedUnidadFiltro((prev) => prev && uniqueUnidades.includes(prev as string) ? prev : (uniqueUnidades[0] as string))
+        }
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -623,6 +630,17 @@ export function ConfigPageClient({ currentLogo }: Props) {
     }
   }
 
+  const unidadesAgrupadas = listasTarifas.reduce((acc: any, lista: any) => {
+    const un = lista.unidadNegocio || 'Gerencia Comercial';
+    const sub = lista.subUnidadNegocio || 'Comercial';
+    if (!acc[un]) acc[un] = {};
+    if (!acc[un][sub]) acc[un][sub] = [];
+    acc[un][sub].push(lista);
+    return acc;
+  }, {})
+  
+  const nombresUnidades = Object.keys(unidadesAgrupadas)
+
   return (
     <div className="flex flex-col gap-6">
       {/* TABS NAVIGATION */}
@@ -931,16 +949,27 @@ export function ConfigPageClient({ currentLogo }: Props) {
                 <p className="text-secondary text-sm">Cargando tarifas...</p>
               ) : (
                 <div className="flex flex-col gap-6">
-                  {Object.entries(
-                    listasTarifas.reduce((acc: any, lista: any) => {
-                      const un = lista.unidadNegocio || 'Gerencia Comercial';
-                      const sub = lista.subUnidadNegocio || 'Comercial';
-                      if (!acc[un]) acc[un] = {};
-                      if (!acc[un][sub]) acc[un][sub] = [];
-                      acc[un][sub].push(lista);
-                      return acc;
-                    }, {})
-                  ).map(([un, subUnidades]: [string, any]) => (
+                  {nombresUnidades.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {nombresUnidades.map(un => (
+                        <button
+                          key={un}
+                          onClick={() => setSelectedUnidadFiltro(un)}
+                          className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                            selectedUnidadFiltro === un 
+                              ? 'bg-primary text-black shadow-lg shadow-primary/30' 
+                              : 'bg-white/5 text-secondary hover:bg-white/10 hover:text-white border border-white/10'
+                          }`}
+                        >
+                          {un}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {Object.entries(unidadesAgrupadas)
+                    .filter(([un]) => selectedUnidadFiltro ? un === selectedUnidadFiltro : true)
+                    .map(([un, subUnidades]: [string, any]) => (
                     <div key={un} className="border border-white/10 rounded-xl overflow-hidden bg-black/10 shadow-lg mb-6">
                       <div className="bg-gradient-to-r from-primary/20 to-transparent text-primary font-bold px-5 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-white/10 gap-3">
                         <div className="flex items-center gap-2">
