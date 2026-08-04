@@ -61,7 +61,7 @@ export async function POST() {
         { longitud: null }
       ]
     },
-    select: { id: true, nombre: true, direccion: true, zona: true, partido: true },
+    select: { id: true, nombre: true, direccion: true, zona: true, partido: true, barrio: true },
     take: 10  // Reducido a 10 para evitar timeouts (10 * 2s = 20s max)
   })
 
@@ -79,8 +79,9 @@ export async function POST() {
     const cleanedAddress = cleanAddress(originalAddress)
     const newPartido = extractLocality(originalAddress)
     
-    // First attempt: Exact address
-    const exactQuery = `${cleanedAddress}, ${empresa.zona || 'CABA'}, Argentina`
+    // First attempt: Exact address using barrio/partido
+    const locality = empresa.barrio || empresa.partido || empresa.zona || 'CABA'
+    const exactQuery = `${cleanedAddress}, ${locality}, Argentina`
     
     // Second attempt: Fallback (remove numbers from the street to just get the street/area)
     // Regex to remove the street number e.g. "Avenida Eva Peron 2465" -> "Avenida Eva Peron"
@@ -92,7 +93,7 @@ export async function POST() {
        fallbackQuery = `${streetPart}, ${parts.slice(1).join(',')}, Argentina`
     } else {
        const streetPart = cleanedAddress.replace(/\d+/g, '').trim()
-       fallbackQuery = `${streetPart}, ${empresa.zona || 'CABA'}, Argentina`
+       fallbackQuery = `${streetPart}, ${locality}, Argentina`
     }
 
     let lat = null

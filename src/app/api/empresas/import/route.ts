@@ -56,7 +56,8 @@ export async function POST(request: Request) {
           telefono: telefonoNorm || null,
           direccion: direccionClean,
           partido: localidad,
-          subZona: localidad ? localidad.toUpperCase() : null,
+          barrio: localidad, // Populate the Location (Localidad) field
+          subZona: null, // Keep Mini-Zonas unchanged (they will be SIN ASIGNAR)
           rubro: emp.rubro?.trim() || null,
           zona: emp.zona,
           estado: 'prospecto', // Default to prospecto as discussed
