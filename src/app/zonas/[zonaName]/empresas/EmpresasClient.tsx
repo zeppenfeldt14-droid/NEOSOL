@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle } from 'lucide-react'
+import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle, Pencil } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -233,6 +233,36 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
     }
   }
 
+  const handleEditSubZona = async () => {
+    let targetSubZona = zonaFilter !== 'todas' && zonaFilter !== 'SIN ASIGNAR' && zonaFilter !== 'CORREO'
+      ? zonaFilter
+      : prompt('Nombre de la mini-zona a renombrar:')
+
+    if (!targetSubZona || !targetSubZona.trim()) return
+
+    const nuevoNombre = prompt(`Nuevo nombre para la mini-zona "${targetSubZona}":`, targetSubZona)
+    if (!nuevoNombre || !nuevoNombre.trim() || nuevoNombre.trim().toUpperCase() === targetSubZona.trim().toUpperCase()) return
+
+    try {
+      const res = await fetch('/api/subzonas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          zona: decodedZona,
+          viejoNombre: targetSubZona.trim().toUpperCase(),
+          nuevoNombre: nuevoNombre.trim().toUpperCase()
+        })
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al actualizar')
+      }
+      window.location.reload()
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
   const handleAddRubro = async () => {
     const name = prompt('Nombre de la nueva categoría comercial / rubro (ej: DISTRIBUIDORAS, BEBIDAS):')
     if (!name || !name.trim()) return
@@ -380,6 +410,13 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
               title="Crear Nueva Categoría / Mini-Zona"
             >
               <Plus size={14} />
+            </button>
+            <button
+              onClick={handleEditSubZona}
+              className="btn-toggle border-dashed hover:border-primary/50 hover:text-primary"
+              title="Editar Nombre de Categoría / Mini-Zona"
+            >
+              <Pencil size={14} />
             </button>
           </div>
         </div>

@@ -215,9 +215,19 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
     throw new Error('El nombre de la empresa es obligatorio')
   }
 
-  // Automatic geocoding if address changed or coordinates are missing
+  // Check if zone changed to auto-assign vendor and reset subZone
   try {
     const currentEmpresa = await prisma.empresa.findUnique({ where: { id: empresaId } })
+    if (currentEmpresa && updateData.zona && updateData.zona !== currentEmpresa.zona) {
+      updateData.subZona = 'SIN ASIGNAR'
+      const vendedorZona = await prisma.usuario.findFirst({
+        where: { zona: updateData.zona, activo: true, NOT: { alias: 'admin' } }
+      })
+      if (vendedorZona) {
+        updateData.vendedorAsignado = vendedorZona.alias
+      }
+    }
+
     const oldAddress = currentEmpresa?.direccion || ''
     const oldBarrio = currentEmpresa?.barrio || ''
     

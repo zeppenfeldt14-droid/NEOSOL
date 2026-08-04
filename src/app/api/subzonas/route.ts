@@ -64,3 +64,81 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Error al crear sub-zona.' }, { status: 500 })
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const session = await getSessionUser()
+    if (!session) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+    const body = await request.json()
+    const { zona, viejoNombre, nuevoNombre } = body
+
+    if (!zona || !viejoNombre || !nuevoNombre) {
+      return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 })
+    }
+
+    const oldNorm = viejoNombre.trim().toUpperCase()
+    const newNorm = nuevoNombre.trim().toUpperCase()
+
+    if (oldNorm === newNorm) {
+      return NextResponse.json({ success: true })
+    }
+
+    // Check if subZona exists
+    const existingSubZona = await prisma.subZona.findUnique({
+      where: {
+        zona_nombre: {
+          zona,
+          nombre: oldNorm
+        }
+      }
+    })
+
+    if (existingSubZona) {
+      // Check if target name already exists
+      const targetExists = await prisma.subZona.findUnique({
+        where: {
+          zona_nombre: {
+            zona,
+            nombre: newNorm
+          }
+        }
+      })
+
+      if (targetExists) {
+        return NextResponse.json({ error: 'Ya existe una sub-zona con el nuevo nombre.' }, { status: 400 })
+      }
+
+      // Update subzona name
+      await prisma.subZona.update({
+        where: { id: existingSubZona.id },
+        data: { nombre: newNorm }
+      })
+    } else {
+      // Create it if it was only a dynamic subzona on empresas
+      await prisma.subZona.create({
+        data: {
+          zona,
+          nombre: newNorm
+        }
+      })
+    }
+
+    // Update all empresas in this zone with the old subzone name
+    await prisma.empresa.updateMany({
+      where: {
+        zona,
+        subZona: oldNorm
+      },
+      data: {
+        subZona: newNorm
+      }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('[API PUT SubZona]', error)
+    return NextResponse.json({ error: 'Error al actualizar sub-zona.' }, { status: 500 })
+  }
+}
+

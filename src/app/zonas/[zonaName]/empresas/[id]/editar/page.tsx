@@ -103,7 +103,9 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
         <form action={async (formData) => {
           'use server'
           await updateEmpresaWithId(formData)
-          redirect(`/zonas/${zonaName}/empresas/${empresaId}`)
+          const updatedEmp = await prisma.empresa.findUnique({ where: { id: empresaId }, select: { zona: true } })
+          const finalZona = updatedEmp?.zona || decodedZona
+          redirect(`/zonas/${encodeURIComponent(finalZona)}/empresas/${empresaId}`)
         }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Bloque 1: Información General */}
