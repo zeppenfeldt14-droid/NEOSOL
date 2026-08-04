@@ -570,19 +570,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       <div style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '480px', flex: isFullscreen ? 1 : 'none' }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-        {/* No activity badge - Non-blocking, map remains 100% visible */}
-        {isLoaded && totalEmpresas > 0 && !hasData && (
-          <div style={{
-            position: 'absolute', top: '12px', left: '12px', pointerEvents: 'none',
-            display: 'flex', alignItems: 'center',
-            background: 'rgba(15,23,42,0.85)', padding: '6px 12px', borderRadius: '20px',
-            border: '1px solid rgba(255,255,255,0.1)', zIndex: 500, boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-          }}>
-            <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0, fontWeight: 500 }}>
-              ℹ️ Sin actividad registrada en este período para este modo
-            </p>
-          </div>
-        )}
+
 
         {/* No coordinates overlay */}
         {isLoaded && noEmpresas && (
