@@ -45,15 +45,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ zona
     }
 
     const body = await request.json()
-    const { color, barrios, regenerarGeojson } = body
+    const { color, barrios, regenerarGeojson, customGeojson } = body
 
     // Build update payload — color is always saved if provided
     const updateData: any = {}
     if (color !== undefined && color !== null) updateData.color = color
     
+    if (customGeojson !== undefined) {
+      updateData.geojson = customGeojson
+    }
+
     if (barrios !== undefined && Array.isArray(barrios)) {
       updateData.barrios = barrios
-      if (barrios.length === 0) {
+      if (barrios.length === 0 && !customGeojson) {
         updateData.geojson = null
       }
     }

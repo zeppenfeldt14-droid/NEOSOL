@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+
+const ConfigZoneMap = dynamic(() => import('@/components/ConfigZoneMap'), { ssr: false })
 import { Upload, Link2, Trash2, Save, Image as ImageIcon, Settings, Users, Power, Edit2, Building, MapPin, Copy } from 'lucide-react'
 import { saveLogo, deleteLogo } from './actions'
 
@@ -66,6 +69,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const [editingZonaName, setEditingZonaName] = useState('')
   const [editingZonaColor, setEditingZonaColor] = useState('#3b82f6')
   const [editingZonaBarrios, setEditingZonaBarrios] = useState<string[]>([])
+  const [editingZonaGeojson, setEditingZonaGeojson] = useState<any>(null)
   const [newBarrioInput, setNewBarrioInput] = useState('')
   const [isFetchingTerritory, setIsFetchingTerritory] = useState(false)
   const [isLoadingZonas, setIsLoadingZonas] = useState(false)
@@ -489,10 +493,14 @@ export function ConfigPageClient({ currentLogo }: Props) {
   const handleUpdateTerritorio = async (id: number, zonaName: string) => {
     setIsFetchingTerritory(true)
     try {
+      const payload: any = { color: editingZonaColor, barrios: editingZonaBarrios }
+      if (editingZonaGeojson !== undefined) {
+        payload.customGeojson = editingZonaGeojson
+      }
       const res = await fetch(`/api/zonas/${encodeURIComponent(zonaName)}/territorio`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ color: editingZonaColor, barrios: editingZonaBarrios })
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al actualizar territorio')
@@ -852,6 +860,7 @@ export function ConfigPageClient({ currentLogo }: Props) {
                                     setEditingZonaName(z.nombre);
                                     setEditingZonaColor(z.color || '#3b82f6');
                                     setEditingZonaBarrios(z.barrios || []);
+                                    setEditingZonaGeojson(z.geojson || null);
                                   }} 
                                   className="btn btn-secondary !py-1 !px-2 text-xs"
                                 >
@@ -906,6 +915,18 @@ export function ConfigPageClient({ currentLogo }: Props) {
                                   <span className="text-xs text-secondary">No hay barrios. La zona no se delimitará en el mapa.</span>
                                 )}
                               </div>
+                            </div>
+                            
+                            <div className="form-group mb-0">
+                              <label className="form-label flex justify-between">
+                                <span>Mapa de Territorio (Dibujo Manual)</span>
+                                <span className="text-xs text-secondary font-normal">Dibuja o edita polígonos</span>
+                              </label>
+                              <ConfigZoneMap 
+                                initialGeojson={editingZonaGeojson} 
+                                color={editingZonaColor} 
+                                onChange={(geojson) => setEditingZonaGeojson(geojson)} 
+                              />
                             </div>
                             
                             <div className="flex justify-end gap-2 mt-2 flex-wrap">
