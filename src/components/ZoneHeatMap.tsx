@@ -26,6 +26,7 @@ type Props = {
   visitas: HeatPoint[]
   ventas: HeatPoint[]
   totalEmpresas: number
+  empresasSinCoordenadas?: number
   selectedZones?: string[]
   userNivel?: number
   userZona?: string | null
@@ -65,7 +66,7 @@ const SELLER_PALETTE = [
   '#ff0055', // Rosa/Rojo Neón
 ]
 
-export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, userNivel, userZona, allPoints, vendedoresDisponibles = [] }: Props) {
+export function ZoneHeatMap({ visitas, ventas, totalEmpresas, empresasSinCoordenadas = 0, selectedZones, userNivel, userZona, allPoints, vendedoresDisponibles = [] }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const heatLayerRef = useRef<any>(null)
@@ -85,7 +86,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
 
   const activeData = mode === 'visitas' ? visitas : ventas
   const hasData = activeData.length > 0
-  const noEmpresas = totalEmpresas === 0
+  const noEmpresas = empresasSinCoordenadas > 0
 
   const getMapCenter = () => {
     if (userNivel === 3 && userZona) {
@@ -457,14 +458,13 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
           {/* Geocode button */}
           {noEmpresas && (
             <button onClick={handleGeocode} disabled={isGeocoding} style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '6px 12px', borderRadius: '8px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '32px', height: '32px', borderRadius: '8px',
               border: '1px solid rgba(245,158,11,0.3)',
               background: 'rgba(245,158,11,0.1)', color: '#fbbf24',
-              cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700
-            }}>
-              <RefreshCw size={12} />
-              {isGeocoding ? 'Geocodificando...' : 'Cargar Coordenadas'}
+              cursor: 'pointer', transition: 'all 0.2s'
+            }} title="Cargar Coordenadas Faltantes">
+              <RefreshCw size={16} className={isGeocoding ? 'animate-spin' : ''} />
             </button>
           )}
 

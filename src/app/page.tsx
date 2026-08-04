@@ -476,6 +476,13 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       }
     })
 
+  const totalEmpresasZone = await prisma.empresa.count({
+    where: {
+      zona: zoneFilter,
+      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
+    }
+  })
+
   const dashboardData = {
     kpis: {
       totalFacturado,
@@ -506,6 +513,7 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       visitas: heatmapVisitas,
       ventas: heatmapVentas,
       totalEmpresas: empresasGeo.length,
+      empresasSinCoordenadas: totalEmpresasZone - empresasGeo.length,
       userNivel: user.nivel,
       userZona: user.zona || null,
       allPoints: empresasGeo.map(e => ({ 

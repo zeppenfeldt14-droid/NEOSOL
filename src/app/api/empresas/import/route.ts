@@ -50,11 +50,13 @@ export async function POST(request: Request) {
         ignoredCount++
       } else {
         const direccionClean = emp.direccion?.trim() || null
+        const localidad = extractLocality(direccionClean || '')
         empresasToCreate.push({
           nombre: emp.nombre.trim(),
           telefono: telefonoNorm || null,
           direccion: direccionClean,
-          partido: extractLocality(direccionClean || ''),
+          partido: localidad,
+          subZona: localidad ? localidad.toUpperCase() : null,
           rubro: emp.rubro?.trim() || null,
           zona: emp.zona,
           estado: 'prospecto', // Default to prospecto as discussed

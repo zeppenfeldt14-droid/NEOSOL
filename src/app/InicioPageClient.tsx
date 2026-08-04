@@ -416,6 +416,7 @@ export function InicioPageClient({ data, currentUser, vendedoresDisponibles = []
               visitas={heatmap.visitas} 
               ventas={heatmap.ventas} 
               totalEmpresas={heatmap.allPoints?.length ?? (heatmap.visitas.length + heatmap.ventas.length)} 
+              empresasSinCoordenadas={heatmap.empresasSinCoordenadas || 0}
               selectedZones={selectedZones}
               userNivel={currentUser.nivel}
               userZona={currentUser.zona}
