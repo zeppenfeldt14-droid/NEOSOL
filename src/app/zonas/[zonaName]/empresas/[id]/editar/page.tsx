@@ -126,7 +126,7 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Sucursal (Zona Principal)</label>
-                {user.nivel === 1 ? (
+                {(user.nivel === 1 || user.nivel === 2 || user.isNivelTodo) ? (
                   <select name="zona" defaultValue={empresa.zona || 'CABA'} className="form-input bg-dark">
                     {todasLasZonas.map(z => (
                       <option key={z.id} value={z.nombre}>{z.nombre}</option>

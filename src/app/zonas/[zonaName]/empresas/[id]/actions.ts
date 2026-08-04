@@ -171,7 +171,7 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
   const cicloVentaStr = formData.get('cicloVentaDias') as string
   const cicloVentaDias = cicloVentaStr ? parseInt(cicloVentaStr) : null
 
-  const canModifyConfig = user && user.nivel === 1
+  const canModifyConfig = user && (user.nivel === 1 || user.nivel === 2 || user.isNivelTodo)
 
   const notasFinal = estado === 'baja' && motivoBaja
     ? `[BAJA - ${new Date().toLocaleDateString('es-AR')}] ${motivoBaja}\n\n${notas || ''}`.trim()
