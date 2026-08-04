@@ -101,10 +101,26 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, empresasSinCoorden
   const handleGeocode = useCallback(async () => {
     setIsGeocoding(true)
     setGeocodeMsg('Geocodificando direcciones...')
+    
+    let remaining = 1
+    let totalUpdated = 0
+
     try {
-      const res = await fetch('/api/geocode', { method: 'POST' })
-      const data = await res.json()
-      setGeocodeMsg(`✓ ${data.updated} empresas actualizadas. ${data.remaining} pendientes. Recargá la página.`)
+      while (remaining > 0) {
+        const res = await fetch('/api/geocode', { method: 'POST' })
+        if (!res.ok) throw new Error('Network response was not ok')
+        const data = await res.json()
+        
+        if (data.updated) totalUpdated += data.updated
+        
+        remaining = data.remaining || 0
+        
+        if (remaining > 0) {
+          setGeocodeMsg(`Buscando... Actualizadas: ${totalUpdated}. Faltan: ${remaining}.`)
+        } else {
+          setGeocodeMsg(`✓ ${totalUpdated} empresas actualizadas. Recargá la página para ver los cambios en el mapa.`)
+        }
+      }
     } catch {
       setGeocodeMsg('Error al geocodificar. Intentá de nuevo.')
     } finally {

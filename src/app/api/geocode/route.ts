@@ -62,7 +62,7 @@ export async function POST() {
       ]
     },
     select: { id: true, nombre: true, direccion: true, zona: true, partido: true },
-    take: 50  // Procesamos de a 50 para no sobrecargar la API
+    take: 10  // Reducido a 10 para evitar timeouts (10 * 2s = 20s max)
   })
 
   if (empresasSinGeo.length === 0) {
