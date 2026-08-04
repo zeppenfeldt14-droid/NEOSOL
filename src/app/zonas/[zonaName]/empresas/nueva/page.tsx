@@ -101,7 +101,7 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
               </div>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Sucursal (Zona Principal)</label>
-                {user.nivel === 1 ? (
+                {(user.nivel === 1 || user.nivel === 2 || user.isNivelTodo) ? (
                   <select name="zona" defaultValue={decodedZona} className="form-input bg-dark">
                     {todasLasZonas.map(z => (
                       <option key={z.id} value={z.nombre}>{z.nombre}</option>
@@ -134,7 +134,7 @@ export default async function NuevaEmpresaPage({ params }: { params: Promise<{ z
                   ))}
                 </select>
               </div>
-              {user.nivel === 1 && (
+              {(user.nivel === 1 || user.nivel === 2 || user.isNivelTodo) && (
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <label className="form-label flex items-center gap-2 cursor-pointer mt-2">
                     <input 

@@ -22,7 +22,7 @@ export async function createEmpresa(formData: FormData) {
   const subZona = formData.get('subZona') as string || 'SIN ASIGNAR'
   const rubro = formData.get('rubro') as string || null
   
-  const canModifyConfig = user && user.nivel === 1
+  const canModifyConfig = user && (user.nivel === 1 || user.nivel === 2 || user.isNivelTodo)
   const zona = canModifyConfig ? (formData.get('zona') as string || defaultZona) : defaultZona
   const ocultarVendedor = canModifyConfig ? (formData.get('ocultarVendedor') === 'on' || formData.get('ocultarVendedor') === 'true') : false
 
@@ -126,5 +126,5 @@ export async function createEmpresa(formData: FormData) {
     )
   }
 
-  redirect(`/empresas/${empresa.id}`)
+  redirect(`/zonas/${encodeURIComponent(empresa.zona || zona)}/empresas/${empresa.id}`)
 }
