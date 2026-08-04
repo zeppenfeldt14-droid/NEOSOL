@@ -509,12 +509,14 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
       userNivel: user.nivel,
       userZona: user.zona || null,
       allPoints: empresasGeo.map(e => ({ 
+        id: e.id,
         lat: e.latitud!, 
         lng: e.longitud!, 
         zona: e.zona, 
         nombre: e.nombre, 
         estado: e.estado,
-        motivoBaja: e.motivoBaja
+        motivoBaja: e.motivoBaja,
+        vendedorAsignado: e.vendedorAsignado
       }))
     },
     availableZones,

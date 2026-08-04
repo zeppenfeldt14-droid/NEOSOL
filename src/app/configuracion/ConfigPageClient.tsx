@@ -496,11 +496,30 @@ export function ConfigPageClient({ currentLogo }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al actualizar territorio')
-      alert('Territorio actualizado correctamente.')
+      alert('✅ Territorio actualizado. Los polígonos del mapa se regenerarán en segundo plano.')
       if (data.zona) {
         setEditingZonaBarrios(data.zona.barrios || [])
       }
       fetchZonas()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsFetchingTerritory(false)
+    }
+  }
+
+  const handleRegenerarGeojson = async (id: number, zonaName: string) => {
+    if (!confirm(`¿Regenerar los polígonos del mapa para la zona "${zonaName}" con sus barrios actuales? El proceso corre en segundo plano y puede tardar unos minutos.`)) return
+    setIsFetchingTerritory(true)
+    try {
+      const res = await fetch(`/api/zonas/${encodeURIComponent(zonaName)}/territorio`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ regenerarGeojson: true })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al regenerar polígonos')
+      alert('✅ Regeneración de polígonos iniciada en segundo plano. El mapa se actualizará en unos minutos.')
     } catch (err: any) {
       alert(err.message)
     } finally {
@@ -889,13 +908,21 @@ export function ConfigPageClient({ currentLogo }: Props) {
                               </div>
                             </div>
                             
-                            <div className="flex justify-end mt-2">
+                            <div className="flex justify-end gap-2 mt-2 flex-wrap">
+                              <button 
+                                onClick={() => handleRegenerarGeojson(z.id, z.nombre)} 
+                                className="btn btn-secondary"
+                                disabled={isFetchingTerritory}
+                                title="Regenera los polígonos del mapa con los barrios ya guardados"
+                              >
+                                🗺️ Regenerar Mapa
+                              </button>
                               <button 
                                 onClick={() => handleUpdateTerritorio(z.id, z.nombre)} 
                                 className="btn btn-primary"
                                 disabled={isFetchingTerritory}
                               >
-                                {isFetchingTerritory ? 'Obteniendo polígonos...' : 'Actualizar Territorio Geográfico'}
+                                {isFetchingTerritory ? 'Guardando...' : 'Guardar Cambios'}
                               </button>
                             </div>
                           </div>

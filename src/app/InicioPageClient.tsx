@@ -415,11 +415,11 @@ export function InicioPageClient({ data, currentUser, vendedoresDisponibles = []
             <ZoneHeatMap 
               visitas={heatmap.visitas} 
               ventas={heatmap.ventas} 
-              totalEmpresas={heatmap.visitas.length + heatmap.ventas.length} 
+              totalEmpresas={heatmap.allPoints?.length ?? (heatmap.visitas.length + heatmap.ventas.length)} 
               selectedZones={selectedZones}
               userNivel={currentUser.nivel}
               userZona={currentUser.zona}
-              allPoints={heatmap.visitas.length > 0 ? heatmap.visitas : heatmap.ventas}
+              allPoints={heatmap.allPoints}
               vendedoresDisponibles={uniqueVendedores}
             />
           </div>
