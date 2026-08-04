@@ -6,7 +6,7 @@ import { getSessionUser } from '@/lib/auth'
 // usando Nominatim (OpenStreetMap) — gratuito, sin API key
 export async function POST() {
   const user = await getSessionUser()
-  if (!user || user.nivel > 2) {
+  if (!user || user.nivel > 3) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
