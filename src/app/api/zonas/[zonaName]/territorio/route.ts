@@ -73,10 +73,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ zona
       data: updateData
     })
 
-    // Determine which barrios to use for GeoJSON
+    // Solo regenerar GeoJSON desde Nominatim si se pide explícitamente (con el botón "Regenerar Mapa")
+    // Esto evita que guardar cambios normales sobreescriba los polígonos manuales o cause timeouts.
     const barriosParaGeojson = regenerarGeojson
       ? (existing.barrios as string[] || [])
-      : (barrios && Array.isArray(barrios) && barrios.length > 0 ? barrios : null)
+      : null
 
     // Fetch polygons in background asynchronously
     if (barriosParaGeojson && barriosParaGeojson.length > 0) {
