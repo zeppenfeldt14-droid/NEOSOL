@@ -28,12 +28,19 @@ async function main() {
   for (const row of records as any[]) {
     if (!row.name || row.name.trim() === '') continue
     
-    // Parse Zona from Query if possible
-    let zona = 'ZONA NO DEFINIDA';
-    if (row.query && row.query.toUpperCase().includes('ZONA OESTE')) zona = 'ZONA OESTE';
-    else if (row.query && row.query.toUpperCase().includes('ZONA SUR')) zona = 'ZONA SUR';
-    else if (row.query && row.query.toUpperCase().includes('ZONA NORTE')) zona = 'ZONA NORTE';
-    else if (row.query && row.query.toUpperCase().includes('CABA')) zona = 'CABA';
+    // Auto-detect zone using dictionary on location fields
+    let zona = 'POR ASIGNAR';
+    const locationText = `${row.city || ''} ${row.county || ''} ${row.address || ''}`.toUpperCase();
+    
+    if (/MOR(Ó|O)N|RAMOS MEJ(Í|I)A|CASTELAR|ITUZAING(Ó|O)|SAN JUSTO|MERLO|MORENO|CASANOVA|TABLADA|TESEI|PASO DEL REY/i.test(locationText)) {
+      zona = 'ZONA OESTE';
+    } else if (/QUILMES|AVELLANEDA|LAN(Ú|U)S|SARAND(Í|I)|BERNAL|DOM(Í|I)NICO|CHINGOLO|GERLI/i.test(locationText)) {
+      zona = 'ZONA SUR';
+    } else if (/SAN ISIDRO|VICENTE L(Ó|O)PEZ|MUNRO|SAN FERNANDO|PACHECO|TIGRE/i.test(locationText)) {
+      zona = 'ZONA NORTE';
+    } else if (/CABA|COMUNA|PALERMO|BALVANERA|BELGRANO|CABALLITO|RECOLETA|MATADEROS|LINIERS|POMPEYA|FLORES|CONSTITUCI(Ó|O)N|VILLA CRESPO/i.test(locationText) || (row.state_code && row.state_code.toUpperCase().includes('CABA'))) {
+      zona = 'CABA';
+    }
 
     const nombre = row.name.trim();
     const direccion = row.street ? row.street.trim() : (row.address ? row.address.trim() : '');
