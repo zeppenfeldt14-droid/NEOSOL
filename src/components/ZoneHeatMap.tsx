@@ -86,7 +86,8 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, empresasSinCoorden
 
   const activeData = mode === 'visitas' ? visitas : ventas
   const hasData = activeData.length > 0
-  const noEmpresas = empresasSinCoordenadas > 0
+  const noEmpresas = totalEmpresas === 0
+  const hasPendingCoordinates = empresasSinCoordenadas > 0
 
   const getMapCenter = () => {
     if (userNivel === 3 && userZona) {
@@ -472,7 +473,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, empresasSinCoorden
           </button>
 
           {/* Geocode button */}
-          {noEmpresas && (
+          {hasPendingCoordinates && (
             <button onClick={handleGeocode} disabled={isGeocoding} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: '32px', height: '32px', borderRadius: '8px',
