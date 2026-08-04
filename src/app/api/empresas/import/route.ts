@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+function extractLocality(addr: string): string | null {
+  if (!addr) return null
+  const parts = addr.split(',').map(p => p.trim())
+  if (parts.length >= 3) {
+    return parts[1]
+  }
+  return null
+}
+
 export async function POST(request: Request) {
   try {
     const user = await getSessionUser()
@@ -40,10 +49,12 @@ export async function POST(request: Request) {
       if (isDuplicateByName || isDuplicateByPhone) {
         ignoredCount++
       } else {
+        const direccionClean = emp.direccion?.trim() || null
         empresasToCreate.push({
           nombre: emp.nombre.trim(),
           telefono: telefonoNorm || null,
-          direccion: emp.direccion?.trim() || null,
+          direccion: direccionClean,
+          partido: extractLocality(direccionClean || ''),
           rubro: emp.rubro?.trim() || null,
           zona: emp.zona,
           estado: 'prospecto', // Default to prospecto as discussed
