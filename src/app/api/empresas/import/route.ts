@@ -47,6 +47,7 @@ export async function POST(request: Request) {
           rubro: emp.rubro?.trim() || null,
           zona: emp.zona,
           estado: 'prospecto', // Default to prospecto as discussed
+          vendedorAsignado: user.nivel === 3 ? user.alias : null
         })
         
         // Add to sets to prevent duplicates WITHIN the imported file itself
