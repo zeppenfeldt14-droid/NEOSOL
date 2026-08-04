@@ -8,7 +8,7 @@ import { getSessionUser } from '@/lib/auth'
 function cleanAddress(addr: string): string {
   let cleaned = addr
   
-  // Diccionario de abreviaturas comunes
+  // Diccionario de abreviaturas y correcciones ortográficas comunes
   const dict = {
     'av.': 'Avenida',
     'av ': 'Avenida ',
@@ -24,7 +24,12 @@ function cleanAddress(addr: string): string {
     'cdad': 'Ciudad',
     'pcia.': 'Provincia',
     'pcia': 'Provincia',
-    'b°': 'Barrio'
+    'b°': 'Barrio',
+    'contitucion': 'Constitucion',
+    'esmaralda': 'Esmeralda',
+    'piso': '',
+    'depto': '',
+    'pb': ''
   }
 
   // Ignorar mayúsculas/minúsculas para el reemplazo
@@ -102,20 +107,27 @@ export async function POST() {
     // First attempt: Exact address using clean barrio/partido
     const exactQuery = `${cleanedAddress}, ${locality}, Argentina`
     
-    // Second attempt: Fallback 1 (remove numbers from the street name if separated by commas)
+    // Second attempt: Fallback 1 (remove extra text separated by commas)
     let fallbackQuery1 = ''
-    let streetNameOnly = ''
+    let streetNameOnly = '' // Only street name without numbers
+    let streetNameWithNumber = '' // Street name WITH numbers
+
     if (cleanedAddress.includes(',')) {
        const parts = cleanedAddress.split(',')
+       streetNameWithNumber = parts[0].trim()
        streetNameOnly = parts[0].replace(/\d+/g, '').trim()
-       fallbackQuery1 = `${streetNameOnly}, ${parts.slice(1).join(',')}, Argentina`
+       fallbackQuery1 = `${streetNameWithNumber}, ${locality}, Argentina`
     } else {
+       streetNameWithNumber = cleanedAddress.trim()
        streetNameOnly = cleanedAddress.replace(/\d+/g, '').trim()
-       fallbackQuery1 = `${streetNameOnly}, ${locality}, Argentina`
+       fallbackQuery1 = `${streetNameWithNumber}, ${locality}, Argentina`
     }
 
-    // Third attempt: Fallback 2 (just street name and the determined locality)
+    // Third attempt: Fallback 2 (just street name without number and the determined locality)
     const fallbackQuery2 = `${streetNameOnly}, ${locality}, Argentina`
+
+    // Fourth attempt: Fallback 3 (just the locality, marking the center of the area)
+    const fallbackQuery3 = `${locality}, Argentina`
 
     let lat = null
     let lon = null
@@ -138,16 +150,27 @@ export async function POST() {
       let result = await fetchGeo(exactQuery)
       await new Promise(resolve => setTimeout(resolve, 1100))
 
-      // If exact fails, try fallback 1
-      if (!result && fallbackQuery1) {
+      // If exact fails, try fallback 1 (Street with Number + Locality)
+      if (!result && fallbackQuery1 && fallbackQuery1 !== exactQuery) {
         result = await fetchGeo(fallbackQuery1)
         await new Promise(resolve => setTimeout(resolve, 1100))
       }
 
-      // If fallback 1 fails, try fallback 2
+      // If fallback 1 fails, try fallback 2 (Just Street without number + Locality)
       if (!result && fallbackQuery2 && fallbackQuery2 !== fallbackQuery1) {
         result = await fetchGeo(fallbackQuery2)
         await new Promise(resolve => setTimeout(resolve, 1100))
+      }
+
+      // If fallback 2 fails, try fallback 3 (Just Locality with jitter)
+      if (!result && fallbackQuery3) {
+        result = await fetchGeo(fallbackQuery3)
+        await new Promise(resolve => setTimeout(resolve, 1100))
+        if (result) {
+          // Add jitter to avoid stacking all failed addresses perfectly on top of each other
+          result.lat += (Math.random() - 0.5) * 0.01 // approx +- 500m
+          result.lon += (Math.random() - 0.5) * 0.01
+        }
       }
 
       if (result) {
