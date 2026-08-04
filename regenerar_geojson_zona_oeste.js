@@ -15,7 +15,8 @@ async function fetchGeoJsonForBarrio(barrio) {
   const q = encodeURIComponent(`${barrio}, Buenos Aires, Argentina`);
   const url = `https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${q}`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'NeosolCRM/1.0' } });
+    const randomUserAgent = `NeosolCRM/${Math.random().toString(36).substring(7)} (contact: admin@neosol.com)`;
+    const res = await fetch(url, { headers: { 'User-Agent': randomUserAgent } });
     if (!res.ok) {
       console.warn(`  ⚠️  HTTP ${res.status} para: ${barrio}`);
       return null;
@@ -67,7 +68,7 @@ async function main() {
         process.stdout.write('–\n');
       }
       // Respectar rate limit de Nominatim
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise(r => setTimeout(r, 4000));
     }
 
     if (features.length > 0) {

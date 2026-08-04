@@ -3,9 +3,10 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle, Pencil } from 'lucide-react'
+import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle, Pencil, Upload } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import CsvImportModal from '@/components/CsvImportModal'
 
 type Empresa = {
   id: number
@@ -31,6 +32,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
   const [estadoFilter, setEstadoFilter] = useState<'todos' | 'prospecto' | 'activo' | 'baja' | 'descartada'>('todos')
   const [zonaFilter, setZonaFilter] = useState<string>('todas')
   const [rubroFilter, setRubroFilter] = useState<string>('todos')
+  const [showImportModal, setShowImportModal] = useState(false)
 
   const decodedZona = useMemo(() => {
     return decodeURIComponent(zonaName)
@@ -337,11 +339,28 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
           >
             <Download size={18} />
           </button>
+          <button 
+            onClick={() => setShowImportModal(true)}
+            className="btn btn-secondary"
+            title="Importar Prospectos (CSV)"
+          >
+            <Upload size={18} /> Importar (CSV)
+          </button>
           <Link href={`/zonas/${zonaName}/empresas/nueva`} className="btn btn-primary">
             <Plus size={18} /> Nueva Empresa
           </Link>
         </div>
       </div>
+
+      {showImportModal && (
+        <CsvImportModal
+          zonaName={decodedZona}
+          onClose={() => setShowImportModal(false)}
+          onImportComplete={() => {
+            window.location.reload()
+          }}
+        />
+      )}
 
       {/* Controles de Filtros Unificados (Estilo Dashboard / CSS Original) */}
       <div className="glass-panel card" style={{ marginBottom: '2rem' }}>
