@@ -11,8 +11,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ zona
     }
 
     const zonaNameDecoded = decodeURIComponent(zonaName).trim().toUpperCase()
-    const existing = await prisma.zona.findUnique({
-      where: { nombre: zonaNameDecoded }
+    const existing = await prisma.zona.findFirst({
+      where: { nombre: { equals: zonaNameDecoded, mode: 'insensitive' } }
     })
 
     if (!existing) {
@@ -22,63 +22,58 @@ export async function PUT(request: Request, { params }: { params: Promise<{ zona
     const body = await request.json()
     const { color, barrios } = body
 
-    if (!color && !barrios) {
-      return NextResponse.json({ error: 'Faltan datos (color o barrios).' }, { status: 400 })
-    }
-
-    let mergedGeoJson: any = null
-
-    // Si se envían barrios, descargamos la geometría
-    if (barrios && Array.isArray(barrios)) {
-      const features = []
-      
-      for (const barrio of barrios) {
-        try {
-          // Buscamos el polígono en Nominatim
-          const q = encodeURIComponent(`${barrio}, Buenos Aires, Argentina`)
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${q}`, {
-            headers: { 'User-Agent': 'NeosolCRM/1.0' }
-          })
-          const data = await res.json()
-          
-          // Tomamos el primer resultado que tenga un polígono
-          const geoItem = data.find((item: any) => item.geojson && (item.geojson.type === 'Polygon' || item.geojson.type === 'MultiPolygon'))
-          
-          if (geoItem && geoItem.geojson) {
-            features.push({
-              type: 'Feature',
-              properties: { name: barrio },
-              geometry: geoItem.geojson
-            })
-          }
-          
-          // Respetamos el límite de Nominatim de 1 req/s
-          await new Promise(r => setTimeout(r, 1100))
-        } catch (e) {
-          console.error('[Nominatim error]', e)
-        }
-      }
-
-      if (features.length > 0) {
-        mergedGeoJson = {
-          type: 'FeatureCollection',
-          features
-        }
-      }
-    }
-
-    // Actualizamos la zona
     const updateData: any = {}
     if (color) updateData.color = color
-    if (barrios) {
+    if (barrios && Array.isArray(barrios)) {
       updateData.barrios = barrios
-      updateData.geojson = mergedGeoJson || null
+      // Clear geojson if barrios is empty
+      if (barrios.length === 0) {
+        updateData.geojson = null
+      }
     }
 
     const updatedZona = await prisma.zona.update({
       where: { id: existing.id },
       data: updateData
     })
+
+    // Fetch polygons in background asynchronously without blocking the user response
+    if (barrios && Array.isArray(barrios) && barrios.length > 0) {
+      (async () => {
+        try {
+          const features = []
+          for (const barrio of barrios) {
+            try {
+              const q = encodeURIComponent(`${barrio}, Buenos Aires, Argentina`)
+              const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=${q}`, {
+                headers: { 'User-Agent': 'NeosolCRM/1.0' }
+              })
+              const data = await res.json()
+              const geoItem = data.find((item: any) => item.geojson && (item.geojson.type === 'Polygon' || item.geojson.type === 'MultiPolygon'))
+              if (geoItem && geoItem.geojson) {
+                features.push({
+                  type: 'Feature',
+                  properties: { name: barrio },
+                  geometry: geoItem.geojson
+                })
+              }
+              await new Promise(r => setTimeout(r, 600))
+            } catch (e) {
+              console.error('[Nominatim background error]', e)
+            }
+          }
+
+          if (features.length > 0) {
+            await prisma.zona.update({
+              where: { id: existing.id },
+              data: { geojson: { type: 'FeatureCollection', features } }
+            })
+          }
+        } catch (err) {
+          console.error('[Background GeoJSON Generation]', err)
+        }
+      })()
+    }
 
     return NextResponse.json({ success: true, zona: updatedZona })
   } catch (error: any) {

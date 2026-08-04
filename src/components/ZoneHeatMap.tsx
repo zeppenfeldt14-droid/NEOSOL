@@ -12,6 +12,7 @@ type HeatPoint = {
 }
 
 type AllPoint = {
+  id?: number
   lat: number
   lng: number
   zona?: string | null
@@ -160,6 +161,19 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
         sellerInfo = `<div style="display:inline-block;margin-top:4px;margin-left:4px;background:${bgColor};color:${textColor};border:1px solid ${borderColor};padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;">👤 ${sellerName}</div>`
       }
 
+      const zoneSelectHtml = point.id && territories.length > 0 ? `
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.1)">
+          <label style="font-size:10px;color:#64748b;font-weight:700;display:block;margin-bottom:2px">ASIGNAR A ZONA:</label>
+          <select 
+            onchange="if(this.value && this.value !== '${point.zona || ''}') window.handleReassignZonaFromMap(${point.id}, this.value)" 
+            style="width:100%;font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;cursor:pointer;"
+          >
+            <option value="">-- Seleccionar Zona --</option>
+            ${territories.map(t => `<option value="${t.nombre}" ${t.nombre === point.zona ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+          </select>
+        </div>
+      ` : ''
+
       const icon = L.divIcon({
         html: `<div title="${point.nombre || ''}" style="position:relative;width:24px;height:36px;cursor:pointer;transition:transform 0.15s;filter:drop-shadow(0px 3px 4px rgba(0,0,0,0.4));">
           <svg viewBox="0 0 32 48" style="width:24px;height:36px;">
@@ -187,6 +201,7 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
             ">${cfg.emoji} ${cfg.label}</span>
             ${sellerInfo}
             ${motivoHtml}
+            ${zoneSelectHtml}
           </div>
         `, { closeButton: false, maxWidth: 220 })
         .addTo(group)
@@ -227,6 +242,29 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
 
       map.zoomControl.setPosition('bottomright')
       mapInstanceRef.current = map
+
+      if (typeof window !== 'undefined') {
+        (window as any).handleReassignZonaFromMap = async (empresaId: number, nuevaZona: string) => {
+          if (!nuevaZona) return
+          if (!confirm(`¿Deseas reasignar manualmente esta empresa a la zona ${nuevaZona}?`)) return
+          try {
+            const res = await fetch(`/api/empresas/${empresaId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ zona: nuevaZona })
+            })
+            const data = await res.json()
+            if (res.ok && data.success) {
+              window.location.reload()
+            } else {
+              alert(data.error || 'Error al reasignar zona')
+            }
+          } catch (e: any) {
+            alert(e.message || 'Error al reasignar zona')
+          }
+        }
+      }
+
       setIsLoaded(true)
     })
 
@@ -532,15 +570,16 @@ export function ZoneHeatMap({ visitas, ventas, totalEmpresas, selectedZones, use
       <div style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '480px', flex: isFullscreen ? 1 : 'none' }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-        {/* No activity overlay */}
+        {/* No activity badge - Non-blocking, map remains 100% visible */}
         {isLoaded && totalEmpresas > 0 && !hasData && (
           <div style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(15,23,42,0.6)', gap: '0.75rem', zIndex: 500
+            position: 'absolute', top: '12px', left: '12px', pointerEvents: 'none',
+            display: 'flex', alignItems: 'center',
+            background: 'rgba(15,23,42,0.85)', padding: '6px 12px', borderRadius: '20px',
+            border: '1px solid rgba(255,255,255,0.1)', zIndex: 500, boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
           }}>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
-              Sin actividad registrada en este período para este modo
+            <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0, fontWeight: 500 }}>
+              ℹ️ Sin actividad registrada en este período para este modo
             </p>
           </div>
         )}

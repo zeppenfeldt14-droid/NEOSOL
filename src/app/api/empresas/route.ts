@@ -25,9 +25,9 @@ export async function GET(request: Request) {
     const empresas = await prisma.empresa.findMany({
       where: {
         ...(estado ? { estado } : {}),
-        ...(zonaFiltro ? { zona: zonaFiltro } : {}),
+        ...(zonaFiltro ? { zona: { equals: zonaFiltro, mode: 'insensitive' } } : {}),
         ...(q ? { nombre: { contains: q, mode: 'insensitive' } } : {}),
-        ...(isVendedor ? { vendedorAsignado: session.alias, ocultarVendedor: false } : vendedorFiltro ? { vendedorAsignado: vendedorFiltro } : {}),
+        ...(isVendedor ? { vendedorAsignado: { equals: session.alias, mode: 'insensitive' }, ocultarVendedor: false } : vendedorFiltro ? { vendedorAsignado: { equals: vendedorFiltro, mode: 'insensitive' } } : {}),
       },
       select: {
         id: true,

@@ -3,6 +3,8 @@ import EmpresasClient from './EmpresasClient'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
+import { areZonasEqual } from '@/lib/zonaUtils'
+
 export const dynamic = 'force-dynamic'
 
 export default async function EmpresasPage({ 
@@ -22,16 +24,19 @@ export default async function EmpresasPage({
   const decodedZona = decodeURIComponent(zonaName)
 
   // Verify access permissions to this zone
-  if (user.nivel === 3 && user.zona !== decodedZona) {
+  if (user.nivel === 3 && !areZonasEqual(user.zona, decodedZona)) {
     redirect(`/zonas/${user.zona || 'CABA'}/empresas`)
   } else if (user.nivel === 2) {
     let enabledZones: string[] = []
     try {
       if (user.zonasHabilitadas) {
-        enabledZones = JSON.parse(JSON.stringify(user.zonasHabilitadas))
+        enabledZones = typeof user.zonasHabilitadas === 'string'
+          ? JSON.parse(user.zonasHabilitadas)
+          : JSON.parse(JSON.stringify(user.zonasHabilitadas))
       }
     } catch (e) {}
-    if (!enabledZones.includes(decodedZona)) {
+    const hasAccess = enabledZones.some(ez => areZonasEqual(ez, decodedZona))
+    if (!hasAccess && enabledZones.length > 0) {
       redirect(`/zonas/${enabledZones[0] || 'CABA'}/empresas`)
     }
   }
@@ -40,9 +45,9 @@ export default async function EmpresasPage({
   const userAlias = isVendedor ? user.alias : queryVendedor
   const hasVendedorFilter = Boolean(userAlias)
   
-  const whereFilter = {
-    zona: decodedZona,
-    ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {}),
+  const whereFilter: any = {
+    zona: { equals: decodedZona, mode: 'insensitive' },
+    ...(hasVendedorFilter ? { vendedorAsignado: { equals: userAlias, mode: 'insensitive' } } : {}),
     ...(isVendedor ? { ocultarVendedor: false } : {})
   }
 
@@ -59,7 +64,7 @@ export default async function EmpresasPage({
 
   // Fetch available sub-zones in DB for this major zone
   const dbSubZonas = await prisma.subZona.findMany({
-    where: { zona: decodedZona },
+    where: { zona: { equals: decodedZona, mode: 'insensitive' } },
     orderBy: { nombre: 'asc' }
   })
 

@@ -13,6 +13,8 @@ import { AlertsDashboard } from '@/components/AlertsDashboard'
 import TareasPendientes from '@/components/TareasPendientes'
 import { redirect } from 'next/navigation'
 
+import { areZonasEqual } from '@/lib/zonaUtils'
+
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage({ params, searchParams }: { params: Promise<{ zonaName: string }>, searchParams: Promise<{ period?: string, vendedor?: string }> }) {
@@ -38,8 +40,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   }
 
   // Verify access permissions to this zone
-  if (user.nivel === 3 && user.zona !== decodedZona) {
-    if (user.zona && user.zona !== decodedZona) {
+  if (user.nivel === 3 && !areZonasEqual(user.zona, decodedZona)) {
+    if (user.zona && !areZonasEqual(user.zona, decodedZona)) {
       redirect(`/zonas/${encodeURIComponent(user.zona)}`)
     } else if (!user.zona && decodedZona !== 'CABA') {
       redirect('/zonas/CABA')
@@ -63,7 +65,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
       redirect('/configuracion/productos')
     }
 
-    if (!enabledZones.includes(decodedZona)) {
+    const hasAccess = enabledZones.some(ez => areZonasEqual(ez, decodedZona))
+    if (!hasAccess && enabledZones.length > 0) {
       redirect(`/zonas/${enabledZones[0] || 'CABA'}`)
     }
   }
@@ -72,20 +75,20 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const userAlias = isVendedor ? user.alias : vendedor
   const hasVendedorFilter = Boolean(userAlias)
 
-  const whereEmpresa = {
-    zona: decodedZona,
-    ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
+  const whereEmpresa: any = {
+    zona: { equals: decodedZona, mode: 'insensitive' },
+    ...(hasVendedorFilter ? { vendedorAsignado: { equals: userAlias, mode: 'insensitive' } } : {})
   }
-  const whereAccion = {
+  const whereAccion: any = {
     empresa: {
-      zona: decodedZona,
-      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
+      zona: { equals: decodedZona, mode: 'insensitive' },
+      ...(hasVendedorFilter ? { vendedorAsignado: { equals: userAlias, mode: 'insensitive' } } : {})
     }
   }
-  const whereVisita = {
+  const whereVisita: any = {
     empresa: {
-      zona: decodedZona,
-      ...(hasVendedorFilter ? { vendedorAsignado: userAlias } : {})
+      zona: { equals: decodedZona, mode: 'insensitive' },
+      ...(hasVendedorFilter ? { vendedorAsignado: { equals: userAlias, mode: 'insensitive' } } : {})
     }
   }
 

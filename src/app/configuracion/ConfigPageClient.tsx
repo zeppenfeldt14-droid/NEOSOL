@@ -496,7 +496,10 @@ export function ConfigPageClient({ currentLogo }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al actualizar territorio')
-      alert('Territorio actualizado correctamente y mapa delimitado.')
+      alert('Territorio actualizado correctamente.')
+      if (data.zona) {
+        setEditingZonaBarrios(data.zona.barrios || [])
+      }
       fetchZonas()
     } catch (err: any) {
       alert(err.message)
