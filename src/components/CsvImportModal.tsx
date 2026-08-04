@@ -19,8 +19,7 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({
     nombre: '',
     telefono: '',
-    direccion: '',
-    rubro: ''
+    direccion: ''
   })
   
   const [importResult, setImportResult] = useState<{ success: number, ignored: number } | null>(null)
@@ -49,8 +48,7 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
             
             newMapping.nombre = matchHeader(['name', 'nombre', 'title', 'empresa'])
             newMapping.telefono = matchHeader(['phone', 'tel', 'cel'])
-            newMapping.direccion = matchHeader(['address', 'dirección', 'direccion', 'ubicacion'])
-            newMapping.rubro = matchHeader(['category', 'categoria', 'rubro', 'tipo'])
+            newMapping.direccion = matchHeader(['address', 'dirección', 'direccion', 'ubicacion', 'street'])
             
             setFieldMapping(newMapping)
           }
@@ -72,7 +70,6 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
         nombre: row[fieldMapping.nombre] || '',
         telefono: fieldMapping.telefono ? row[fieldMapping.telefono] : '',
         direccion: fieldMapping.direccion ? row[fieldMapping.direccion] : '',
-        rubro: fieldMapping.rubro ? row[fieldMapping.rubro] : '',
         zona: zonaName
       })).filter(item => item.nombre.trim() !== '')
 
@@ -181,19 +178,6 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
                         className="form-input bg-[#1a1f2b] text-sm mt-1"
                         value={fieldMapping.direccion}
                         onChange={e => setFieldMapping({...fieldMapping, direccion: e.target.value})}
-                      >
-                        <option value="">(No importar)</option>
-                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                      </select>
-                    </div>
-
-                    {/* Rubro */}
-                    <div className="form-group mb-0">
-                      <label className="text-xs text-gray-400">Categoría / Rubro</label>
-                      <select 
-                        className="form-input bg-[#1a1f2b] text-sm mt-1"
-                        value={fieldMapping.rubro}
-                        onChange={e => setFieldMapping({...fieldMapping, rubro: e.target.value})}
                       >
                         <option value="">(No importar)</option>
                         {headers.map(h => <option key={h} value={h}>{h}</option>)}
