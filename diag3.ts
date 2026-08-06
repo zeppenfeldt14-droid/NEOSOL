@@ -1,0 +1,1 @@
+﻿import fs from 'fs'; import { parse } from 'csv-parse/sync'; const csvText = fs.readFileSync('data_full.csv', 'utf-8'); const records = parse(csvText, { columns: true, skip_empty_lines: true }); const queries = new Set(); for (const row of records) { queries.add(row.query); } console.log(queries);

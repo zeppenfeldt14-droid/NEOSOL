@@ -1,0 +1,1 @@
+﻿import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { console.log(await prisma.empresa.findFirst({ where: { nombre: { contains: 'Noria' } } })); } main().finally(() => prisma.$disconnect());

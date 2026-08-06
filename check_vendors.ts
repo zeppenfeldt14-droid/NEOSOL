@@ -1,0 +1,1 @@
+﻿import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { const groupByVendor = await prisma.empresa.groupBy({ by: ['vendedorAsignado'], where: { zona: 'CABA' }, _count: { vendedorAsignado: true } }); console.log(groupByVendor); } main().finally(() => prisma.$disconnect());

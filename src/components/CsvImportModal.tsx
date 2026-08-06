@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Papa from 'papaparse'
 import { Upload, X, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
@@ -16,6 +16,11 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
   const [data, setData] = useState<any[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   
+  const [selectedZona, setSelectedZona] = useState(zonaName)
+  const [selectedVendedor, setSelectedVendedor] = useState('')
+  const [zonasList, setZonasList] = useState<string[]>([])
+  const [vendedoresList, setVendedoresList] = useState<{id: number, alias: string}[]>([])
+
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({
     nombre: '',
     telefono: '',
@@ -23,6 +28,41 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
   })
   
   const [importResult, setImportResult] = useState<{ success: number, ignored: number } | null>(null)
+
+  // Fetch Zonas
+  useEffect(() => {
+    fetch('/api/zonas')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setZonasList(data.map((z: any) => z.nombre || z))
+        }
+      })
+      .catch(err => console.error(err))
+  }, [])
+
+  // Fetch Vendedores when selectedZona changes
+  useEffect(() => {
+    if (!selectedZona) {
+      setVendedoresList([])
+      setSelectedVendedor('')
+      return
+    }
+    fetch(`/api/usuarios/vendedores?zona=${encodeURIComponent(selectedZona)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setVendedoresList(data)
+          // Default to the first seller if any, or empty
+          if (data.length > 0) {
+            setSelectedVendedor(data[0].alias)
+          } else {
+            setSelectedVendedor('')
+          }
+        }
+      })
+      .catch(err => console.error(err))
+  }, [selectedZona])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -63,6 +103,10 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
       alert('La columna "Nombre" es obligatoria.')
       return
     }
+    if (!selectedZona) {
+      alert('Debes seleccionar una Zona.')
+      return
+    }
 
     setIsProcessing(true)
     try {
@@ -70,7 +114,8 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
         nombre: row[fieldMapping.nombre] || '',
         telefono: fieldMapping.telefono ? row[fieldMapping.telefono] : '',
         direccion: fieldMapping.direccion ? row[fieldMapping.direccion] : '',
-        zona: zonaName
+        zona: selectedZona,
+        vendedorAsignado: selectedVendedor || null
       })).filter(item => item.nombre.trim() !== '')
 
       const res = await fetch('/api/empresas/import', {
@@ -99,7 +144,7 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
         <div className="flex justify-between items-center p-4 border-b border-white/10 bg-black/20">
           <h2 className="text-lg font-bold flex items-center gap-2 text-white">
             <Upload size={18} className="text-primary" />
-            Importar Prospectos a {zonaName}
+            Importar Prospectos
           </h2>
           <button onClick={onClose} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors">
             <X size={20} />
@@ -110,6 +155,36 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
         <div className="p-6 overflow-y-auto custom-scrollbar">
           {!importResult ? (
             <>
+              {/* Selectores de Zona y Vendedor */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="form-group mb-0">
+                  <label className="text-sm text-gray-300">Zona de Destino</label>
+                  <select 
+                    className="form-input bg-[#1a1f2b] text-sm mt-1"
+                    value={selectedZona}
+                    onChange={e => setSelectedZona(e.target.value)}
+                  >
+                    <option value="">Seleccionar zona...</option>
+                    {zonasList.length > 0 ? (
+                      zonasList.map(z => <option key={z} value={z}>{z}</option>)
+                    ) : (
+                      <option value={zonaName}>{zonaName}</option>
+                    )}
+                  </select>
+                </div>
+                <div className="form-group mb-0">
+                  <label className="text-sm text-gray-300">Vendedor Asignado</label>
+                  <select 
+                    className="form-input bg-[#1a1f2b] text-sm mt-1"
+                    value={selectedVendedor}
+                    onChange={e => setSelectedVendedor(e.target.value)}
+                  >
+                    <option value="">(Sin asignar)</option>
+                    {vendedoresList.map(v => <option key={v.alias} value={v.alias}>{v.alias}</option>)}
+                  </select>
+                </div>
+              </div>
+
               {/* File Selection */}
               <div className="mb-6">
                 <label className="form-label text-sm text-gray-300">Archivo Excel (CSV)</label>
@@ -224,7 +299,7 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
               </button>
               <button 
                 onClick={handleImport}
-                disabled={!file || !fieldMapping.nombre || isProcessing}
+                disabled={!file || !fieldMapping.nombre || !selectedZona || isProcessing}
                 className="btn btn-primary"
               >
                 {isProcessing ? 'Procesando...' : 'Iniciar Importación'}

@@ -59,9 +59,9 @@ export async function POST(request: Request) {
           barrio: localidad, // Populate the Location (Localidad) field
           subZona: null, // Keep Mini-Zonas unchanged (they will be SIN ASIGNAR)
           rubro: emp.rubro?.trim() || null,
-          zona: emp.zona,
+          zona: emp.zona || null, // Zona sent from UI (can be selected zona)
           estado: 'prospecto', // Default to prospecto as discussed
-          vendedorAsignado: user.nivel === 3 ? user.alias : null
+          vendedorAsignado: emp.vendedorAsignado || (user.nivel === 3 ? user.alias : null)
         })
         
         // Add to sets to prevent duplicates WITHIN the imported file itself

@@ -1,0 +1,1 @@
+﻿import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { const users = await prisma.usuario.findMany(); console.log(users.map(u => ({ id: u.id, nombre: u.nombre, email: u.email, rol: u.rol }))); } main().finally(() => prisma.$disconnect());
