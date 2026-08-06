@@ -384,7 +384,7 @@ export default function EmpresasGlobalClient({
                     emp.estado === 'baja' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                     'badge-warning'
                   } text-[10px] px-2 py-0.5`}>
-                    {emp.estado.toUpperCase()}
+                    {emp.estado === 'prospecto' ? 'POTENCIAL' : emp.estado.toUpperCase()}
                   </span>
                 </td>
                 <td>
@@ -416,9 +416,7 @@ export default function EmpresasGlobalClient({
           >
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-white font-bold text-sm leading-tight">{emp.nombre}</h3>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${emp.estado === 'activo' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                {emp.estado}
-              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase whitespace-nowrap ${emp.estado === 'activo' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{emp.estado === 'prospecto' ? 'potencial' : emp.estado}</span>
             </div>
             <div className="text-[10px] text-secondary mt-1">
               Zona: {emp.zona || 'SIN ZONA'} | Vendedor: <span className={emp.vendedorAsignado ? "text-primary font-bold" : "text-yellow-500 font-bold"}>{emp.vendedorAsignado || 'SIN ASIGNAR'}</span>

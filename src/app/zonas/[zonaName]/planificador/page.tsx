@@ -704,9 +704,7 @@ export default async function PlanificadorPage(props: {
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{emp.barrio}</div>
                         </td>
                         <td>
-                          <span className={`badge ${emp.estado === 'prospecto' ? 'badge-warning' : emp.estado === 'activo' ? 'badge-success' : 'badge-neutral'}`}>
-                            {emp.estado}
-                          </span>
+                          <span className={`badge ${emp.estado === 'prospecto' ? 'badge-warning' : emp.estado === 'activo' ? 'badge-success' : 'badge-neutral'}`}>{emp.estado === 'prospecto' ? 'potencial' : emp.estado}</span>
                         </td>
                       </tr>
                     ))}
@@ -746,9 +744,7 @@ export default async function PlanificadorPage(props: {
                     <td style={{ fontWeight: 500 }}>{emp.nombre}</td>
                     <td>{emp.zona || '-'}</td>
                     <td>
-                      <span className={`badge ${emp.estado === 'prospecto' ? 'badge-warning' : emp.estado === 'activo' ? 'badge-success' : 'badge-neutral'}`}>
-                        {emp.estado}
-                      </span>
+                      <span className={`badge ${emp.estado === 'prospecto' ? 'badge-warning' : emp.estado === 'activo' ? 'badge-success' : 'badge-neutral'}`}>{emp.estado === 'prospecto' ? 'potencial' : emp.estado}</span>
                     </td>
                     <td>
                       <Link href={`/empresas/${emp.id}`} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>

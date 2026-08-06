@@ -702,9 +702,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
                   <td style={{ fontWeight: 500 }}>{emp.nombre}</td>
                   <td>{emp.zona || '-'}</td>
                   <td>
-                    <span className={`badge ${emp.estado === 'prospecto' ? 'badge-warning' : emp.estado === 'activo' ? 'badge-success' : 'badge-neutral'}`}>
-                      {emp.estado}
-                    </span>
+                    <span className={`badge ${emp.estado === 'prospecto' ? 'badge-warning' : emp.estado === 'activo' ? 'badge-success' : 'badge-neutral'}`}>{emp.estado === 'prospecto' ? 'potencial' : emp.estado}</span>
                   </td>
                   <td>{new Date(emp.actualizadoEn).toLocaleDateString()}</td>
                   <td>
