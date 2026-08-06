@@ -338,11 +338,14 @@ export default function IntelligentPlanner({
         <button
           onClick={e => { 
             e.stopPropagation()
-            if (emp.latitud && emp.longitud) {
+            const addressParts = [emp.direccion, emp.barrio, (emp as any).partido || 'CABA', 'Argentina'].filter(Boolean)
+            if (addressParts.length >= 2) {
+              const q = encodeURIComponent(addressParts.join(', '))
+              window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank')
+            } else if (emp.latitud && emp.longitud) {
               window.open(`https://www.google.com/maps/search/?api=1&query=${emp.latitud},${emp.longitud}`,'_blank')
             } else {
-              const q = encodeURIComponent([emp.direccion, emp.barrio, 'CABA'].filter(Boolean).join(', '))
-              window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank')
+              alert('Esta empresa no tiene dirección ni coordenadas asignadas.')
             }
           }}
           style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', cursor: 'pointer', backgroundColor: 'rgba(34,197,94,0.2)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

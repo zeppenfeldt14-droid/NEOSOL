@@ -108,12 +108,19 @@ export default function VisitasHoyClient({ initialAcciones, zonaName }: Props) {
   const openContextualLink = (accion: Accion) => {
     const emp = accion.empresa
     if (accion.tipo === 'visita_programada') {
-      if (emp.latitud && emp.longitud) {
+      // SIEMPRE priorizar la navegación por dirección de texto para Google Maps.
+      // Así evitamos la falla crítica de coordenadas desactualizadas.
+      const addressParts = [emp.direccion, emp.barrio, (emp as any).partido || zonaName, 'Argentina'].filter(Boolean)
+
+      
+      if (addressParts.length >= 2) { // Al menos direccion y zona/barrio
+        const addressQuery = encodeURIComponent(addressParts.join(', '))
+        window.open(`https://www.google.com/maps/search/?api=1&query=${addressQuery}`, '_blank')
+      } else if (emp.latitud && emp.longitud) {
+        // Solo como plan Z usar latitud y longitud si la empresa no tiene dirección escrita
         window.open(`https://www.google.com/maps/search/?api=1&query=${emp.latitud},${emp.longitud}`, '_blank')
       } else {
-        const addressStr = [emp.direccion, emp.barrio, zonaName].filter(Boolean).join(', ')
-        const q = encodeURIComponent(addressStr)
-        window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank')
+        alert('Esta empresa no tiene dirección ni coordenadas asignadas.')
       }
     } else if (accion.tipo === 'whatsapp') {
       const phone = emp.telefono?.replace(/\D/g, '') || ''

@@ -50,12 +50,15 @@ export default function VisitasHoyCabaClient({ initialVisitas }: Props) {
   })
 
   const openGoogleMaps = (emp: any) => {
-    if (emp.latitud && emp.longitud) {
+    const addressParts = [emp.direccion, emp.barrio, (emp as any).partido || 'CABA', 'Argentina'].filter(Boolean)
+    
+    if (addressParts.length >= 2) {
+      const addressQuery = encodeURIComponent(addressParts.join(', '))
+      window.open(`https://www.google.com/maps/search/?api=1&query=${addressQuery}`, '_blank')
+    } else if (emp.latitud && emp.longitud) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${emp.latitud},${emp.longitud}`, '_blank')
     } else {
-      const addressStr = [emp.direccion, emp.barrio, 'CABA'].filter(Boolean).join(', ')
-      const query = encodeURIComponent(addressStr)
-      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank')
+      alert('Esta empresa no tiene dirección ni coordenadas asignadas.')
     }
   }
 

@@ -73,9 +73,16 @@ function InfoGeneral({ empresa }: { empresa: any }) {
           </div>
         </div>
         {empresa.direccion && (() => {
-          const mapsQuery = (empresa.latitud && empresa.longitud) 
-            ? `${empresa.latitud},${empresa.longitud}`
-            : encodeURIComponent([empresa.direccion, empresa.barrio, empresa.partido].filter(Boolean).join(', '))
+          const addressParts = [empresa.direccion, empresa.barrio, empresa.partido || zonaName, 'Argentina'].filter(Boolean)
+          
+          let mapsQuery = ''
+          if (addressParts.length >= 2) {
+            mapsQuery = encodeURIComponent(addressParts.join(', '))
+          } else if (empresa.latitud && empresa.longitud) {
+            mapsQuery = `${empresa.latitud},${empresa.longitud}`
+          } else {
+            mapsQuery = encodeURIComponent(empresa.direccion)
+          }
           return (
             <a 
               href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}

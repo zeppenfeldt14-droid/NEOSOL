@@ -250,11 +250,18 @@ export async function updateEmpresa(empresaId: number, formData: FormData) {
         if (data && data.length > 0) {
           updateData.latitud = parseFloat(data[0].lat)
           updateData.longitud = parseFloat(data[0].lon)
+        } else {
+          updateData.latitud = null
+          updateData.longitud = null
         }
       }
     }
   } catch (e) {
     console.error('Error auto-geocoding on update', e)
+    // En caso de error de red, igual borramos las coordenadas viejas
+    // para que el cronjob de geocoding las asigne luego
+    updateData.latitud = null
+    updateData.longitud = null
   }
 
   if (estado === 'baja' && !motivoBaja?.trim()) {
