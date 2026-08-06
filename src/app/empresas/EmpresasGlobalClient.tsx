@@ -2,9 +2,10 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
+import { Search, Plus, MapPin, Phone, Building2, Download, MessageCircle, AlertTriangle, CheckCircle, XCircle, Upload, Target } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import CsvImportModal from '@/components/CsvImportModal'
 
 type Empresa = {
   id: number
@@ -65,6 +66,7 @@ export default function EmpresasGlobalClient({
   const [rubroFilter, setRubroFilter] = useState<string>('todos')
 
   const [solicitudes, setSolicitudes] = useState<SolicitudReasignacion[]>([])
+  const [showImportModal, setShowImportModal] = useState(false)
   
   useEffect(() => {
     if (userNivel === 1) {
@@ -147,12 +149,67 @@ export default function EmpresasGlobalClient({
   const empresasSinZona = useMemo(() => empresas.filter(e => !e.zona || e.zona.trim() === ''), [empresas])
   const empresasSinVendedor = useMemo(() => empresas.filter(e => !e.vendedorAsignado || e.vendedorAsignado.trim() === ''), [empresas])
 
+  const kpis = useMemo(() => {
+    const total = empresas.length
+    const prospectos = empresas.filter(e => e.estado === 'prospecto').length
+    const clientes = empresas.filter(e => e.estado === 'activo').length
+    const efectividad = total > 0 ? Math.round((clientes / total) * 100) : 0
+    return { total, prospectos, clientes, efectividad }
+  }, [empresas])
+
   return (
     <div className="animate-fade-in pb-12">
-      <div className="page-header">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="page-title">Directorio Global de Empresas</h1>
+          <h1 className="page-title">Empresas Globales</h1>
           <p className="page-subtitle">Visualización unificada de todas las zonas y vendedores.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowImportModal(true)}
+            className="btn btn-secondary"
+            title="Importar Prospectos (CSV)"
+          >
+            <Upload size={18} /> Importar (CSV)
+          </button>
+          <Link href={`/empresas/nueva`} className="btn btn-primary">
+            <Plus size={18} /> Nueva Empresa
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-title">Total Empresas</span>
+            <Building2 size={16} className="text-primary" />
+          </div>
+          <div className="kpi-value">{kpis.total}</div>
+          <div className="kpi-subtitle">Registradas globalmente</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-title">Prospectos</span>
+            <Target size={16} className="text-yellow-500" />
+          </div>
+          <div className="kpi-value">{kpis.prospectos}</div>
+          <div className="kpi-subtitle">En seguimiento</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-title">Clientes activos</span>
+            <CheckCircle size={16} className="text-green-500" />
+          </div>
+          <div className="kpi-value">{kpis.clientes}</div>
+          <div className="kpi-subtitle">Clientes activos</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <span className="kpi-title">Efectividad</span>
+            <CheckCircle size={16} className="text-primary" />
+          </div>
+          <div className="kpi-value">{kpis.efectividad}%</div>
+          <div className="kpi-subtitle">{kpis.clientes} cliente(s) de {kpis.total} objetivo</div>
         </div>
       </div>
 
@@ -367,6 +424,14 @@ export default function EmpresasGlobalClient({
           </Link>
         ))}
       </div>
+      
+      {showImportModal && (
+        <CsvImportModal 
+          zonaName=""
+          onClose={() => setShowImportModal(false)}
+          onImportComplete={() => window.location.reload()}
+        />
+      )}
     </div>
   )
 }

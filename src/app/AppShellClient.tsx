@@ -174,18 +174,6 @@ export function AppShellClient({ children, logo, user, zones = [], vendedoresPor
           ) : (
             <div className="sidebar-logo">NEOSOL</div>
           )}
-          <img 
-            src="/omnisync-logo.png" 
-            alt="By OmniSync" 
-            style={{ 
-              maxHeight: '16px', 
-              maxWidth: '80%', 
-              objectFit: 'contain', 
-              margin: '6px auto 0',
-              opacity: 0.65,
-              display: 'block'
-            }} 
-          />
         </div>
         
         <nav className="sidebar-nav">
