@@ -73,7 +73,8 @@ function InfoGeneral({ empresa }: { empresa: any }) {
           </div>
         </div>
         {empresa.direccion && (() => {
-          const addressParts = [empresa.direccion, empresa.barrio, empresa.partido || zonaName, 'Argentina'].filter(Boolean)
+          const addressParts = [empresa.direccion, empresa.barrio, empresa.partido || empresa.zona || 'CABA', 'Argentina'].filter(Boolean)
+
           
           let mapsQuery = ''
           if (addressParts.length >= 2) {
