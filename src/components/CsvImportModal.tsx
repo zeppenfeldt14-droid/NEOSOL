@@ -24,7 +24,8 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({
     nombre: '',
     telefono: '',
-    direccion: ''
+    direccion: '',
+    coordenadas: ''
   })
   
   const [importResult, setImportResult] = useState<{ success: number, ignored: number } | null>(null)
@@ -89,6 +90,7 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
             newMapping.nombre = matchHeader(['name', 'nombre', 'title', 'empresa'])
             newMapping.telefono = matchHeader(['phone', 'tel', 'cel'])
             newMapping.direccion = matchHeader(['address', 'dirección', 'direccion', 'ubicacion', 'street'])
+            newMapping.coordenadas = matchHeader(['coord', 'lat', 'lon', 'coordenada', 'coordenadas'])
             
             setFieldMapping(newMapping)
           }
@@ -114,6 +116,7 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
         nombre: row[fieldMapping.nombre] || '',
         telefono: fieldMapping.telefono ? row[fieldMapping.telefono] : '',
         direccion: fieldMapping.direccion ? row[fieldMapping.direccion] : '',
+        coordenadas: fieldMapping.coordenadas ? row[fieldMapping.coordenadas] : '',
         zona: selectedZona,
         vendedorAsignado: selectedVendedor || null
       })).filter(item => item.nombre.trim() !== '')
@@ -255,6 +258,19 @@ export default function CsvImportModal({ zonaName, onClose, onImportComplete }: 
                         onChange={e => setFieldMapping({...fieldMapping, direccion: e.target.value})}
                       >
                         <option value="">(No importar)</option>
+                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Coordenadas */}
+                    <div className="form-group mb-0">
+                      <label className="text-xs text-gray-400">Coordenadas (Lat, Lng)</label>
+                      <select 
+                        className="form-input bg-[#1a1f2b] text-sm mt-1"
+                        value={fieldMapping.coordenadas}
+                        onChange={e => setFieldMapping({...fieldMapping, coordenadas: e.target.value})}
+                      >
+                        <option value="">(No importar / Auto-completar)</option>
                         {headers.map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
                     </div>

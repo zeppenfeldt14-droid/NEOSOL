@@ -51,6 +51,21 @@ export async function POST(request: Request) {
       } else {
         const direccionClean = emp.direccion?.trim() || null
         const localidad = extractLocality(direccionClean || '')
+        
+        let latitud = null
+        let longitud = null
+        if (emp.coordenadas) {
+          const cparts = String(emp.coordenadas).split(',')
+          if (cparts.length >= 2) {
+            const lat = parseFloat(cparts[0].trim())
+            const lng = parseFloat(cparts[1].trim())
+            if (!isNaN(lat) && !isNaN(lng)) {
+              latitud = lat
+              longitud = lng
+            }
+          }
+        }
+
         empresasToCreate.push({
           nombre: emp.nombre.trim(),
           telefono: telefonoNorm || null,
@@ -61,7 +76,9 @@ export async function POST(request: Request) {
           rubro: emp.rubro?.trim() || null,
           zona: emp.zona || null, // Zona sent from UI (can be selected zona)
           estado: 'prospecto', // Default to prospecto as discussed
-          vendedorAsignado: emp.vendedorAsignado || (user.nivel === 3 ? user.alias : null)
+          vendedorAsignado: emp.vendedorAsignado || (user.nivel === 3 ? user.alias : null),
+          latitud: latitud,
+          longitud: longitud
         })
         
         // Add to sets to prevent duplicates WITHIN the imported file itself
