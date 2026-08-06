@@ -532,13 +532,25 @@ export default async function IndexPage({ searchParams }: { searchParams: Promis
   }
 
   // Fetch available sellers in the selected zones
-  const vendedoresDisponibles = await prisma.usuario.findMany({
-    where: { 
-      nivel: 3, 
-      zona: zoneFilter 
-    },
-    select: { alias: true, zona: true, nombre: true }
+  const usuariosActivos = await prisma.usuario.findMany({
+    where: { activo: true },
+    select: { alias: true, zona: true, nombre: true, nivel: true, limitesEstado: true }
   })
+  
+  const vendedoresDisponibles = usuariosActivos.filter(u => {
+    // Si es vendedor (nivel 3) en la zona seleccionada
+    if (u.nivel === 3 && selectedZones.includes(u.zona || '')) return true;
+    
+    // O si tiene las metas comerciales activadas
+    try {
+      const limites = typeof u.limitesEstado === 'string' 
+        ? JSON.parse(u.limitesEstado) 
+        : (u.limitesEstado || {});
+      if (limites.metasActivas) return true;
+    } catch(e) {}
+    
+    return false;
+  }).map(u => ({ alias: u.alias, zona: u.zona, nombre: u.nombre }))
 
   return (
     <main className="min-h-screen bg-[#0a0f1c] pb-20 selection:bg-primary/30">

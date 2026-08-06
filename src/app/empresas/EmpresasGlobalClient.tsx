@@ -165,12 +165,8 @@ export default function EmpresasGlobalClient({
           <p className="page-subtitle">Visualización unificada de todas las zonas y vendedores.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowImportModal(true)}
-            className="btn btn-secondary"
-            title="Importar Prospectos (CSV)"
-          >
-            <Upload size={18} /> Importar (CSV)
+          <button onClick={() => setShowImportModal(true)} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} title="Importar Potenciales (CSV)">
+            <Upload size={16} /> Importar
           </button>
           <Link href={`/empresas/nueva`} className="btn btn-primary">
             <Plus size={18} /> Nueva Empresa
@@ -190,11 +186,14 @@ export default function EmpresasGlobalClient({
 
         <div className="glass-panel card flex flex-col items-center justify-center text-center" style={{ padding: '1.25rem' }}>
           <div className="flex items-center gap-2 mb-2">
-            <div className="badge" style={{ backgroundColor: 'rgba(234,179,8,0.2)', color: '#eab308', padding: '0.15rem 0.4rem', border: '1px solid rgba(234,179,8,0.3)' }}><Target size={12} /></div>
-            <span className="stat-label text-yellow-500" style={{ fontSize: '0.85rem' }}>Prospectos</span>
+            <div className="glass-panel card p-4 relative overflow-hidden flex flex-col justify-center items-center text-center shadow-lg hover:shadow-xl transition-shadow border-white/5 hover:border-white/10" style={{ minWidth: '150px' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="stat-label text-yellow-500" style={{ fontSize: '0.85rem' }}>Potenciales</span>
+              </div>
+              <div className="stat-value text-yellow-500" style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{kpis.prospectos}</div>
+              <div className="text-[10px] text-yellow-500/80 font-medium">Oportunidades</div>
+            </div>
           </div>
-          <div className="stat-value text-yellow-500" style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{kpis.prospectos}</div>
-          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>En seguimiento</div>
         </div>
 
         <div className="glass-panel card flex flex-col items-center justify-center text-center" style={{ padding: '1.25rem' }}>
@@ -286,9 +285,9 @@ export default function EmpresasGlobalClient({
             <label className="form-label">Estado</label>
             <div className="flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
               {[
-                { id: 'todos', label: 'Todas' },
-                { id: 'prospecto', label: 'Prospectos' },
-                { id: 'activo', label: 'Clientes' },
+                { id: 'todos', label: 'Todos' },
+                { id: 'prospecto', label: 'Potenciales' },
+                { id: 'activo', label: 'Activos' },
                 { id: 'baja', label: 'Bajas' },
                 { id: 'descartada', label: 'Descartadas' }
               ].map(tab => (

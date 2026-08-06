@@ -61,11 +61,20 @@ export default async function EmpresasGlobalPage() {
   })
   const rubrosList = Array.from(rubrosSet).sort()
 
-  // Obtener vendedores activos (Nivel 3)
-  const vendedores = await prisma.usuario.findMany({
-    where: { nivel: 3, activo: true },
-    select: { id: true, nombre: true, alias: true, zona: true }
+  // Obtener vendedores activos (Nivel 3 y usuarios con Metas Activas)
+  const usuariosActivos = await prisma.usuario.findMany({
+    where: { activo: true },
+    select: { id: true, nombre: true, alias: true, zona: true, nivel: true, limitesEstado: true }
   })
+  
+  const vendedores = usuariosActivos.filter(u => {
+    if (u.nivel === 3) return true;
+    try {
+      const limites = typeof u.limitesEstado === 'string' ? JSON.parse(u.limitesEstado) : (u.limitesEstado || {});
+      if (limites.metasActivas) return true;
+    } catch(e) {}
+    return false;
+  }).map(u => ({ id: u.id, nombre: u.nombre, alias: u.alias, zona: u.zona }))
 
   return (
     <EmpresasGlobalClient 

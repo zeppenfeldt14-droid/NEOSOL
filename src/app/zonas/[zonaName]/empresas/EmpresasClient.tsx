@@ -328,7 +328,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
       <div className="page-header">
         <div>
           <h1 className="page-title">Directorio de Empresas</h1>
-          <p className="page-subtitle">Gestiona todas las empresas, clientes, prospectos y descartadas.</p>
+          <p className="page-subtitle">Gestiona todas las empresas, clientes, potenciales y descartadas.</p>
         </div>
         <div className="flex gap-2 items-center">
           <button 
@@ -342,7 +342,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
           <button 
             onClick={() => setShowImportModal(true)}
             className="btn btn-secondary"
-            title="Importar Prospectos (CSV)"
+            title="Importar Potenciales (CSV)"
           >
             <Upload size={18} /> Importar (CSV)
           </button>
@@ -387,7 +387,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
             <div className="flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
               {[
                 { id: 'todos', label: 'Todas' },
-                { id: 'prospecto', label: 'Prospectos' },
+                { id: 'prospecto', label: 'Potenciales' },
                 { id: 'activo', label: 'Clientes' },
                 { id: 'baja', label: 'Bajas' },
                 { id: 'descartada', label: 'Descartadas' }

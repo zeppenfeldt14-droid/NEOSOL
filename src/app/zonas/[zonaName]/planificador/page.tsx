@@ -267,7 +267,7 @@ export default async function PlanificadorPage(props: {
       // Se resaltarán primero los de más tiempo en el sorting
       let motivo = ''
       if (diasDesde === null) {
-        motivo = 'Prospecto nuevo sin visitas'
+        motivo = 'Potencial nuevo sin visitas'
       } else if (diasDesde > 14) {
         motivo = `Retomar contacto (hace ${diasDesde} días)`
       } else {
@@ -506,7 +506,7 @@ export default async function PlanificadorPage(props: {
               </div>
               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white' }}>{nuevosProspectosMes.length}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Clientes prospectos agregados en la zona {decodedZona}.
+                Clientes potenciales agregados en la zona {decodedZona}.
               </div>
             </div>
           </div>

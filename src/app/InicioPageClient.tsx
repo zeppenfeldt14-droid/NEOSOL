@@ -394,7 +394,7 @@ export function InicioPageClient({ data, currentUser, vendedoresDisponibles = []
             </div>
           </div>
           <div className="text-[10px] text-purple-400 mt-3 font-bold">
-            {kpis.clientesProspecto} Prospectos
+            {kpis.clientesProspecto} Potenciales
           </div>
         </div>
 

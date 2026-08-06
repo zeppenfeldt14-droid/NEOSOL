@@ -475,7 +475,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
         
         <div className="glass-panel card delay-100" style={{ padding: '1rem' }}>
           <div className="flex justify-between items-center" style={{ marginBottom: '0.5rem' }}>
-            <span className="stat-label" style={{ fontSize: '0.75rem' }}>Prospectos</span>
+            <span className="stat-label" style={{ fontSize: '0.75rem' }}>Potenciales</span>
             <div className="badge badge-warning" style={{ padding: '0.15rem 0.4rem' }}><Briefcase size={12} /></div>
           </div>
           <div className="stat-value" style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>{empresasProspecto}</div>
