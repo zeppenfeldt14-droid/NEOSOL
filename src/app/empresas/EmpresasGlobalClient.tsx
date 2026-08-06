@@ -178,38 +178,41 @@ export default function EmpresasGlobalClient({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Total Empresas</span>
-            <Building2 size={16} className="text-primary" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="glass-panel card flex flex-col items-center justify-center text-center" style={{ padding: '1.25rem' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="badge badge-info" style={{ padding: '0.15rem 0.4rem' }}><Building2 size={12} /></div>
+            <span className="stat-label" style={{ fontSize: '0.85rem' }}>Total Empresas</span>
           </div>
-          <div className="kpi-value">{kpis.total}</div>
-          <div className="kpi-subtitle">Registradas globalmente</div>
+          <div className="stat-value text-primary" style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{kpis.total}</div>
+          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Registradas globalmente</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Prospectos</span>
-            <Target size={16} className="text-yellow-500" />
+
+        <div className="glass-panel card flex flex-col items-center justify-center text-center" style={{ padding: '1.25rem' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="badge" style={{ backgroundColor: 'rgba(234,179,8,0.2)', color: '#eab308', padding: '0.15rem 0.4rem', border: '1px solid rgba(234,179,8,0.3)' }}><Target size={12} /></div>
+            <span className="stat-label text-yellow-500" style={{ fontSize: '0.85rem' }}>Prospectos</span>
           </div>
-          <div className="kpi-value">{kpis.prospectos}</div>
-          <div className="kpi-subtitle">En seguimiento</div>
+          <div className="stat-value text-yellow-500" style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{kpis.prospectos}</div>
+          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>En seguimiento</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Clientes activos</span>
-            <CheckCircle size={16} className="text-green-500" />
+
+        <div className="glass-panel card flex flex-col items-center justify-center text-center" style={{ padding: '1.25rem' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="badge badge-success" style={{ padding: '0.15rem 0.4rem' }}><CheckCircle size={12} /></div>
+            <span className="stat-label text-green-400" style={{ fontSize: '0.85rem' }}>Clientes activos</span>
           </div>
-          <div className="kpi-value">{kpis.clientes}</div>
-          <div className="kpi-subtitle">Clientes activos</div>
+          <div className="stat-value text-green-400" style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{kpis.clientes}</div>
+          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>Cartera activa</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <span className="kpi-title">Efectividad</span>
-            <CheckCircle size={16} className="text-primary" />
+
+        <div className="glass-panel card flex flex-col items-center justify-center text-center" style={{ padding: '1.25rem' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="badge badge-info" style={{ padding: '0.15rem 0.4rem' }}><CheckCircle size={12} /></div>
+            <span className="stat-label text-blue-400" style={{ fontSize: '0.85rem' }}>Efectividad</span>
           </div>
-          <div className="kpi-value">{kpis.efectividad}%</div>
-          <div className="kpi-subtitle">{kpis.clientes} cliente(s) de {kpis.total} objetivo</div>
+          <div className="stat-value text-blue-400" style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{kpis.efectividad}%</div>
+          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>{kpis.clientes} cliente(s) de {kpis.total} objetivo</div>
         </div>
       </div>
 
