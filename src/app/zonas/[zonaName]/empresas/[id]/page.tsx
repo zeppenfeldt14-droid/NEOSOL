@@ -250,13 +250,21 @@ function HistorialVisitas({ empresa, zonaName, empresaId }: { empresa: any, zona
 }
 
 
-export default async function EmpresaPage({ params }: { params: Promise<{ id: string; zonaName: string }> }) {
+export default async function EmpresaPage({ 
+  params,
+  searchParams
+}: { 
+  params: Promise<{ id: string; zonaName: string }>
+  searchParams: Promise<{ origen?: string }>
+}) {
   const user = await getSessionUser()
   if (!user) {
     redirect('/login')
   }
 
   const { id, zonaName } = await params
+  const { origen } = await searchParams
+  
   const decodedZona = decodeURIComponent(zonaName)
   const empresaId = parseInt(id)
   
@@ -302,11 +310,13 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
     alertas: []
   }
 
+  const backLink = origen === 'global' ? '/empresas' : `/zonas/${zonaName}/empresas`
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
         <div className="w-full">
-          <Link href={`/zonas/${zonaName}/empresas`} className="flex items-center gap-2" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+          <Link href={backLink} className="flex items-center gap-2" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
             <ArrowLeft size={16} /> Volver a empresas
           </Link>
           <div className="flex justify-between items-start md:items-center mb-6 w-full flex-col md:flex-row gap-4">

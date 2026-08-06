@@ -190,6 +190,14 @@ export function AppShellClient({ children, logo, user, zones = [], vendedoresPor
             <MessageSquare className="nav-icon text-primary" />
             <span className="font-bold text-white uppercase tracking-wider text-xs">Mensajes</span>
           </Link>
+
+          {/* Empresas Global (Niveles 1 y 2) */}
+          {user.nivel < 3 && (
+            <Link href="/empresas" className={`nav-item ${isLinkActive('/empresas') ? 'active' : ''}`}>
+              <Users className="nav-icon text-primary" />
+              <span className="font-bold text-white uppercase tracking-wider text-xs">Directorio Global</span>
+            </Link>
+          )}
           
           {/* LEVEL 3 (Vendedor): Show single zone directly */}
           {user.nivel === 3 ? (

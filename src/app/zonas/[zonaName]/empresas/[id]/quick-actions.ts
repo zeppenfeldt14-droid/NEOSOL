@@ -35,6 +35,13 @@ export async function descartarEmpresa(id: number, motivo: string) {
 }
 
 export async function eliminarEmpresaDefinitivamente(id: number) {
+  const { getSessionUser } = await import('@/lib/auth')
+  const session = await getSessionUser()
+  
+  if (session?.nivel === 2) {
+    throw new Error('Nivel 2 no tiene permisos para eliminar empresas.')
+  }
+
   // Las relaciones (visitas, acciones, etc) deberían eliminarse en cascada 
   // pero por las dudas eliminamos primero las dependencias si Prisma no tiene onDelete: Cascade
   

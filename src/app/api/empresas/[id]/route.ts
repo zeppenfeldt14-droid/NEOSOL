@@ -49,6 +49,12 @@ export async function PUT(
 
     if (zona && zona.trim().toUpperCase() !== (currentEmpresa.zona || '').trim().toUpperCase()) {
       const normalizedZona = zona.trim().toUpperCase()
+
+      // If user is Level 2 and tries to assign to a DIFFERENT zone, they can't do it directly.
+      if (session.nivel === 2) {
+        return NextResponse.json({ error: 'Nivel 2 no puede reasignar a otra zona directamente. Debe crear una Solicitud de Reasignación.' }, { status: 403 })
+      }
+
       updateData.zona = normalizedZona
       updateData.subZona = subZona || 'SIN ASIGNAR'
 
@@ -65,7 +71,11 @@ export async function PUT(
       }
     } else {
       if (subZona !== undefined) updateData.subZona = subZona
-      if (vendedorAsignado !== undefined) updateData.vendedorAsignado = vendedorAsignado
+      
+      // If user is level 2 and tries to change vendor but KEEP the same zone, they can do it.
+      if (vendedorAsignado !== undefined) {
+        updateData.vendedorAsignado = vendedorAsignado
+      }
     }
 
     const updatedEmpresa = await prisma.empresa.update({

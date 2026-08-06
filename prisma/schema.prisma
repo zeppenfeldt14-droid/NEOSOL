@@ -404,3 +404,15 @@ model NotaPlanificador {
   factura           Factura?  @relation(fields: [facturaId], references: [id])
   pedido            Pedido?   @relation(fields: [pedidoId], references: [id])
 }
+
+model SolicitudReasignacion {
+  id               Int      @id @default(autoincrement())
+  empresaId        Int
+  empresaNombre    String
+  solicitadoPor    String
+  zonaOrigen       String?
+  zonaDestino      String
+  vendedorDestino  String
+  estado           String   @default("pendiente")
+  creadoEn         DateTime @default(now())
+}
