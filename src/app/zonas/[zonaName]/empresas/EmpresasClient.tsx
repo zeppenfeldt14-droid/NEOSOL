@@ -571,7 +571,7 @@ export default function EmpresasClient({ empresas, zonas, rubros }: { empresas: 
                     empresa.estado === 'baja' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                     'badge-warning'
                   }`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>
-                    {empresa.estado.toUpperCase()}
+                    {empresa.estado === 'prospecto' ? 'POTENCIAL' : empresa.estado.toUpperCase()}
                   </span>
                 </td>
                 <td>

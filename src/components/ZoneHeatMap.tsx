@@ -37,7 +37,7 @@ type Props = {
 // Color and label per estado
 const ESTADO_CONFIG: Record<string, { color: string; glow: string; label: string; emoji: string }> = {
   activo:     { color: '#22c55e', glow: '#22c55e80', label: 'Cliente Activo', emoji: '✅' },
-  prospecto:  { color: '#f59e0b', glow: '#f59e0b80', label: 'Prospecto',      emoji: '🟡' },
+  prospecto:  { color: '#f59e0b', glow: '#f59e0b80', label: 'Potencial',      emoji: '🟡' },
   descartada: { color: '#8b5cf6', glow: '#8b5cf680', label: 'Descartada',     emoji: '🟣' },
   baja:       { color: '#ef4444', glow: '#ef444480', label: 'Baja',           emoji: '🔴' },
 }
