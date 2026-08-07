@@ -487,7 +487,7 @@ export function AppShellClient({ children, logo, user, zones = [], vendedoresPor
               src="/omnisync-logo.png" 
               alt="By OmniSync" 
               style={{ 
-                height: '35px', 
+                height: '15px', 
                 objectFit: 'contain',
                 opacity: 0.6,
                 filter: 'brightness(1.2)'
