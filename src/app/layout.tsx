@@ -6,7 +6,7 @@ import { AppShellClient } from './AppShellClient'
 import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
-  title: 'CRM NEOSOL',
+  title: 'By OmniSync',
   description: 'Sistema de gestión',
 }
 

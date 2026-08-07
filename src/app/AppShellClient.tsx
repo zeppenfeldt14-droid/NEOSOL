@@ -483,7 +483,16 @@ export function AppShellClient({ children, logo, user, zones = [], vendedoresPor
             >
               <Menu size={24} />
             </button>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 500 }} className="text-white font-bold">NEOSOL CRM</h2>
+            <img 
+              src="/omnisync-logo.png" 
+              alt="By OmniSync" 
+              style={{ 
+                height: '35px', 
+                objectFit: 'contain',
+                opacity: 0.6,
+                filter: 'brightness(1.2)'
+              }} 
+            />
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell userAlias={user.alias} />
